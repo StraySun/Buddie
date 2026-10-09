@@ -18,7 +18,7 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .hr-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 17px 0 11px; }
 .hr-actions__filters { display: flex; gap: 8px; align-items: center; }
 .hr-actions select { min-height: 33px; padding: 0 10px; border: 1px solid #e8e3ed; border-radius: 9px; background: white; color: #615a69; font-size: 9px; }
-.candidate-panel { overflow: hidden; }
+.candidate-panel { overflow-x: auto; overflow-y: hidden; }
 .candidate-panel__head { display: flex; align-items: center; justify-content: space-between; padding: 14px; }
 .candidate-panel__head h2 { margin: 0; font-size: 12px; }
 .candidate-panel__head span { color: #827c8a; font-size: 8px; }
