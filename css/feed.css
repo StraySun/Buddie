@@ -1,0 +1,38 @@
+.feed-layout { display: grid; grid-template-columns: minmax(0,1fr) 245px; gap: 18px; align-items: start; }
+.feed-main { display: grid; gap: 12px; min-width: 0; }
+.feed-banner { min-height: 160px; position: relative; display: flex; align-items: center; overflow: hidden; padding: 22px; color: white; border-radius: var(--radius-lg); background: linear-gradient(112deg,#311054 0%,#6122bb 53%,#a363f0 100%); }
+.feed-banner::after { content: ''; position: absolute; top: -56px; right: -5px; width: 250px; height: 250px; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; box-shadow: 0 0 0 24px rgba(255,255,255,.04),0 0 0 55px rgba(255,255,255,.035); }
+.feed-banner__content { z-index: 1; max-width: 76%; }
+.feed-banner__eyebrow { display: inline-flex; padding: 4px 8px; border-radius: var(--radius-pill); background: rgba(255,255,255,.13); color: #e6d5ff; font-size: 8px; font-weight: 700; letter-spacing: .04em; }
+.feed-banner h2 { max-width: 520px; margin: 10px 0 6px; font-size: 19px; line-height: 1.2; letter-spacing: -.3px; }
+.feed-banner p { max-width: 460px; margin: 0 0 12px; color: #e4d5f4; font-size: 9px; line-height: 1.5; }
+.feed-banner__mascot { position: absolute; z-index: 1; right: 28px; top: 25px; width: 105px; height: 105px; display: grid; place-items: center; border-radius: 50%; color: #421476; background: radial-gradient(circle at 40% 35%,#e0b7ff,#a762f2 70%); font-size: 48px; font-weight: 900; transform: rotate(-8deg); }
+.feed-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.feed-section-heading h2 { margin: 0 0 3px; font-size: 14px; }
+.feed-section-heading p { margin: 0; color: #86818f; font-size: 8px; }
+.feed-section-heading a { color: #6e38b4; font-size: 9px; font-weight: 700; white-space: nowrap; }
+.feed-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.feed-jobs { display: grid; gap: 10px; }
+.feed-side { display: grid; gap: 10px; }
+.feed-tip { background: linear-gradient(140deg,#fff,#f4edff); }
+.feed-tip__top { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+.feed-tip__mascot { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; color: white; background: linear-gradient(135deg,#a362ef,#7839dc); }
+.feed-tip__title { font-size: 10px; font-weight: 800; }
+.feed-tip__tag { color: #8d6baf; font-size: 8px; }
+.feed-tip h3 { margin: 0 0 6px; font-size: 10px; line-height: 1.4; }
+.feed-tip p { margin: 0 0 11px; color: #777482; font-size: 8px; line-height: 1.5; }
+.feed-notices { display: grid; gap: 0; }
+.feed-notice { position: relative; padding: 8px 0 8px 21px; border-bottom: 1px solid #f0edf4; }
+.feed-notice:last-child { border-bottom: 0; }
+.feed-notice__icon { position: absolute; top: 9px; left: 0; color: #7d42c6; }
+.feed-notice strong { display: block; margin-bottom: 3px; font-size: 8px; }
+.feed-notice span { color: #85818c; font-size: 8px; line-height: 1.4; }
+.partners { padding: 13px; }
+.partners__head { display: flex; align-items: center; justify-content: space-between; }
+.partners__head h2 { margin: 0; font-size: 10px; }
+.partners__list { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; margin-top: 10px; }
+.partners__item { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; border-radius: 9px; background: #faf9fc; font-size: 8px; font-weight: 700; }
+.partners__item .company-logo { width: 18px; height: 18px; flex-basis: 18px; border-radius: 6px; font-size: 9px; }
+@media(max-width:980px) { .feed-layout { grid-template-columns: minmax(0,1fr) 215px; gap: 12px; } .feed-banner__mascot { right: 16px; width: 84px; height: 84px; } }
+@media(max-width:760px) { .feed-layout { grid-template-columns: 1fr; } .feed-side { grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); } }
+@media(max-width:500px) { .feed-banner { min-height: 180px; padding: 17px; } .feed-banner__content { max-width: 100%; } .feed-banner__mascot { display: none; } .feed-banner h2 { font-size: 17px; } .partners__list { grid-template-columns: repeat(3,1fr); } }
