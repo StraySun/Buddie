@@ -1,0 +1,22 @@
+:root {
+  --bg-sidebar: #0F0B1E;
+  --bg-active-nav: #1E1738;
+  --bg-page: linear-gradient(135deg, #F4F5FA 0%, #EBEFFF 100%);
+  --color-primary: #7C3AED;
+  --color-primary-hover: #6D28D9;
+  --color-text-main: #111827;
+  --color-text-muted: #6B7280;
+  --color-text-light: #FFFFFF;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-purple-badge: #8B5CF6;
+  --color-danger: #EF4444;
+  --card-bg: #FFFFFF;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-pill: 9999px;
+  --border-color: #ECEAF2;
+  --color-lilac: #F4EDFF;
+  --font-family: 'Montserrat', 'Plus Jakarta Sans', sans-serif;
+}

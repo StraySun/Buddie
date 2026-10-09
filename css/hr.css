@@ -1,0 +1,37 @@
+body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
+.hr-shell { max-width: 1500px; margin: 0 auto; padding: 23px 28px; }
+.hr-topbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 13px 18px; border-radius: 14px; background: white; box-shadow: var(--card-shadow); }
+.hr-brand { display: flex; align-items: center; gap: 10px; }
+.hr-brand .brand__mark { width: 32px; height: 32px; }
+.hr-brand strong { font-size: 13px; }
+.hr-brand small { display: block; margin-top: 3px; color: #817b8b; font-size: 8px; }
+.hr-topbar__company { color: #635c6d; font-size: 9px; }
+.hr-topbar__profile { display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 700; }
+.hr-heading { margin: 24px 0 14px; }
+.hr-heading h1 { margin: 0 0 5px; font-size: 21px; }
+.hr-heading p { margin: 0; color: #777482; font-size: 10px; }
+.hr-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 11px; }
+.hr-metric { display: flex; align-items: center; gap: 12px; padding: 15px; }
+.hr-metric__icon { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 11px; color: #7940c3; background: #f1e7ff; font-size: 15px; }
+.hr-metric__label { color: #777482; font-size: 8px; }
+.hr-metric__number { margin-top: 5px; font-size: 19px; font-weight: 800; }
+.hr-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 17px 0 11px; }
+.hr-actions__filters { display: flex; gap: 8px; align-items: center; }
+.hr-actions select { min-height: 33px; padding: 0 10px; border: 1px solid #e8e3ed; border-radius: 9px; background: white; color: #615a69; font-size: 9px; }
+.candidate-panel { overflow: hidden; }
+.candidate-panel__head { display: flex; align-items: center; justify-content: space-between; padding: 14px; }
+.candidate-panel__head h2 { margin: 0; font-size: 12px; }
+.candidate-panel__head span { color: #827c8a; font-size: 8px; }
+.candidate-table { width: 100%; border-collapse: collapse; text-align: left; }
+.candidate-table th { padding: 9px 11px; color: #7f7987; background: #faf9fc; font-size: 8px; white-space: nowrap; }
+.candidate-table td { padding: 11px; border-top: 1px solid #f0edf3; font-size: 8px; white-space: nowrap; }
+.candidate { display: flex; align-items: center; gap: 7px; }
+.candidate__avatar { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: #763bb7; background: #f0ddff; font-size: 8px; font-weight: 800; }
+.candidate strong { display: block; font-size: 8px; }
+.candidate small { display: block; margin-top: 3px; color: #898491; font-size: 7px; }
+.match-score { color: #7540bc; font-weight: 800; }
+.hr-skills { display: flex; gap: 3px; }
+.hr-skills span { padding: 3px 5px; border-radius: 5px; background: #f2e9ff; color: #664391; font-size: 7px; }
+.hr-table-foot { padding: 11px 14px; color: #817b89; font-size: 8px; }
+@media(max-width:900px) { .hr-shell { padding: 17px; } .hr-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:580px) { .hr-shell { padding: 12px; } .hr-topbar { flex-wrap: wrap; } .hr-actions { align-items: flex-start; flex-direction: column; } .hr-actions__filters { flex-wrap: wrap; } .hr-metrics { gap: 7px; } .hr-metric { padding: 11px; gap: 8px; } .hr-metric__number { font-size: 16px; } }
