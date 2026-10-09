@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BUDDIE · Student Career Dashboard</title>
+  <!-- Подключение шрифта из Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand-header">
+      <div class="brand-icon">🎓</div>
+      <div>
+        <div class="brand-title">Buddie.</div>
+        <div class="brand-subtitle">Career Platform</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Меню</div>
+    <ul class="nav-menu">
+      <li class="nav-item active">
+        <a href="#">
+          <span>⚡</span> Главная лента
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#">
+          <span>💼</span> Мои отклики
+          <span class="nav-badge">3</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#">
+          <span>📝</span> Резюме и тесты
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#">
+          <span>🏢</span> Компании
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-widget">
+      <div class="widget-header">
+        <span>Профиль заполнен</span>
+        <span>85%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="widget-subtext">Добавьте портфолио, чтобы получать больше приглашений.</div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-dot"></div>
+      <span>Система работает стабильно</span>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-wrapper">
+    
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="header-left">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" placeholder="Поиск стажировок, навыков, компаний...">
+          <span class="shortcut-key">⌘ K</span>
+        </div>
+        <div class="selector-pill">
+          <span>📍 Москва</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button class="icon-btn">
+          <span>🔔</span>
+          <span class="badge">2</span>
+        </button>
+        <div class="user-profile">
+          <div class="avatar">И</div>
+          <div class="user-info">
+            <div class="user-name">Иван Студентов</div>
+            <div class="user-role">Junior Frontend</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT GRID -->
+    <div class="content-grid">
+      
+      <!-- FEED COLUMN (Лента) -->
+      <div class="feed-column">
+        <div class="page-title-block">
+          <div>
+            <h1 class="page-title">С возвращением, Иван! 👋</h1>
+            <div class="page-subtitle">Мы подобрали новые вакансии на основе твоих навыков.</div>
+          </div>
+          <div class="date-badge">12 Октября 2026</div>
+        </div>
+
+        <div class="hero-banner">
+          <div class="hero-content">
+            <div class="hero-tag">AI Рекомендация</div>
+            <h2 class="hero-title">Твои шансы в Яндекс выросли на 24%</h2>
+            <p class="hero-desc">После прохождения теста по React мы обновили твой скоринг. Появились новые подходящие стажировки с быстрым ответом.</p>
+            <button class="btn-hero">Смотреть подборку</button>
+          </div>
+          <div class="hero-illustration">
+            <div class="owl-cap-graphic" style="font-size: 60px; text-align:center; line-height:100px;">🦉</div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <h3 class="section-title">Свежие вакансии</h3>
+          <a href="#" class="link-all">Смотреть все</a>
+        </div>
+
+        <div class="filter-bar">
+          <button class="filter-btn active">Для меня (98%)</button>
+          <button class="filter-btn">Frontend</button>
+          <button class="filter-btn">Стажировки</button>
+          <button class="filter-btn">Удаленка</button>
+        </div>
+
+        <!-- Vacancy Card -->
+        <div class="vacancy-card">
+          <div class="card-top">
+            <div class="company-block">
+              <div class="company-logo logo-yandex">Я</div>
+              <div class="company-info">
+                <span class="company-name">Яндекс</span>
+                <span class="company-rating">⭐ 4.9 · IT-компания</span>
+              </div>
+            </div>
+            <div class="match-badge">✨ 98% Match</div>
+          </div>
+
+          <div class="job-title-row">
+            <div class="job-title">Стажер-разработчик интерфейсов (React)</div>
+            <div class="job-salary">от 60 000 ₽</div>
+          </div>
+
+          <div class="tag-list">
+            <span class="tag">Junior</span>
+            <span class="tag">Стажировка (3 мес)</span>
+            <span class="tag purple">Гибрид</span>
+          </div>
+
+          <p class="job-desc">Ищем амбициозного стажера в команду Поиска. Будем делать быстрые и красивые интерфейсы, писать на React и TypeScript, покрывать код тестами.</p>
+
+          <div class="meta-row">
+            <span>📅 Опубликовано вчера</span>
+            <span>👁️ 45 просмотров</span>
+          </div>
+
+          <div class="card-footer">
+            <div class="fast-response">⚡ Отвечают за 24 часа</div>
+            <div class="card-actions">
+              <button class="btn-ghost">Сохранить</button>
+              <button class="btn-primary">Откликнуться</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="partners-section">
+          <h3 class="section-title" style="font-size: 14px; margin-bottom: 12px;">Топ работодатели</h3>
+          <div class="partners-grid">
+            <div class="partner-card"><span style="color:#21A038;">СБЕР</span></div>
+            <div class="partner-card"><span style="color:#FFDD2D;">T-Bank</span></div>
+            <div class="partner-card"><span style="color:#E30611;">МТС</span></div>
+            <div class="partner-card">VK</div>
+            <div class="partner-card">Авито</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN (Виджеты) -->
+      <div class="right-column">
+        
+        <div class="widget-card">
+          <div class="widget-title">🤖 Совет от Buddie-AI</div>
+          <div class="buddie-tip-box">
+            <span class="tip-tag">Анализ резюме</span>
+            <div class="tip-headline">Добавьте проект из ВУЗа</div>
+            <div class="tip-body">У вас указано знание PostgreSQL, но нет примеров. Добавьте курсовую работу с БД, это повысит конверсию в отклики на 15%.</div>
+            <button class="btn-primary btn-full" style="padding: 6px;">Редактировать профиль</button>
+          </div>
+        </div>
+
+        <div class="widget-card">
+          <div class="widget-title">🔔 Уведомления</div>
+          <div class="notification-list">
+            <div class="notification-item">
+              <div class="notif-title">Приглашение на интервью!</div>
+              <div class="notif-sub">T-Bank просмотрел ваше резюме и предлагает звонок.</div>
+            </div>
+            <div class="notification-item">
+              <div class="notif-title">Отказ: ООО Ромашка</div>
+              <div class="notif-sub">Не расстраивайтесь, вы подходите для 120 других компаний.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="widget-card">
+          <div class="widget-title">📊 Моя статистика</div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-number">14</div>
+              <div class="stat-label">Откликов</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number">3</div>
+              <div class="stat-label">Приглашения</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+</body>
+</html>
