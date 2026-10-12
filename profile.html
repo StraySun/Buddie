@@ -5,34 +5,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buddie — Личный кабинет</title>
-    <link rel="stylesheet" href="css/variables.css">
-    <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/profile.css">
+    <link rel="icon" type="image/png" href="./images/IMG_6619.png">
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/profile.css">
 </head>
 
 <body>
     <div class="page-shell">
-        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__identity"><span
+        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"><img src="./images/IMG_6619.png" alt=""></span><span class="brand__identity"><span
                         class="brand__word">Buddie</span><span class="brand__caption">Умный карьерный
                         помощник</span></span></a>
             <div class="sidebar__label">Навигация</div>
             <nav class="sidebar__nav"><a class="sidebar__nav-item" href="index.html"><span
-                        class="sidebar__icon">▦</span>Лента</a><a class="sidebar__nav-item" href="companies.html"><span
-                        class="sidebar__icon">▤</span>Стажировки</a><a class="sidebar__nav-item"
-                    href="companies.html"><span class="sidebar__icon">✦</span>Карьерные траектории</a><a
+                        class="sidebar__icon" aria-hidden="true">▦</span>Лента</a><a class="sidebar__nav-item" href="companies.html"><span
+                        class="sidebar__icon" aria-hidden="true">▤</span>Стажировки</a><a class="sidebar__nav-item"
+                    href="companies.html"><span class="sidebar__icon" aria-hidden="true">✦</span>Карьерные траектории</a><a
                     class="sidebar__nav-item" href="profile.html"><span
-                        class="sidebar__icon">▣</span>Мои отклики <span class="sidebar__count">4</span></a><a
-                    class="sidebar__nav-item" href="notifications.html"><span class="sidebar__icon">◷</span>Уведомления
+                        class="sidebar__icon" aria-hidden="true">▣</span>Мои отклики <span class="sidebar__count">4</span></a><a
+                    class="sidebar__nav-item" href="notifications.html"><span class="sidebar__icon" aria-hidden="true">◷</span>Уведомления
                     <span class="sidebar__count">5</span></a><a class="sidebar__nav-item sidebar__nav-item--active"
-                    href="profile.html"><span class="sidebar__icon">◎</span>Личный кабинет</a></nav>
+                    href="profile.html"><span class="sidebar__icon" aria-hidden="true">◎</span>Личный кабинет</a></nav>
+            <a class="sidebar__hr-link" href="hr.html">Режим HR-партнёра →</a>
             <div class="sidebar__progress">
                 <div class="sidebar__progress-title">Профиль заполнен <strong>85%</strong></div>
                 <div class="sidebar__track"><span></span></div>
                 <p>Добавь портфолио — работодатели заметят тебя быстрее.</p><a class="sidebar__link"
                     href="#profile">Дополнить профиль →</a>
             </div>
-            <div class="sidebar__footer"><i class="status-dot"></i>Центр карьеры на связи</div>
+            <div class="sidebar__footer"><i class="status-dot" aria-hidden="true"></i>Центр карьеры на связи</div>
             <div class="sidebar__user">
                 <div class="avatar">НМ</div>
                 <div>
@@ -42,7 +44,7 @@
             </div>
         </aside>
         <main class="app-main">
-            <header class="header"><label class="header__search"><span>⌕</span><input
+            <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
                         placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск"></label>
                 <div class="header__select"><small>УНИВЕРСИТЕТ</small>Казанский федеральный университет⌄</div>
                 <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления">◷<span>5</span></a><a
@@ -69,29 +71,29 @@
                         <div class="progress-track"><span></span></div>
                     </div><button class="button">Скачать резюме PDF</button>
                 </section>
-                <div class="profile-layout" style="margin-top:14px">
+                <div class="profile-layout">
                     <section class="profile-main">
                         <nav class="profile-tabs"><a class="is-active" href="#applications">Мои отклики
                                 <span>4</span></a><a href="#stack">Мой профиль и стек</a><a href="#analytics">Аналитика</a></nav>
                         <div class="profile-metrics" id="analytics">
                             <article class="card metric">
                                 <div class="metric__label">Всего откликов</div>
-                                <div class="metric__number">4 <span style="font-size:13px;color:#8b50dc">↗</span></div>
+                                <div class="metric__number">4 <span class="metric__trend metric__trend--purple" aria-hidden="true">↗</span></div>
                                 <div class="metric__hint">За последние 30 дней</div>
                             </article>
                             <article class="card metric">
                                 <div class="metric__label">На рассмотрении</div>
-                                <div class="metric__number">1 <span style="font-size:13px;color:#d4a323">◷</span></div>
+                                <div class="metric__number">1 <span class="metric__trend metric__trend--warning" aria-hidden="true">◷</span></div>
                                 <div class="metric__hint">Ждём ответ компании</div>
                             </article>
                             <article class="card metric">
                                 <div class="metric__label">Интервью</div>
-                                <div class="metric__number">1 <span style="font-size:13px;color:#22a06b">▣</span></div>
+                                <div class="metric__number">1 <span class="metric__trend metric__trend--success" aria-hidden="true">▣</span></div>
                                 <div class="metric__hint">Нужно выбрать время</div>
                             </article>
                             <article class="card metric">
                                 <div class="metric__label">Офферы</div>
-                                <div class="metric__number">1 <span style="font-size:13px;color:#8b50dc">✦</span></div>
+                                <div class="metric__number">1 <span class="metric__trend metric__trend--purple" aria-hidden="true">✦</span></div>
                                 <div class="metric__hint">Твой следующий шаг</div>
                             </article>
                         </div>
@@ -102,21 +104,21 @@
                                     <p>Все этапы — от первого отклика до оффера.</p>
                                 </div><span class="company-rating">4 отклика</span>
                             </div>
-                            <div class="profile-controls"><label class="search-field"><span>⌕</span><input
+                            <div class="profile-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input
                                         placeholder="Найти отклик или компанию"></label><select
                                     aria-label="Фильтр по статусу">
                                     <option>Все статусы⌄</option>
                                     <option>Приглашение</option>
                                     <option>На рассмотрении</option>
                                 </select></div>
-                            <div class="table-scroll">
+                            <div class="table-scroll" tabindex="0" aria-label="Таблица откликов. Прокручивайте по горизонтали.">
                                 <table class="data-table">
                                     <thead>
                                         <tr>
-                                            <th>Вакансия и компания</th>
-                                            <th>Дата подачи</th>
-                                            <th>Статус</th>
-                                            <th>Действие</th>
+                                            <th scope="col">Вакансия и компания</th>
+                                            <th scope="col">Дата подачи</th>
+                                            <th scope="col">Статус</th>
+                                            <th scope="col">Действие</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -148,12 +150,12 @@
                                         <tr id="feedback">
                                             <td>
                                                 <div class="application-company"><span
-                                                        class="company-logo company-logo--vk">ᴠκ</span><span><strong>Тестировщик</strong><small>VK
+                                                        class="company-logo company-logo--vk">VK</span><span><strong>Тестировщик</strong><small>VK
                                                             · Москва · Офис</small></span></div>
                                             </td>
                                             <td>01.10.2026</td>
                                             <td><span class="status-badge status-badge--danger">● Отказ</span></td>
-                                            <td><a href="#feedback" style="color:#7540bc;font-weight:700">Фидбек</a>
+                                            <td><a class="application-feedback" href="#feedback">Фидбек</a>
                                             </td>
                                         </tr>
                                         <tr>
@@ -180,7 +182,7 @@
                             <h2>Мой профиль и стек</h2>
                             <div class="stack-focus"><small>КАРЬЕРНЫЙ ФОКУС</small><strong>Разработка и
                                     аналитика</strong>
-                                <div style="margin-top:5px"><span class="chip">Стажировка</span><span
+                                <div class="stack-focus__chips"><span class="chip">Стажировка</span><span
                                         class="chip chip--neutral">Начальная позиция</span></div>
                             </div>
                             <div class="skill-list">
@@ -198,7 +200,7 @@
                         </section>
                         <section class="card widget profile-tip">
                             <h2>✦ Советы Buddie</h2>
-                            <div class="profile-tip__callout"><span class="profile-tip__mascot"><img src="./images/IMG_6619.png" alt="Маскот Buddie" width="64" height="64"></span><span
+                            <div class="profile-tip__callout"><span class="profile-tip__mascot"><img src="./images/IMG_6619.png" alt="" width="64" height="64"></span><span
                                     class="profile-tip__timer">◷ 24 часа</span></div>
                             <p>Yandex ждёт твоего ответа! Запишись на интервью в течение 24 часов, чтобы не упустить
                                 слот.</p><button class="button button--full">Выбрать время</button>

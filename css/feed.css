@@ -1,4 +1,3 @@
-.feed-layout { display: grid; grid-template-columns: minmax(0,1fr) 245px; gap: 18px; align-items: start; }
 .feed-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(270px, 0.38fr); align-items: start; gap: 22px; }
 .feed-main { display: grid; gap: 20px; min-width: 0; }
 .feed-banner { min-height: 240px; position: relative; display: flex; align-items: center; overflow: hidden; padding: 32px; color: white; border: 1px solid rgba(255,255,255,.18); border-radius: 24px; background: linear-gradient(115deg,#33105f 0%,#6323c2 55%,#8847ef 100%); box-shadow: 0 18px 38px rgba(85,35,154,.2); }
@@ -11,7 +10,7 @@
 .feed-banner__mascot img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 16px 20px rgba(23,8,49,.24)); }
 .feed-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .feed-section-heading h2 { margin: 0 0 5px; font-size: 20px; letter-spacing: -.35px; }
-.feed-section-heading p { margin: 0; color: #777482; font-size: 12px; line-height: 1.5; }
+.feed-section-heading p { margin: 0; color: #666270; font-size: 12px; line-height: 1.5; }
 .feed-section-heading a { color: #6e38b4; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .feed-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .feed-jobs { display: grid; gap: 14px; }
@@ -21,15 +20,15 @@
 .feed-tip__mascot { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; overflow: hidden; border-radius: 15px; background: linear-gradient(135deg,#bd84ff,#7532e5); }
 .feed-tip__mascot img { width: 65px; height: 65px; object-fit: contain; }
 .feed-tip__title { font-size: 14px; font-weight: 800; }
-.feed-tip__tag { color: #8d6baf; font-size: 11px; }
+.feed-tip__tag { color: #6b4c8e; font-size: 11px; }
 .feed-tip h3 { margin: 0 0 8px; font-size: 16px; line-height: 1.4; }
-.feed-tip p { margin: 0 0 16px; color: #777482; font-size: 12px; line-height: 1.65; }
+.feed-tip p { margin: 0 0 16px; color: #666270; font-size: 12px; line-height: 1.65; }
 .feed-notices { display: grid; gap: 0; }
 .feed-notice { position: relative; padding: 12px 0 12px 25px; border-bottom: 1px solid #f0edf4; }
 .feed-notice:last-child { border-bottom: 0; }
 .feed-notice__icon { position: absolute; top: 13px; left: 0; color: #7d42c6; }
 .feed-notice strong { display: block; margin-bottom: 4px; font-size: 12px; }
-.feed-notice span { color: #85818c; font-size: 11px; line-height: 1.5; }
+.feed-notice span { color: #666270; font-size: 11px; line-height: 1.5; }
 .partners { padding: 18px; }
 .partners__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .partners__head h2 { margin: 0; font-size: 14px; }
