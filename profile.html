@@ -13,19 +13,19 @@
 
 <body>
     <div class="page-shell">
-        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark">♟</span><span><span
+        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__identity"><span
                         class="brand__word">Buddie</span><span class="brand__caption">Умный карьерный
                         помощник</span></span></a>
             <div class="sidebar__label">Навигация</div>
             <nav class="sidebar__nav"><a class="sidebar__nav-item" href="index.html"><span
                         class="sidebar__icon">▦</span>Лента</a><a class="sidebar__nav-item" href="companies.html"><span
-                        class="sidebar__icon">♧</span>Стажировки</a><a class="sidebar__nav-item"
-                    href="companies.html"><span class="sidebar__icon">⌘</span>Карьерные траектории</a><a
-                    class="sidebar__nav-item sidebar__nav-item--active" href="profile.html"><span
+                        class="sidebar__icon">▤</span>Стажировки</a><a class="sidebar__nav-item"
+                    href="companies.html"><span class="sidebar__icon">✦</span>Карьерные траектории</a><a
+                    class="sidebar__nav-item" href="profile.html"><span
                         class="sidebar__icon">▣</span>Мои отклики <span class="sidebar__count">4</span></a><a
-                    class="sidebar__nav-item" href="notifications.html"><span class="sidebar__icon">♧</span>Уведомления
+                    class="sidebar__nav-item" href="notifications.html"><span class="sidebar__icon">◷</span>Уведомления
                     <span class="sidebar__count">5</span></a><a class="sidebar__nav-item sidebar__nav-item--active"
-                    href="profile.html"><span class="sidebar__icon">♙</span>Личный кабинет</a></nav>
+                    href="profile.html"><span class="sidebar__icon">◎</span>Личный кабинет</a></nav>
             <div class="sidebar__progress">
                 <div class="sidebar__progress-title">Профиль заполнен <strong>85%</strong></div>
                 <div class="sidebar__track"><span></span></div>
@@ -42,11 +42,10 @@
             </div>
         </aside>
         <main class="app-main">
-            <header class="header"><a class="header__brand" href="index.html"><span class="brand__mark">♟</span><span
-                        class="brand__word">Buddie</span></a><label class="header__search"><span>⌕</span><input
+            <header class="header"><label class="header__search"><span>⌕</span><input
                         placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск"></label>
                 <div class="header__select"><small>УНИВЕРСИТЕТ</small>Казанский федеральный университет⌄</div>
-                <div class="header__right"><a class="header__bell" href="notifications.html">♧<span>5</span></a><a
+                <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления">◷<span>5</span></a><a
                         class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
                                 курс</small></span></a></div>
             </header>
@@ -58,7 +57,7 @@
                     </div>
                     <div class="page-heading__date">7 октября 2026</div>
                 </div>
-                <section class="card student-card">
+                <section class="card student-card" id="profile">
                     <div class="student-card__avatar">НМ</div>
                     <div class="student-card__identity">
                         <h2>Нур М.</h2>
@@ -73,9 +72,8 @@
                 <div class="profile-layout" style="margin-top:14px">
                     <section class="profile-main">
                         <nav class="profile-tabs"><a class="is-active" href="#applications">Мои отклики
-                                <span>4</span></a><a href="#stack">Мой профиль и стек</a><a
-                                href="#favorites">Избранное</a><a href="#analytics">Аналитика</a></nav>
-                        <div class="profile-metrics">
+                                <span>4</span></a><a href="#stack">Мой профиль и стек</a><a href="#analytics">Аналитика</a></nav>
+                        <div class="profile-metrics" id="analytics">
                             <article class="card metric">
                                 <div class="metric__label">Всего откликов</div>
                                 <div class="metric__number">4 <span style="font-size:13px;color:#8b50dc">↗</span></div>
@@ -147,7 +145,7 @@
                                             <td><button class="button button--outline button--small">Чат с HR</button>
                                             </td>
                                         </tr>
-                                        <tr>
+                                        <tr id="feedback">
                                             <td>
                                                 <div class="application-company"><span
                                                         class="company-logo company-logo--vk">ᴠκ</span><span><strong>Тестировщик</strong><small>VK
@@ -174,7 +172,7 @@
                             <div class="profile-applications__foot"><span>Показаны 4 из 4 откликов</span><span>Обновлено
                                     сегодня, 10:42</span></div>
                         </section>
-                        <div class="profile-footnote">♙ Твои данные видны только компаниям, в которые ты откликнулся.
+                        <div class="profile-footnote">ⓘ Твои данные видны только компаниям, в которые ты откликнулся.
                         </div>
                     </section>
                     <aside class="profile-side">
@@ -200,7 +198,7 @@
                         </section>
                         <section class="card widget profile-tip">
                             <h2>✦ Советы Buddie</h2>
-                            <div class="profile-tip__callout"><span class="profile-tip__mascot">♟</span><span
+                            <div class="profile-tip__callout"><span class="profile-tip__mascot"><img src="./images/IMG_6619.png" alt="Маскот Buddie" width="64" height="64"></span><span
                                     class="profile-tip__timer">◷ 24 часа</span></div>
                             <p>Yandex ждёт твоего ответа! Запишись на интервью в течение 24 часов, чтобы не упустить
                                 слот.</p><button class="button button--full">Выбрать время</button>
