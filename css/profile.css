@@ -44,7 +44,8 @@
 .skill__bars i.is-filled { background: #8b50dc; }
 .profile-tip { background: linear-gradient(150deg,#fff,#f4edff); }
 .profile-tip__callout { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.profile-tip__mascot { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 13px; color: white; background: linear-gradient(135deg,#a362ef,#7839dc); font-size: 22px; }
+.profile-tip__mascot { width: 42px; height: 42px; display: grid; place-items: center; overflow: hidden; border-radius: 13px; background: linear-gradient(135deg,#a362ef,#7839dc); }
+.profile-tip__mascot img { width: 100%; height: 100%; object-fit: contain; }
 .profile-tip__timer { color: #7742ba; background: #efe1ff; padding: 5px 8px; border-radius: var(--radius-pill); font-size: 8px; }
 .profile-tip p { color: #615c69; font-size: 8px; line-height: 1.55; }
 @media(max-width:960px) { .profile-layout { grid-template-columns: 1fr; } .profile-side { grid-template-columns: repeat(2,minmax(0,1fr)); } }
