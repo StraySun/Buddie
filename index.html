@@ -43,7 +43,7 @@
     </aside>
     <main class="app-main">
       <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
-            placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск"></label>
+            placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
         <div class="header__select"><small>УНИВЕРСИТЕТ</small>Казанский федеральный университет⌄</div>
         <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления">◷<span>5</span></a><a
             class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
@@ -75,11 +75,9 @@
                 <p>Показаны 3 из 5 персональных подборок · Buddie</p>
               </div><a href="companies.html">Смотреть все 42 →</a>
             </div>
-            <div class="feed-filters"><button class="filter-pill filter-pill--active">Для тебя · 5</button><button
-                class="filter-pill">Специальность: ИТ и аналитика⌄</button><button class="filter-pill">Формат:
-                Любой⌄</button><button class="filter-pill">Все фильтры ⊞</button></div>
+            <div class="feed-filters"><button class="filter-pill filter-pill--active" type="button" data-feed-reset aria-pressed="true">Все стажировки</button><select class="filter-pill" aria-label="Специальность" data-feed-specialty><option value="all">Любая специальность</option><option value="analysis">Аналитика и данные</option><option value="development">Разработка</option></select><select class="filter-pill" aria-label="Формат работы" data-feed-format><option value="all">Любой формат</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select><button class="filter-pill" type="button" data-feed-reset>Сбросить фильтры</button></div>
             <div class="feed-jobs">
-              <article class="card job-card">
+              <article class="card job-card" data-job-id="yandex-analyst" data-specialty="analysis" data-format="hybrid">
                 <div class="job-card__top">
                   <div class="job-card__company">
                     <div class="company-logo company-logo--yandex">Я</div>
@@ -99,11 +97,10 @@
                   продуктовых команд.</p>
                 <div class="job-card__meta"><span>⌖ Москва</span><span>▣ 3 дня/неделю</span><span>◷ Сегодня</span></div>
                 <div class="job-card__footer"><span class="job-card__response">● Быстрый отклик</span>
-                  <div class="job-card__actions"><button class="button button--outline button--small">☆
-                      Сохранить</button><button class="button button--small">↗ Откликнуться</button></div>
+                  <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false">☆ Сохранить</button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false">↗ Откликнуться</button></div>
                 </div>
               </article>
-              <article class="card job-card">
+              <article class="card job-card" data-job-id="sber-java" data-specialty="development" data-format="remote">
                 <div class="job-card__top">
                   <div class="job-card__company">
                     <div class="company-logo company-logo--sber">С</div>
@@ -124,11 +121,10 @@
                 <div class="job-card__meta"><span>⌖ Москва / Удалённо</span><span>▣ Удалённо</span><span>◷ Вчера</span>
                 </div>
                 <div class="job-card__footer"><span class="job-card__response">● Быстрый отклик</span>
-                  <div class="job-card__actions"><button class="button button--outline button--small">☆
-                      Сохранить</button><button class="button button--small">↗ Откликнуться</button></div>
+                  <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false">☆ Сохранить</button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false">↗ Откликнуться</button></div>
                 </div>
               </article>
-              <article class="card job-card">
+              <article class="card job-card" data-job-id="tbank-data" data-specialty="analysis" data-format="hybrid">
                 <div class="job-card__top">
                   <div class="job-card__company">
                     <div class="company-logo company-logo--tbank">Т</div>
@@ -150,11 +146,11 @@
                 </div>
                 <div class="job-card__footer"><span class="job-card__response job-card__response--warning">● Дедлайн
                     через 3 дня</span>
-                  <div class="job-card__actions"><button class="button button--outline button--small">☆
-                      Сохранить</button><button class="button button--small">↗ Откликнуться</button></div>
+                  <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false">☆ Сохранить</button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false">↗ Откликнуться</button></div>
                 </div>
               </article>
             </div>
+            <p class="interaction-empty" data-feed-empty hidden>По этим условиям стажировок не найдено.</p>
             <section class="card partners">
               <div class="partners__head">
                 <h2>Партнёры университета</h2><span class="company-rating">Проверенные работодатели</span>
@@ -199,6 +195,7 @@
       </div>
     </main>
   </div>
+  <script src="./js/app.js" defer></script>
 </body>
 
 </html>

@@ -53,13 +53,14 @@
             </article>
         </section>
         <div class="hr-actions" id="post"><a class="button" href="#post">＋ Разместить стажировку</a>
-            <div class="hr-actions__filters"><select aria-label="Целевой университет">
-                    <option>Целевой ВУЗ: КФУ</option>
-                    <option>Все университеты</option>
-                </select><select aria-label="Фильтр статуса">
-                    <option>Все статусы</option>
-                    <option>Новые</option>
-                    <option>Приглашённые</option>
+            <div class="hr-actions__filters"><input class="hr-candidate-search" type="search" placeholder="Поиск кандидата..." aria-label="Поиск кандидата" data-search-input><select aria-label="Целевой университет" data-hr-university>
+                    <option value="kfu">Целевой ВУЗ: КФУ</option>
+                    <option value="all">Все университеты</option>
+                </select><select aria-label="Фильтр статуса" data-hr-status>
+                    <option value="all">Все статусы</option>
+                    <option value="new">Новые</option>
+                    <option value="interview">Интервью</option>
+                    <option value="review">На рассмотрении</option>
                 </select></div>
         </div>
         <section class="card candidate-panel">
@@ -157,6 +158,7 @@
                     направление и интересы студента.</span></div>
         </section>
     </main>
+    <script src="./js/app.js" defer></script>
 </body>
 
 </html>

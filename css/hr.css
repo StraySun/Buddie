@@ -21,6 +21,8 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .hr-metric__number { margin-top: 5px; font-size: 19px; font-weight: 800; }
 .hr-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 17px 0 11px; }
 .hr-actions__filters { display: flex; gap: 8px; align-items: center; }
+.hr-candidate-search { min-width: 160px; min-height: 40px; padding: 0 10px; border: 1px solid #e8e3ed; border-radius: 9px; color: #615a69; font-size: 11px; }
+.hr-candidate-search:focus { outline: 3px solid #8b50dc; outline-offset: 2px; }
 .hr-actions select { min-height: 40px; padding: 0 10px; border: 1px solid #e8e3ed; border-radius: 9px; background: white; color: #615a69; font-size: 9px; }
 .candidate-panel { overflow: hidden; }
 .candidate-panel .table-scroll { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }

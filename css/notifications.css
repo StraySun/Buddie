@@ -21,7 +21,8 @@
 .toggle--on::before { background: #7139bc; }
 .toggle--on::after { left: 24px; }
 .settings-card__subhead { margin: 15px 0 6px; font-size: 9px; font-weight: 800; }
-.channel-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; color: #5d5864; font-size: 9px; }
+.channel-row { min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 7px 0; color: #5d5864; font-size: 9px; }
 .channel-row input { accent-color: #7c3aed; }
 .settings-saved { margin-top: 10px; color: #187143; font-size: 8px; }
+.timeline-card.is-read { background: #fff; border-color: #ebe7f0; }
 @media(max-width:900px) { .notifications-layout { grid-template-columns: 1fr; } .notifications-side { grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); } }

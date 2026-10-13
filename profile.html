@@ -45,7 +45,7 @@
         </aside>
         <main class="app-main">
             <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
-                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск"></label>
+                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
                 <div class="header__select"><small>УНИВЕРСИТЕТ</small>Казанский федеральный университет⌄</div>
                 <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления">◷<span>5</span></a><a
                         class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
@@ -105,11 +105,13 @@
                                 </div><span class="company-rating">4 отклика</span>
                             </div>
                             <div class="profile-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input
-                                        placeholder="Найти отклик или компанию"></label><select
-                                    aria-label="Фильтр по статусу">
-                                    <option>Все статусы⌄</option>
-                                    <option>Приглашение</option>
-                                    <option>На рассмотрении</option>
+                                        placeholder="Найти отклик или компанию" aria-label="Поиск откликов" data-search-input></label><select
+                                    aria-label="Фильтр по статусу" data-application-status>
+                                    <option value="all">Все статусы</option>
+                                    <option value="Приглашение">Приглашение</option>
+                                    <option value="На рассмотрении">На рассмотрении</option>
+                                    <option value="Отказ">Отказ</option>
+                                    <option value="Оффер">Оффер</option>
                                 </select></div>
                             <div class="table-scroll" tabindex="0" aria-label="Таблица откликов. Прокручивайте по горизонтали.">
                                 <table class="data-table">
@@ -210,6 +212,7 @@
             </div>
         </main>
     </div>
+    <script src="./js/app.js" defer></script>
 </body>
 
 </html>

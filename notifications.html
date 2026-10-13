@@ -45,7 +45,7 @@
         </aside>
         <main class="app-main">
             <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
-                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск"></label>
+                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
                 <div class="header__select"><small>УНИВЕРСИТЕТ</small>Казанский федеральный университет⌄</div>
                 <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления">◷<span>5</span></a><a
                         class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
@@ -56,14 +56,11 @@
                     <div>
                         <h1>Центр умных уведомлений</h1>
                         <p>Персональные сигналы, дедлайн-трекер и статусы откликов.</p>
-                    </div><button class="button button--outline button--small">Отметить всё прочитанным</button>
+                    </div><button class="button button--outline button--small" type="button" data-mark-all-read>Отметить всё прочитанным</button>
                 </div>
                 <div class="notifications-layout">
                     <section class="notifications-main">
-                        <nav class="notification-tabs"><button class="filter-pill filter-pill--active">Все
-                                (5)</button><button class="filter-pill">Отклики и статусы (2)</button><button
-                                class="filter-pill">Дедлайны (1)</button><button class="filter-pill">Рекомендации AI
-                                (2)</button></nav>
+                        <nav class="notification-tabs" aria-label="Фильтр уведомлений"><button class="filter-pill filter-pill--active" type="button" data-notification-filter="all" aria-pressed="true">Все</button><button class="filter-pill" type="button" data-notification-filter="application" aria-pressed="false">Отклики и статусы</button><button class="filter-pill" type="button" data-notification-filter="deadline" aria-pressed="false">Дедлайны</button><button class="filter-pill" type="button" data-notification-filter="recommendation" aria-pressed="false">Рекомендации AI</button></nav>
                         <section>
                             <h2 class="timeline-group__title">Сегодня</h2>
                             <div class="timeline-list">
@@ -78,7 +75,7 @@
                                             Совпадение с твоим профилем — 96%.</p>
                                         <div class="timeline-card__actions"><a class="button button--small"
                                                 href="index.html">Откликнуться в 1 клик</a><button
-                                                class="button button--outline button--small">Напомнить позже</button>
+                                                class="button button--outline button--small" type="button" data-dismiss-notification>Напомнить позже</button>
                                         </div>
                                     </div>
                                 </article>
@@ -139,21 +136,21 @@
                             <h2>⚙ Настройки уведомлений</h2>
                             <div class="settings-list">
                                 <div class="setting-row"><span>Новые подходящие вакансии (AI match)</span><button
-                                        class="toggle toggle--on" aria-label="Включено" aria-pressed="true"></button></div>
+                                        class="toggle toggle--on" data-notification-setting aria-label="Включено" aria-pressed="true"></button></div>
                                 <div class="setting-row"><span>Изменение статуса отклика</span><button
-                                        class="toggle toggle--on" aria-label="Включено" aria-pressed="true"></button></div>
+                                        class="toggle toggle--on" data-notification-setting aria-label="Включено" aria-pressed="true"></button></div>
                                 <div class="setting-row"><span>Напоминания о дедлайнах</span><button
-                                        class="toggle toggle--on" aria-label="Включено" aria-pressed="true"></button></div>
-                                <div class="setting-row"><span>Сообщения от HR</span><button class="toggle"
+                                        class="toggle toggle--on" data-notification-setting aria-label="Включено" aria-pressed="true"></button></div>
+                                <div class="setting-row"><span>Сообщения от HR</span><button class="toggle" data-notification-setting
                                         aria-label="Выключено" aria-pressed="false"></button></div>
-                                <div class="setting-row"><span>Дайджест КФУ</span><button class="toggle toggle--on"
+                                <div class="setting-row"><span>Дайджест КФУ</span><button class="toggle toggle--on" data-notification-setting
                                         aria-label="Включено" aria-pressed="true"></button></div>
                             </div>
                             <h3 class="settings-card__subhead">Каналы доставки</h3><label class="channel-row"><input
-                                    type="checkbox" checked> Внутренние уведомления</label><label
-                                class="channel-row"><input type="checkbox" checked> Telegram ·
-                                @BuddieKFU_bot</label><label class="channel-row"><input type="checkbox"> Email</label>
-                            <div class="settings-saved">✓ Настройки сохранены</div>
+                                    type="checkbox" data-notification-channel checked> Внутренние уведомления</label><label
+                                class="channel-row"><input type="checkbox" data-notification-channel checked> Telegram ·
+                                @BuddieKFU_bot</label><label class="channel-row"><input type="checkbox" data-notification-channel> Email</label>
+                            <div class="settings-saved">Настройки хранятся в этом браузере</div>
                         </section>
                         <section class="card widget">
                             <h2 class="widget__title">Твой карьерный радар</h2>
@@ -165,6 +162,7 @@
             </div>
         </main>
     </div>
+    <script src="./js/app.js" defer></script>
 </body>
 
 </html>

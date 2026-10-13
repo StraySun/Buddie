@@ -45,7 +45,7 @@
         </aside>
         <main class="app-main">
             <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
-                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск"></label>
+                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
                 <div class="header__select"><small>УНИВЕРСИТЕТ</small>Казанский федеральный университет⌄</div>
                 <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления">◷<span>5</span></a><a
                         class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
@@ -59,15 +59,12 @@
                     </div><span class="page-heading__date">Проверено центром карьеры</span>
                 </div>
                 <div class="companies-tools"><label class="search-field"><span aria-hidden="true">⌕</span><input
-                            placeholder="Поиск компании..." aria-label="Поиск компаний"></label>
-                    <div class="companies-filters"><button class="filter-pill filter-pill--active">Все
-                            компании</button><button class="filter-pill">IT &amp; Финтех</button><button
-                            class="filter-pill">Аналитика</button><button class="filter-pill">Инженерия</button></div>
+                            placeholder="Поиск компании..." aria-label="Поиск компаний" data-search-input></label>
+                    <div class="companies-filters"><button class="filter-pill filter-pill--active" type="button" data-company-filter="all" aria-pressed="true">Все компании</button><button class="filter-pill" type="button" data-company-filter="it" aria-pressed="false">IT &amp; Финтех</button><button class="filter-pill" type="button" data-company-filter="analytics" aria-pressed="false">Аналитика</button><button class="filter-pill" type="button" data-company-filter="engineering" aria-pressed="false">Инженерия</button></div>
                 </div>
-                <div class="company-summary"><span>Партнёрская сеть университета</span><span>4 компании · 41 активная
-                        стажировка</span></div>
+                <div class="company-summary"><span>Партнёрская сеть университета</span><span data-company-count>6 компаний · 55 активных стажировок</span></div>
                 <section class="companies-grid">
-                    <article class="card company-card">
+                    <article class="card company-card" data-company-card data-category="it">
                         <div class="company-card__top"><span class="company-logo company-logo--yandex">Я</span>
                             <div>
                                 <h2 class="company-card__name">Yandex</h2><span class="company-card__partner">✓ Партнёр
@@ -80,7 +77,7 @@
                             class="button button--outline button--small company-card__action" href="index.html">Перейти
                             к вакансиям →</a>
                     </article>
-                    <article class="card company-card">
+                    <article class="card company-card" data-company-card data-category="analytics">
                         <div class="company-card__top"><span class="company-logo company-logo--tbank">Т</span>
                             <div>
                                 <h2 class="company-card__name">Т-Банк</h2><span class="company-card__partner">✓ Партнёр
@@ -93,7 +90,7 @@
                             class="button button--outline button--small company-card__action" href="index.html">Перейти
                             к вакансиям →</a>
                     </article>
-                    <article class="card company-card">
+                    <article class="card company-card" data-company-card data-category="engineering">
                         <div class="company-card__top"><span class="company-logo company-logo--sber">С</span>
                             <div>
                                 <h2 class="company-card__name">Сбер</h2><span class="company-card__partner">✓ Партнёр
@@ -106,7 +103,7 @@
                             class="button button--outline button--small company-card__action" href="index.html">Перейти
                             к вакансиям →</a>
                     </article>
-                    <article class="card company-card">
+                    <article class="card company-card" data-company-card data-category="it">
                         <div class="company-card__top"><span class="company-logo company-logo--vk">VK</span>
                             <div>
                                 <h2 class="company-card__name">VK</h2><span class="company-card__partner">✓ Партнёр
@@ -119,7 +116,7 @@
                             class="button button--outline button--small company-card__action" href="index.html">Перейти
                             к вакансиям →</a>
                     </article>
-                    <article class="card company-card">
+                    <article class="card company-card" data-company-card data-category="analytics">
                         <div class="company-card__top"><span class="company-logo company-logo--ozon">O</span>
                             <div>
                                 <h2 class="company-card__name">Ozon</h2><span class="company-card__partner">✓ Партнёр
@@ -132,7 +129,7 @@
                             class="button button--outline button--small company-card__action" href="index.html">Перейти
                             к вакансиям →</a>
                     </article>
-                    <article class="card company-card">
+                    <article class="card company-card" data-company-card data-category="engineering">
                         <div class="company-card__top"><span class="company-logo company-logo--mts">М</span>
                             <div>
                                 <h2 class="company-card__name">МТС</h2><span class="company-card__partner">✓ Партнёр
@@ -146,9 +143,11 @@
                             к вакансиям →</a>
                     </article>
                 </section>
+                <p class="interaction-empty" data-companies-empty hidden>Компании не найдены.</p>
             </div>
         </main>
     </div>
+    <script src="./js/app.js" defer></script>
 </body>
 
 </html>
