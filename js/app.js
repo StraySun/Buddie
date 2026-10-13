@@ -7,6 +7,18 @@ const storage = {
       return fallback;
     }
   },
+  readArray(key) {
+    const value = this.read(key, []);
+    return Array.isArray(value) ? value : [];
+  },
+  readObject(key) {
+    const value = this.read(key, {});
+    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  },
+  readBoolean(key, fallback) {
+    const value = this.read(key, fallback);
+    return typeof value === 'boolean' ? value : fallback;
+  },
   write(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -203,8 +215,8 @@ document.querySelectorAll('[data-notification-filter]').forEach(button => button
   updateSearch(searchTerm);
 }));
 
-const savedJobs = new Set(storage.read('buddie-saved-jobs', []));
-const appliedJobs = new Set(storage.read('buddie-applied-jobs', []));
+const savedJobs = new Set(storage.readArray('buddie-saved-jobs'));
+const appliedJobs = new Set(storage.readArray('buddie-applied-jobs'));
 document.querySelectorAll('[data-job-id]').forEach(job => {
   const id = job.dataset.jobId;
   const save = job.querySelector('[data-job-action="save"]');
@@ -230,7 +242,7 @@ function setJobButton(button, active, label) {
   button.classList.toggle('button--soft', active);
 }
 
-const settings = storage.read('buddie-notification-settings', {});
+const settings = storage.readObject('buddie-notification-settings');
 document.querySelectorAll('[data-notification-setting]').forEach((button, index) => {
   const label = button.closest('.setting-row').querySelector('span').textContent.trim();
   const key = label || String(index);
@@ -247,10 +259,9 @@ document.querySelectorAll('[data-notification-setting]').forEach((button, index)
 function setSettingButton(button, active) {
   button.classList.toggle('toggle--on', active);
   button.setAttribute('aria-pressed', String(active));
-  button.setAttribute('aria-label', active ? 'Включено' : 'Выключено');
 }
 
-const channels = storage.read('buddie-notification-channels', {});
+const channels = storage.readObject('buddie-notification-channels');
 document.querySelectorAll('[data-notification-channel]').forEach((input, index) => {
   const key = input.closest('label').textContent.trim() || String(index);
   if (typeof channels[key] === 'boolean') input.checked = channels[key];
@@ -261,7 +272,7 @@ document.querySelectorAll('[data-notification-channel]').forEach((input, index) 
   });
 });
 
-const dismissedNotifications = new Set(storage.read('buddie-dismissed-notifications', []));
+const dismissedNotifications = new Set(storage.readArray('buddie-dismissed-notifications'));
 document.querySelectorAll('[data-dismiss-notification]').forEach(button => button.addEventListener('click', () => {
   const card = button.closest('.timeline-card');
   const title = card.querySelector('.timeline-card__title').textContent.trim();
@@ -278,7 +289,7 @@ document.querySelector('[data-mark-all-read]')?.addEventListener('click', event 
   document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
   announce('Уведомления отмечены прочитанными.');
 });
-if (storage.read('buddie-notifications-read', false)) {
+if (storage.readBoolean('buddie-notifications-read', false)) {
   document.querySelector('[data-mark-all-read]')?.replaceChildren('✓ Всё прочитано');
   document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
 }

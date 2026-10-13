@@ -30,6 +30,41 @@ for (const file of pages) {
   }
 }
 
+test('malformed and unexpected localStorage values do not break pages', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('buddie-saved-jobs', '{}');
+    localStorage.setItem('buddie-applied-jobs', '{invalid');
+    localStorage.setItem('buddie-notification-settings', '[]');
+    localStorage.setItem('buddie-notification-channels', 'null');
+    localStorage.setItem('buddie-dismissed-notifications', '{}');
+    localStorage.setItem('buddie-notifications-read', '[]');
+  });
+
+  for (const file of pages) {
+    await page.goto(`/${file}`);
+    await expect(page.locator('h1')).toBeVisible();
+  }
+
+  await page.goto('/index.html');
+  const saveButton = page.locator('[data-job-action="save"]').first();
+  await saveButton.click();
+  await expect(saveButton).toHaveAttribute('aria-pressed', 'true');
+
+  await page.goto('/notifications.html');
+  const toggles = page.locator('[data-notification-setting]');
+  await expect(toggles).toHaveCount(5);
+  await expect.poll(() => toggles.evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-label')))).toEqual([
+    'Новые подходящие вакансии (AI match)',
+    'Изменение статуса отклика',
+    'Напоминания о дедлайнах',
+    'Сообщения от HR',
+    'Дайджест КФУ'
+  ]);
+  await toggles.nth(3).click();
+  await expect(toggles.nth(3)).toHaveAttribute('aria-label', 'Сообщения от HR');
+  await expect(toggles.nth(3)).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('feed filters, reset, save, and local-only apply persist', async ({ page }) => {
   await page.goto('/index.html');
   const yandex = page.locator('[data-job-id="yandex-analyst"]');
