@@ -96,6 +96,12 @@ test('student navigation, university selectors, partner cards, and anchors are a
     if (file === 'profile.html') {
       expect(await page.locator('.data-table th').evaluateAll(headers => headers.every(header => header.scope === 'col'))).toBe(true);
       await expect.poll(() => page.locator('.data-table td').first().evaluate(cell => parseFloat(getComputedStyle(cell).fontSize))).toBeGreaterThanOrEqual(11);
+      await expect(page.locator('.metric__label .metric__trend')).toHaveCount(4);
+      await expect(page.locator('.metric__number .metric__trend')).toHaveCount(0);
+      expect(await page.locator('.data-table tbody td:last-child').evaluateAll(cells => cells.every(cell => {
+        const control = cell.firstElementChild;
+        return getComputedStyle(cell).textAlign === 'center' && control.getBoundingClientRect().width >= cell.clientWidth - 21;
+      }))).toBe(true);
     }
   }
 

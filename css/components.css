@@ -41,7 +41,7 @@
 .filter-pill { min-height: 40px; padding: 0 13px; border: 1px solid #ece8f2; border-radius: var(--radius-pill); color: #655a72; background: white; font-size: 11px; }
 .filter-pill--active { color: #6734a8; border-color: #dfc8fb; background: #f2e9ff; }
 .metric { min-width: 0; padding: 13px; }
-.metric__label { color: #5B6474; font-size: 12px; }
+.metric__label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #5B6474; font-size: 12px; }
 .metric__number { margin: 6px 0 3px; font-size: 20px; font-weight: 800; }
 .metric__hint { color: #5B6474; font-size: 12px; }
 .widget { padding: 14px; }
