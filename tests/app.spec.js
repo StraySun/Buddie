@@ -32,7 +32,7 @@ for (const file of pages) {
 
 test('malformed and unexpected localStorage values do not break pages', async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem('buddie-saved-jobs', '{}');
+    localStorage.setItem('buddie-saved-jobs', '["known", {}, null]');
     localStorage.setItem('buddie-applied-jobs', '{invalid');
     localStorage.setItem('buddie-notification-settings', '[]');
     localStorage.setItem('buddie-notification-channels', 'null');
@@ -63,6 +63,42 @@ test('malformed and unexpected localStorage values do not break pages', async ({
   await toggles.nth(3).click();
   await expect(toggles.nth(3)).toHaveAttribute('aria-label', 'Сообщения от HR');
   await expect(toggles.nth(3)).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('student navigation, university selectors, partner cards, and anchors are accessible', async ({ page }) => {
+  for (const file of ['index.html', 'companies.html', 'profile.html', 'notifications.html']) {
+    await page.goto(`/${file}`);
+    await expect(page.locator('.brand__caption')).toHaveText('Buddie · Карьерная лента');
+    const nav = page.locator('.sidebar__nav');
+    await expect(nav.locator('.sidebar__nav-copy small')).toHaveText([
+      'Вакансии и стажировки',
+      'Каталог компаний',
+      'Навыки и развитие',
+      'История статусов',
+      'Сигналы и дедлайны',
+      'Профиль и резюме'
+    ]);
+    await page.locator('.header__select select').selectOption('itmo');
+    await expect(page.locator('.header__select select')).toHaveValue('itmo');
+    const brokenAnchors = await page.locator('a[href^="#"]').evaluateAll(links => links
+      .map(link => link.getAttribute('href').slice(1))
+      .filter(id => id && !document.getElementById(id)));
+    expect(brokenAnchors).toEqual([]);
+    if (file === 'index.html') {
+      await expect(page.locator('.partners__head h2')).toHaveText('Наши партнёры');
+      await expect(page.locator('.partners__head p')).toHaveText('Твой старт в лучших командах');
+      await expect(page.locator('.partners__item')).toHaveText(['Yandex', 'СБЕР', 'VK', 'OZON', 'Т-Банк']);
+    }
+    if (file === 'profile.html') {
+      expect(await page.locator('.data-table th').evaluateAll(headers => headers.every(header => header.scope === 'col'))).toBe(true);
+      await expect.poll(() => page.locator('.data-table td').first().evaluate(cell => parseFloat(getComputedStyle(cell).fontSize))).toBeGreaterThanOrEqual(11);
+    }
+  }
+
+  await page.goto('/hr.html');
+  expect(await page.locator('.candidate-table th').evaluateAll(headers => headers.every(header => header.scope === 'col'))).toBe(true);
+  await page.locator('.hr-topbar__company select').selectOption({ label: 'ООО Сбер' });
+  await expect(page.locator('.hr-topbar__company select')).toHaveValue('ООО Сбер');
 });
 
 test('feed filters, reset, save, and local-only apply persist', async ({ page }) => {
