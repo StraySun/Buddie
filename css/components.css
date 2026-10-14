@@ -36,7 +36,7 @@
 .status-badge--warning { color: #9a7011; background: #fff4ce; }
 .status-badge--danger { color: #b44848; background: #ffe7e7; }
 .status-badge--purple { color: #7540bc; background: #f2e7ff; }
-.search-field { min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e9e6ed; border-radius: 10px; background: white; color: #666270; }
+.search-field { min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e9e6ed; border-radius: 10px; background: white; color: #5B6474; }
 .search-field input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 12px; }
 .filter-pill { min-height: 40px; padding: 0 13px; border: 1px solid #ece8f2; border-radius: var(--radius-pill); color: #655a72; background: white; font-size: 11px; }
 .filter-pill--active { color: #6734a8; border-color: #dfc8fb; background: #f2e9ff; }
