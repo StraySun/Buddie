@@ -9,11 +9,12 @@ const storage = {
   },
   readArray(key) {
     const value = this.read(key, []);
-    return Array.isArray(value) ? value : [];
+    return Array.isArray(value) ? value.filter(entry => typeof entry === 'string') : [];
   },
   readObject(key) {
     const value = this.read(key, {});
-    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(value).filter(([, entry]) => typeof entry === 'boolean'));
   },
   readBoolean(key, fallback) {
     const value = this.read(key, fallback);
