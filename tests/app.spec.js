@@ -78,7 +78,7 @@ test('student navigation, university selectors, partner cards, and anchors are a
       'Профиль, отклики и резюме'
     ]);
     await expect(nav.locator('.sidebar__nav-item--active')).toHaveCount(1);
-    await expect(nav.locator('.sidebar__nav-copy .sidebar__count')).toHaveText(['5']);
+    await expect(nav.locator('.sidebar__nav-copy .sidebar__count')).toHaveText(['5', '4']);
     expect(await nav.locator('.sidebar__nav-item').evaluateAll(items => items.map(item => item.getAttribute('href')))).toEqual([
       'index.html', 'companies.html', 'notifications.html', 'profile.html'
     ]);
