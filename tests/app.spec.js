@@ -70,13 +70,17 @@ test('student navigation, university selectors, partner cards, and anchors are a
     await page.goto(`/${file}`);
     await expect(page.locator('.brand__caption')).toHaveText('Buddie · Карьерная лента');
     const nav = page.locator('.sidebar__nav');
+    await expect(nav.locator('.sidebar__nav-item')).toHaveCount(4);
     await expect(nav.locator('.sidebar__nav-copy small')).toHaveText([
       'Вакансии и стажировки',
       'Каталог компаний',
-      'Навыки и развитие',
-      'История статусов',
       'Сигналы и дедлайны',
-      'Профиль и резюме'
+      'Профиль, отклики и резюме'
+    ]);
+    await expect(nav.locator('.sidebar__nav-item--active')).toHaveCount(1);
+    await expect(nav.locator('.sidebar__nav-copy .sidebar__count')).toHaveText(['5']);
+    expect(await nav.locator('.sidebar__nav-item').evaluateAll(items => items.map(item => item.getAttribute('href')))).toEqual([
+      'index.html', 'companies.html', 'notifications.html', 'profile.html'
     ]);
     await page.locator('.header__select select').selectOption('itmo');
     await expect(page.locator('.header__select select')).toHaveValue('itmo');
