@@ -1,24 +1,48 @@
 const storage = {
   read(key, fallback) {
     try {
-      const value = localStorage.getItem(key);
-      return value === null ? fallback : JSON.parse(value);
+      const raw = localStorage.getItem(key);
+      if (raw === null) return fallback;
+      return JSON.parse(raw);
     } catch {
       return fallback;
     }
   },
   readArray(key) {
-    const value = this.read(key, []);
-    return Array.isArray(value) ? value.filter(entry => typeof entry === 'string') : [];
+    try {
+      const value = this.read(key, []);
+      if (!Array.isArray(value)) return [];
+      return value.filter(entry => typeof entry === 'string' && entry.length > 0);
+    } catch {
+      return [];
+    }
   },
   readObject(key) {
-    const value = this.read(key, {});
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
-    return Object.fromEntries(Object.entries(value).filter(([, entry]) => typeof entry === 'boolean'));
+    try {
+      const value = this.read(key, {});
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
+      return Object.fromEntries(
+        Object.entries(value).filter(([, entry]) => typeof entry === 'boolean')
+      );
+    } catch {
+      return {};
+    }
   },
   readBoolean(key, fallback) {
-    const value = this.read(key, fallback);
-    return typeof value === 'boolean' ? value : fallback;
+    try {
+      const value = this.read(key, fallback);
+      return typeof value === 'boolean' ? value : fallback;
+    } catch {
+      return fallback;
+    }
+  },
+  readString(key, fallback = '') {
+    try {
+      const value = this.read(key, fallback);
+      return typeof value === 'string' ? value : fallback;
+    } catch {
+      return fallback;
+    }
   },
   write(key, value) {
     try {
@@ -71,7 +95,8 @@ function updateSearch(value) {
   const companyCount = document.querySelector('[data-company-count]');
   if (companyCount) {
     const internships = visibleCompanies.reduce((total, card) => {
-      return total + Number(card.querySelector('.company-card__count').textContent.match(/\d+/)?.[0] ?? 0);
+      const countText = card.querySelector('.company-card__count')?.textContent ?? '';
+      return total + Number(countText.match(/\d+/)?.[0] ?? 0);
     }, 0);
     companyCount.textContent = `${visibleCompanies.length} из ${companyCards.length} компаний · ${internships} активных стажировок`;
   }
@@ -99,10 +124,16 @@ function matchesApplicationStatus(row) {
 function matchesHrFilters(row) {
   const university = document.querySelector('[data-hr-university]')?.value ?? 'all';
   const status = document.querySelector('[data-hr-status]')?.value ?? 'all';
-  const text = row.textContent.toLocaleLowerCase('ru');
+  const text = (row.textContent ?? '').toLocaleLowerCase('ru');
   const statusText = row.querySelector('.status-badge')?.textContent.toLocaleLowerCase('ru') ?? '';
-  const matchesUniversity = university === 'all' || text.includes('кфу');
-  const matchesStatus = status === 'all' || (status === 'new' && statusText.includes('нов')) || (status === 'interview' && statusText.includes('интервью')) || (status === 'review' && statusText.includes('рассмотр'));
+  const matchesUniversity = university === 'all'
+    || (university === 'kfu' && text.includes('кфу'))
+    || (university === 'itmo' && text.includes('итмо'))
+    || (university === 'hse' && (text.includes('вшэ') || text.includes('hse')));
+  const matchesStatus = status === 'all'
+    || (status === 'new' && statusText.includes('нов'))
+    || (status === 'interview' && statusText.includes('интервью'))
+    || (status === 'review' && statusText.includes('рассмотр'));
   return matchesUniversity && matchesStatus;
 }
 
@@ -227,7 +258,9 @@ document.querySelectorAll('[data-job-id]').forEach(job => {
 });
 
 document.querySelectorAll('[data-job-action]').forEach(button => button.addEventListener('click', () => {
-  const id = button.closest('[data-job-id]').dataset.jobId;
+  const job = button.closest('[data-job-id]');
+  const id = job?.dataset.jobId;
+  if (!id) return;
   const isSave = button.dataset.jobAction === 'save';
   const collection = isSave ? savedJobs : appliedJobs;
   const active = !collection.has(id);
@@ -238,6 +271,7 @@ document.querySelectorAll('[data-job-action]').forEach(button => button.addEvent
 }));
 
 function setJobButton(button, active, label) {
+  if (!button) return;
   button.setAttribute('aria-pressed', String(active));
   button.textContent = label;
   button.classList.toggle('button--soft', active);
@@ -245,7 +279,7 @@ function setJobButton(button, active, label) {
 
 const settings = storage.readObject('buddie-notification-settings');
 document.querySelectorAll('[data-notification-setting]').forEach((button, index) => {
-  const label = button.closest('.setting-row').querySelector('span').textContent.trim();
+  const label = button.closest('.setting-row')?.querySelector('span')?.textContent.trim() ?? '';
   const key = label || String(index);
   if (typeof settings[key] === 'boolean') setSettingButton(button, settings[key]);
   button.addEventListener('click', () => {
@@ -264,7 +298,7 @@ function setSettingButton(button, active) {
 
 const channels = storage.readObject('buddie-notification-channels');
 document.querySelectorAll('[data-notification-channel]').forEach((input, index) => {
-  const key = input.closest('label').textContent.trim() || String(index);
+  const key = input.closest('label')?.textContent.trim() || String(index);
   if (typeof channels[key] === 'boolean') input.checked = channels[key];
   input.addEventListener('change', () => {
     channels[key] = input.checked;
@@ -276,7 +310,8 @@ document.querySelectorAll('[data-notification-channel]').forEach((input, index) 
 const dismissedNotifications = new Set(storage.readArray('buddie-dismissed-notifications'));
 document.querySelectorAll('[data-dismiss-notification]').forEach(button => button.addEventListener('click', () => {
   const card = button.closest('.timeline-card');
-  const title = card.querySelector('.timeline-card__title').textContent.trim();
+  const title = card?.querySelector('.timeline-card__title')?.textContent.trim();
+  if (!card || !title) return;
   dismissedNotifications.add(title);
   storage.write('buddie-dismissed-notifications', [...dismissedNotifications]);
   setVisible(card, false);
@@ -294,5 +329,35 @@ if (storage.readBoolean('buddie-notifications-read', false)) {
   document.querySelector('[data-mark-all-read]')?.replaceChildren('✓ Всё прочитано');
   document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
 }
+
+const savedUniversity = storage.readString('buddie-university', '');
+document.querySelectorAll('.header__select select').forEach(select => {
+  if (savedUniversity && [...select.options].some(option => option.value === savedUniversity)) {
+    select.value = savedUniversity;
+  }
+  select.addEventListener('change', () => {
+    storage.write('buddie-university', select.value);
+    announce('Университет сохранён в этом браузере.');
+  });
+});
+
+document.querySelectorAll('.hr-topbar__company select').forEach(select => {
+  const savedCompany = storage.readString('buddie-hr-company', '');
+  if (savedCompany && [...select.options].some(option => option.value === savedCompany)) {
+    select.value = savedCompany;
+  }
+  select.addEventListener('change', () => {
+    storage.write('buddie-hr-company', select.value);
+    announce('Компания сохранена в этом браузере.');
+  });
+});
+
+document.querySelectorAll('.table-scroll').forEach(scroller => {
+  scroller.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    scroller.scrollLeft += event.key === 'ArrowRight' ? 96 : -96;
+    event.preventDefault();
+  });
+});
 
 updateSearch('');

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "python3 -m http.server 4173 --bind 0.0.0.0",
+    "dev": "node ./scripts/static-server.js",
     "test": "playwright test",
     "test:install": "playwright install chromium"
   },

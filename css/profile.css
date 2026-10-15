@@ -23,10 +23,10 @@
 .profile-controls { display: flex; gap: 8px; padding: 0 14px 10px; }
 .profile-controls .search-field { flex: 1; }
 .profile-controls select { width: 100px; min-height: 40px; border: 1px solid #e9e6ed; border-radius: 9px; background: white; color: #5B6474; font-size: 12px; }
-.table-scroll { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
-.data-table { width: 100%; border-collapse: collapse; text-align: left; }
-.data-table th { padding: 8px 10px; color: #5B6474; background: #faf9fc; font-size: 11px; font-weight: 600; white-space: nowrap; }
-.data-table td { padding: 9px 10px; border-top: 1px solid #f0edf3; font-size: 11px; white-space: nowrap; }
+.table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
+.data-table { width: 100%; min-width: 720px; border-collapse: collapse; text-align: left; }
+.data-table th { padding: 8px 10px; color: #5B6474; background: #faf9fc; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.data-table td { padding: 9px 10px; border-top: 1px solid #f0edf3; font-size: 12px; white-space: nowrap; }
 .data-table th:last-child,.data-table td:last-child { text-align: center; }
 .data-table td:last-child > .button,.data-table td:last-child > .application-feedback { width: 100%; }
 .application-company { display: flex; align-items: center; gap: 7px; min-width: 150px; }

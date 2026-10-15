@@ -7,7 +7,7 @@
 .button--small { min-height: 40px; padding: 0 13px; font-size: 12px; }
 .button--full { width: 100%; }
 .chip { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 10px; border-radius: var(--radius-pill); color: #694493; background: #f2e9ff; font-size: 12px; font-weight: 600; }
-.chip--neutral { color: #676371; background: #f2f1f5; }
+.chip--neutral { color: #5B6474; background: #f2f1f5; }
 .match-badge { display: inline-flex; align-items: center; gap: 4px; padding: 7px 11px; border-radius: var(--radius-pill); color: #7540bc; background: #f2e7ff; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .company-logo { width: 31px; height: 31px; display: grid; place-items: center; flex: 0 0 31px; border-radius: 10px; font-size: 16px; font-weight: 800; }
 .company-logo--yandex { color: #171717; background: #ffdf35; }
@@ -38,7 +38,7 @@
 .status-badge--purple { color: #7540bc; background: #f2e7ff; }
 .search-field { min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e9e6ed; border-radius: 10px; background: white; color: #5B6474; }
 .search-field input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 12px; }
-.filter-pill { min-height: 40px; padding: 0 13px; border: 1px solid #ece8f2; border-radius: var(--radius-pill); color: #655a72; background: white; font-size: 11px; }
+.filter-pill { min-height: 40px; padding: 0 13px; border: 1px solid #ece8f2; border-radius: var(--radius-pill); color: #5B6474; background: white; font-size: 12px; }
 .filter-pill--active { color: #6734a8; border-color: #dfc8fb; background: #f2e9ff; }
 .metric { min-width: 0; padding: 13px; }
 .metric__label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #5B6474; font-size: 12px; }
