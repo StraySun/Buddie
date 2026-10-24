@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 1. Утилиты: storage, toast, debounce
 // ==========================================
 
@@ -460,10 +460,7 @@ document.querySelectorAll('[data-job-id]').forEach(job => {
 
 document.querySelectorAll('[data-job-action]').forEach(button => button.addEventListener('click', async () => {
   const card = button.closest('[data-job-id]');
-  const id = card.dataset.jobId;
-document.querySelectorAll('[data-job-action]').forEach(button => button.addEventListener('click', () => {
-  const job = button.closest('[data-job-id]');
-  const id = job?.dataset.jobId;
+  const id = card?.dataset.jobId;
   if (!id) return;
   const isSave = button.dataset.jobAction === 'save';
   const collection = isSave ? savedJobs : appliedJobs;
@@ -496,21 +493,8 @@ document.querySelectorAll('[data-job-action]').forEach(button => button.addEvent
 
 
 // ==========================================
-// 8. Уведомления: dismiss, mark-all-read
+// 8. Уведомления: mark-all-read
 // ==========================================
-document.querySelectorAll('[data-dismiss-notification]').forEach(button => {
-  button.addEventListener('click', () => {
-    const card = button.closest('.timeline-card');
-    if (!card) return;
-    const title = card.querySelector('.timeline-card__title')?.textContent.trim();
-    if (title) {
-      dismissedNotifications.add(title);
-      storage.write('buddie-dismissed-notifications', [...dismissedNotifications]);
-    }
-    updateSearch(searchTerm);
-    announce('Уведомление скрыто.');
-  });
-});
 
 document.querySelector('[data-mark-all-read]')?.addEventListener('click', event => {
   storage.write('buddie-notifications-read', true);
@@ -558,7 +542,6 @@ document.querySelectorAll('[data-notification-channel]').forEach((input, index) 
   });
 });
 
-const dismissedNotifications = new Set(storage.readArray('buddie-dismissed-notifications'));
 document.querySelectorAll('[data-dismiss-notification]').forEach(button => button.addEventListener('click', () => {
   const card = button.closest('.timeline-card');
   const title = card?.querySelector('.timeline-card__title')?.textContent.trim();
@@ -569,20 +552,6 @@ document.querySelectorAll('[data-dismiss-notification]').forEach(button => butto
   updateEmptyStates();
   announce('Напоминание скрыто.');
 }));
-
-// ==========================================
-// 10. Синхронизация выбранного университета
-// ==========================================
-const savedUniversity = storage.read('buddie-selected-university', 'kfu');
-document.querySelectorAll('.header__select select').forEach(select => {
-  if (savedUniversity) select.value = savedUniversity;
-  select.addEventListener('change', () => {
-    storage.write('buddie-selected-university', select.value);
-    document.querySelectorAll('.header__select select').forEach(s => {
-      if (s !== select) s.value = select.value;
-    });
-  });
-});
 
 
 // ==========================================
