@@ -60,3 +60,49 @@
 .application-company .company-logo--vk { font-size: 12px; }
 @media(max-width:960px) { .profile-layout { grid-template-columns: 1fr; } .profile-side { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .profile-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .student-card { flex-wrap: wrap; } .student-card__progress { flex: 1; min-width: 135px; } .student-card > .button { width: 100%; } .profile-side { grid-template-columns: 1fr; } .profile-controls { flex-wrap: wrap; } .profile-controls select { height: 40px; } }
+
+
+/* Interactive profile tab buttons */
+.profile-tabs button.profile-tab-btn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.profile-tabs button.profile-tab-btn:hover {
+  color: var(--color-text-main);
+  background: rgba(124, 58, 237, 0.05);
+}
+
+.profile-tabs button.profile-tab-btn.is-active {
+  color: var(--color-primary);
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+}
+
+.profile-tab-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: #F4EDFF;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tab-pane {
+  transition: opacity 0.2s ease;
+}
