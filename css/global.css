@@ -66,3 +66,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible { 
 .page-heading__date { color: var(--color-text-muted); font-size: 12px; white-space: nowrap; }
 @media(max-width:1050px) { .sidebar { width: 174px; } .app-main { margin-left: 174px; } .header { gap: 9px; padding: 0 16px; } .header__select { max-width: 155px; min-width: 140px; } .content { padding: 24px 20px 32px; } }
 @media(max-width:760px) { .sidebar { position: static; width: 100%; height: auto; padding: 12px; } .brand { padding-bottom: 10px; } .sidebar__label,.sidebar__progress,.sidebar__footer,.sidebar__user { display: none; } .sidebar__hr-link { min-height: 40px; margin: 4px 0 0; padding: 0 8px; } .sidebar__nav { display: flex; gap: 3px; overflow-x: auto; } .sidebar__nav-item { flex: 0 0 150px; min-height: 54px; padding: 7px 8px; font-size: 12px; } .sidebar__icon { width: auto; } .sidebar__nav-copy small { font-size: 10px; } .app-main { margin-left: 0; } .header { position: static; height: auto; flex-wrap: wrap; padding: 10px 12px; } .header__search { order: 3; flex-basis: 100%; } .header__select { display: none; } .header__profile > div:last-child { display: none; } .content { padding: 20px 14px 28px; } .page-heading { align-items: flex-start; flex-direction: column; gap: 9px; margin-bottom: 20px; } .page-heading h1 { font-size: 24px; } .page-heading p { font-size: 13px; } }
+
+
+/* Accessibility: Honor prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
