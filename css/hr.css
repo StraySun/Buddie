@@ -1,6 +1,6 @@
 body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .hr-page .card { border-radius: var(--radius-md); }
-.hr-shell { max-width: 1500px; margin: 0 auto; padding: 23px 28px; }
+.hr-shell { max-width: 1500px; min-width: 0; margin: 0 auto; padding: 23px 28px; overflow-x: hidden; }
 .hr-topbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 13px 18px; border-radius: var(--radius-md); background: white; box-shadow: var(--card-shadow); }
 .hr-brand { display: flex; align-items: center; gap: 10px; }
 .hr-brand .brand__mark { width: 36px; height: 36px; }
@@ -27,13 +27,13 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .hr-candidate-search:focus { outline: 3px solid #8b50dc; outline-offset: 2px; }
 .hr-actions select { min-height: 40px; padding: 0 10px; border: 1px solid #e8e3ed; border-radius: 9px; background: white; color: #5B6474; font-size: 12px; }
 .candidate-panel { overflow: hidden; }
-.candidate-panel .table-scroll { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
+.candidate-panel .table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
 .candidate-panel__head { display: flex; align-items: center; justify-content: space-between; padding: 18px; }
 .candidate-panel__head h2 { margin: 0; font-size: 14px; }
 .candidate-panel__head span { color: #5B6474; font-size: 12px; }
-.candidate-table { width: 100%; border-collapse: collapse; text-align: left; }
-.candidate-table th { padding: 12px 11px; color: #5B6474; background: #faf9fc; font-size: 11px; white-space: nowrap; }
-.candidate-table td { padding: 11px; border-top: 1px solid #f0edf3; font-size: 11px; white-space: nowrap; }
+.candidate-table { width: 100%; min-width: 860px; border-collapse: collapse; text-align: left; }
+.candidate-table th { padding: 12px 11px; color: #5B6474; background: #faf9fc; font-size: 12px; white-space: nowrap; }
+.candidate-table td { padding: 11px; border-top: 1px solid #f0edf3; font-size: 12px; white-space: nowrap; }
 .candidate { display: flex; align-items: center; gap: 7px; }
 .candidate__avatar { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 30px; border-radius: 50%; color: #763bb7; background: #f0ddff; font-size: 12px; font-weight: 800; }
 .candidate__avatar--green { color: #12633a; background: #dff7e8; }
@@ -44,7 +44,7 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .candidate small { display: block; margin-top: 3px; color: #5B6474; font-size: 12px; }
 .match-score { color: #7540bc; font-weight: 800; }
 .hr-skills { display: flex; gap: 3px; }
-.hr-skills span { padding: 3px 5px; border-radius: 5px; background: #f2e9ff; color: #664391; font-size: 11px; }
+.hr-skills span { padding: 3px 5px; border-radius: 5px; background: #f2e9ff; color: #664391; font-size: 12px; }
 .hr-table-foot { display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; color: #5B6474; font-size: 12px; }
 .hr-table-foot__note { text-align: right; }
 @media(max-width:580px) { .hr-topbar__return { order: 3; flex-basis: 100%; } .hr-table-foot { flex-direction: column; } .hr-table-foot__note { text-align: left; } }

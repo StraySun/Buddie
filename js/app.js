@@ -5,24 +5,48 @@
 const storage = {
   read(key, fallback) {
     try {
-      const value = localStorage.getItem(key);
-      return value === null ? fallback : JSON.parse(value);
+      const raw = localStorage.getItem(key);
+      if (raw === null) return fallback;
+      return JSON.parse(raw);
     } catch {
       return fallback;
     }
   },
   readArray(key) {
-    const value = this.read(key, []);
-    return Array.isArray(value) ? value.filter(entry => typeof entry === 'string') : [];
+    try {
+      const value = this.read(key, []);
+      if (!Array.isArray(value)) return [];
+      return value.filter(entry => typeof entry === 'string' && entry.length > 0);
+    } catch {
+      return [];
+    }
   },
   readObject(key) {
-    const value = this.read(key, {});
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
-    return Object.fromEntries(Object.entries(value).filter(([, entry]) => typeof entry === 'boolean'));
+    try {
+      const value = this.read(key, {});
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
+      return Object.fromEntries(
+        Object.entries(value).filter(([, entry]) => typeof entry === 'boolean')
+      );
+    } catch {
+      return {};
+    }
   },
   readBoolean(key, fallback) {
-    const value = this.read(key, fallback);
-    return typeof value === 'boolean' ? value : fallback;
+    try {
+      const value = this.read(key, fallback);
+      return typeof value === 'boolean' ? value : fallback;
+    } catch {
+      return fallback;
+    }
+  },
+  readString(key, fallback = '') {
+    try {
+      const value = this.read(key, fallback);
+      return typeof value === 'string' ? value : fallback;
+    } catch {
+      return fallback;
+    }
   },
   write(key, value) {
     try {
@@ -437,6 +461,10 @@ document.querySelectorAll('[data-job-id]').forEach(job => {
 document.querySelectorAll('[data-job-action]').forEach(button => button.addEventListener('click', async () => {
   const card = button.closest('[data-job-id]');
   const id = card.dataset.jobId;
+document.querySelectorAll('[data-job-action]').forEach(button => button.addEventListener('click', () => {
+  const job = button.closest('[data-job-id]');
+  const id = job?.dataset.jobId;
+  if (!id) return;
   const isSave = button.dataset.jobAction === 'save';
   const collection = isSave ? savedJobs : appliedJobs;
   const active = !collection.has(id);
@@ -530,6 +558,17 @@ document.querySelectorAll('[data-notification-channel]').forEach((input, index) 
   });
 });
 
+const dismissedNotifications = new Set(storage.readArray('buddie-dismissed-notifications'));
+document.querySelectorAll('[data-dismiss-notification]').forEach(button => button.addEventListener('click', () => {
+  const card = button.closest('.timeline-card');
+  const title = card?.querySelector('.timeline-card__title')?.textContent.trim();
+  if (!card || !title) return;
+  dismissedNotifications.add(title);
+  storage.write('buddie-dismissed-notifications', [...dismissedNotifications]);
+  setVisible(card, false);
+  updateEmptyStates();
+  announce('Напоминание скрыто.');
+}));
 
 // ==========================================
 // 10. Синхронизация выбранного университета
@@ -836,6 +875,36 @@ async function renderSavedJobsInProfile() {
 // ==========================================
 // 13. Инициализация
 // ==========================================
+const savedUniversity = storage.readString('buddie-university', '');
+document.querySelectorAll('.header__select select').forEach(select => {
+  if (savedUniversity && [...select.options].some(option => option.value === savedUniversity)) {
+    select.value = savedUniversity;
+  }
+  select.addEventListener('change', () => {
+    storage.write('buddie-university', select.value);
+    announce('Университет сохранён в этом браузере.');
+  });
+});
+
+document.querySelectorAll('.hr-topbar__company select').forEach(select => {
+  const savedCompany = storage.readString('buddie-hr-company', '');
+  if (savedCompany && [...select.options].some(option => option.value === savedCompany)) {
+    select.value = savedCompany;
+  }
+  select.addEventListener('change', () => {
+    storage.write('buddie-hr-company', select.value);
+    announce('Компания сохранена в этом браузере.');
+  });
+});
+
+document.querySelectorAll('.table-scroll').forEach(scroller => {
+  scroller.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    scroller.scrollLeft += event.key === 'ArrowRight' ? 96 : -96;
+    event.preventDefault();
+  });
+});
+
 updateSearch('');
 playEntranceAnimations();
 initProfileTabs();
