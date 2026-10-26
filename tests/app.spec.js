@@ -1,3 +1,7 @@
+const fs = require('fs');
+const path = require('path');
+const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
+const INITIAL_DB = fs.readFileSync(DB_PATH, 'utf8');
 const { test: base, expect } = require('@playwright/test');
 
 const test = base.extend({
@@ -10,6 +14,14 @@ const test = base.extend({
     await use(page);
     expect(errors).toEqual([]);
   }
+});
+
+test.beforeEach(async () => {
+  fs.writeFileSync(DB_PATH, INITIAL_DB, 'utf8');
+});
+
+test.afterAll(async () => {
+  fs.writeFileSync(DB_PATH, INITIAL_DB, 'utf8');
 });
 
 const pages = ['index.html', 'companies.html', 'profile.html', 'hr.html', 'notifications.html'];
@@ -255,4 +267,284 @@ test('profile and HR tables support keyboard and touch scrolling on narrow scree
     await expect.poll(() => wrapper.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
     await session.detach();
   }
+});
+
+test('applying on index.html dynamically creates application in profile and candidate in HR', async ({ page }) => {
+  await page.goto('/index.html');
+  const yandex = page.locator('[data-job-id="yandex-analyst"]');
+  const applyBtn = yandex.locator('[data-job-action="apply"]');
+  await applyBtn.click();
+  await expect(applyBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.app-toast')).toBeVisible();
+
+  // 1. Проверяем profile.html
+  await page.goto('/profile.html');
+  const profileRows = page.locator('.data-table tbody tr');
+  await expect(profileRows).toHaveCount(5);
+  await expect(profileRows.first()).toContainText('Стажёр-аналитик данных');
+
+  // 2. Проверяем hr.html
+  await page.goto('/hr.html');
+  const candidateRows = page.locator('.candidate-table tbody tr');
+  await expect(candidateRows).toHaveCount(6);
+  await expect(candidateRows.first()).toContainText('Стажёр-аналитик данных');
+  await expect(candidateRows.first()).toContainText('94%');
+});
+
+test('profile tabs switch panes and render saved jobs container', async ({ page }) => {
+  await page.goto('/profile.html');
+  const appPane = page.locator('#pane-applications');
+  const savedPane = page.locator('#pane-saved');
+  const stackPane = page.locator('#pane-stack');
+  const analyticsPane = page.locator('#pane-analytics');
+
+  await expect(appPane).toBeVisible();
+  await expect(savedPane).toBeHidden();
+
+  // Клик на вкладку "Сохранённые"
+  await page.locator('.profile-tab-btn[data-tab="saved"]').click();
+  await expect(savedPane).toBeVisible();
+  await expect(appPane).toBeHidden();
+  await expect(page.locator('.saved-empty')).toBeVisible();
+
+  // Клик на вкладку "Мой профиль и стек"
+  await page.locator('.profile-tab-btn[data-tab="stack"]').click();
+  await expect(stackPane).toBeVisible();
+  await expect(savedPane).toBeHidden();
+
+  // Клик на вкладку "Аналитика"
+  await page.locator('.profile-tab-btn[data-tab="analytics"]').click();
+  await expect(analyticsPane).toBeVisible();
+  await expect(stackPane).toBeHidden();
+
+  // Возврат на "Мои отклики"
+  await page.locator('.profile-tab-btn[data-tab="applications"]').click();
+  await expect(appPane).toBeVisible();
+  await expect(analyticsPane).toBeHidden();
+});
+
+test('profile actions persist across reload (accept offer and interview slot)', async ({ page }) => {
+  await page.goto('/profile.html');
+  const rows = page.locator('.data-table tbody tr');
+
+  // 1. Принять оффер
+  const offerRow = rows.filter({ hasText: 'Python-разработчик' });
+  const acceptBtn = offerRow.locator('button');
+  await acceptBtn.click();
+  await expect(acceptBtn).toHaveText('✓ Принято');
+  await expect(acceptBtn).toBeDisabled();
+
+  // 2. Выбрать время
+  const interviewRow = rows.filter({ hasText: 'Младший фронтенд-разработчик' });
+  const interviewBtn = interviewRow.locator('button');
+  await interviewBtn.click();
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+  await page.locator('.modal-confirm-btn').click();
+  await expect(interviewBtn).toContainText('✓');
+
+  // 3. Перезагрузка страницы F5
+  await page.reload();
+
+  const reloadedRows = page.locator('.data-table tbody tr');
+  await expect(reloadedRows.locator('button', { hasText: '✓ Принято' })).toBeVisible();
+  await expect(reloadedRows.locator('button', { hasText: '✓ Принято' })).toBeDisabled();
+  await expect(reloadedRows.filter({ hasText: 'Оффер принят' })).toBeVisible();
+  await expect(reloadedRows.locator('button').filter({ hasText: '✓' })).toHaveCount(2);
+});
+
+test('profile edit modal updates profile and persists across reload', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // Открываем модалку редактирования
+  await page.locator('[data-edit-profile-btn]').first().click();
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+
+  await page.locator('#edit-profile-role').fill('Product Lead & Architect');
+  await page.locator('.modal-confirm-btn').click();
+  await expect(page.locator('.modal-backdrop')).toBeHidden();
+
+  await expect(page.locator('.student-card__identity small')).toContainText('Product Lead & Architect');
+
+  // Перезагрузка страницы
+  await page.reload();
+  await expect(page.locator('.student-card__identity small')).toContainText('Product Lead & Architect');
+});
+
+test('HR can publish a new job and it dynamically appears in the student feed on index.html', async ({ page }) => {
+  // 1. HR открывает hr.html и размещает новую стажировку
+  await page.goto('/hr.html');
+  await page.locator('a[href="#post"]').click();
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+
+  const uniqueTitle = 'Стажёр Cloud AI & MLOps';
+  await page.locator('#new-job-title').fill(uniqueTitle);
+  await page.locator('#new-job-format').selectOption('remote');
+  await page.locator('#new-job-salary').fill('140 000–180 000 ₽');
+  await page.locator('.modal-confirm-btn').click();
+  await expect(page.locator('.modal-backdrop')).toBeHidden();
+
+  // 2. Студент открывает index.html — вакансия динамически отображается в ленте
+  await page.goto('/index.html');
+  const newJobCard = page.locator('.job-card').filter({ hasText: uniqueTitle });
+  await expect(newJobCard).toBeVisible();
+  await expect(newJobCard.locator('.job-card__response')).toContainText('Новая стажировка');
+  await expect(newJobCard.locator('.job-card__salary')).toContainText('140 000–180 000 ₽');
+
+  // 3. Студент может откликнуться на новую вакансию
+  const applyBtn = newJobCard.locator('[data-job-action="apply"]');
+  await applyBtn.click();
+  await expect(applyBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.app-toast')).toBeVisible();
+
+  // 4. Проверяем появление в profile.html
+  await page.goto('/profile.html');
+  await expect(page.locator('.data-table tbody tr').filter({ hasText: uniqueTitle })).toBeVisible();
+});
+
+test('saving a job on index.html reflects in profile saved tab and can be removed', async ({ page }) => {
+  // 1. Сохраняем вакансию на index.html
+  await page.goto('/index.html');
+  const yandexCard = page.locator('[data-job-id="yandex-analyst"]');
+  const saveBtn = yandexCard.locator('[data-job-action="save"]');
+  await saveBtn.click();
+  await expect(saveBtn).toHaveAttribute('aria-pressed', 'true');
+
+  // 2. Открываем profile.html и переходим на вкладку "Сохранённые"
+  await page.goto('/profile.html');
+  await page.locator('.profile-tab-btn[data-tab="saved"]').click();
+  await expect(page.locator('#pane-saved')).toBeVisible();
+
+  // Карточка должна отображаться в сохраненных
+  const savedCard = page.locator('.saved-jobs-container [data-job-id="yandex-analyst"]');
+  await expect(savedCard).toBeVisible();
+  await expect(page.locator('[data-saved-count]')).toHaveText('1');
+
+  // 3. Удаляем из сохраненных прямо из вкладки профиля
+  const removeSaveBtn = savedCard.locator('[data-job-action="save"]');
+  await removeSaveBtn.click();
+  await expect(page.locator('.saved-empty')).toBeVisible();
+  await expect(page.locator('[data-saved-count]')).toHaveText('0');
+});
+
+
+test('modal dialog accessibility: closes on Escape and retains focus trap', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // Открываем модальное окно редактирования профиля
+  const editBtn = page.locator('[data-edit-profile-btn]').first();
+  await editBtn.click();
+  const modal = page.locator('.modal-backdrop');
+  await expect(modal).toBeVisible();
+
+  // 1. Проверяем, что первый input сфокусирован
+  await expect(page.locator('#edit-profile-name')).toBeFocused();
+
+  // 2. Нажатие Escape мгновенно закрывает модальное окно
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+
+  // 3. Фокус вернулся на кнопку открытия
+  await expect(editBtn).toBeFocused();
+
+  // 4. Проверяем Focus Trap: цикл внутри модалки
+  await editBtn.click();
+  await expect(modal).toBeVisible();
+
+  // Фокусируемся на первом фокусируемом элементе модалки (.modal-close)
+  await page.locator('.modal-close').focus();
+  await expect(page.locator('.modal-close')).toBeFocused();
+
+  // Shift+Tab с первого элемента оборачивает фокус на последний элемент (.modal-confirm-btn)
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.locator('.modal-confirm-btn')).toBeFocused();
+
+  // Tab с последнего элемента оборачивает фокус на первый элемент (.modal-close)
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.modal-close')).toBeFocused();
+
+  // Закрываем модалку по Escape
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+});
+
+test('resume print styling hides shell and displays structured A4 resume', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // Переключаем медиа в print
+  await page.emulateMedia({ media: 'print' });
+
+  // 1. Проверяем, что веб-шелл скрыт
+  await expect(page.locator('.sidebar')).toBeHidden();
+  await expect(page.locator('.header')).toBeHidden();
+  await expect(page.locator('.page-heading')).toBeHidden();
+  await expect(page.locator('.profile-tabs')).toBeHidden();
+  await expect(page.locator('.profile-controls')).toBeHidden();
+  await expect(page.locator('.profile-tip')).toBeHidden();
+  await expect(page.locator('.button').first()).toBeHidden();
+  await expect(page.locator('.student-card__progress')).toBeHidden();
+
+  // 2. Проверяем, что структура резюме отображается
+  await expect(page.locator('.student-card')).toBeVisible();
+  await expect(page.locator('.student-card__identity h2')).toContainText('Нур М.');
+  await expect(page.locator('.student-card__contacts')).toBeVisible();
+  await expect(page.locator('#pane-stack')).toBeVisible();
+  await expect(page.locator('#pane-applications')).toBeVisible();
+});
+
+test('phase 3 UI polish: university selector on mobile, target university badges, empty states, and dynamic dates', async ({ page }) => {
+  // 1. Селектор университета доступен на мобильных
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto('/index.html');
+  const mobileUniSelect = page.locator('.header__select');
+  await expect(mobileUniSelect).toBeVisible();
+  await expect(page.locator('.header__select select')).toHaveValue('kfu');
+
+  // 2. Десктоп: подсветка партнерских вакансий бейджем «Целевой ВУЗ»
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  await expect(page.locator('[data-job-id="yandex-analyst"] .badge--target-uni')).toBeVisible();
+  await expect(page.locator('[data-job-id="sber-java"] .badge--target-uni')).toBeVisible();
+  await expect(page.locator('[data-job-id="tbank-data"] .badge--target-uni')).toBeHidden();
+
+  // Смена ВУЗа на ИТМО
+  await page.locator('.header__select select').selectOption('itmo');
+  await expect(page.locator('[data-job-id="yandex-analyst"] .badge--target-uni')).toBeVisible();
+  await expect(page.locator('[data-job-id="sber-java"] .badge--target-uni')).toBeHidden();
+  await expect(page.locator('[data-job-id="tbank-data"] .badge--target-uni')).toBeVisible();
+
+  // 3. Тени таблицы table-scroll
+  for (const file of ['profile.html', 'hr.html']) {
+    await page.goto(`/${file}`);
+    const shadow = await page.locator('.table-scroll').first().evaluate(el => getComputedStyle(el).boxShadow);
+    expect(shadow).toContain('inset');
+  }
+
+  // 4. Оформление Empty State и рабочий CTA «Сбросить фильтры»
+  await page.goto('/index.html');
+  await page.locator('[data-feed-specialty]').selectOption('development');
+  await page.locator('[data-feed-format]').selectOption('hybrid');
+  const feedEmpty = page.locator('[data-feed-empty]');
+  await expect(feedEmpty).toBeVisible();
+  await expect(feedEmpty.locator('h3')).toContainText('стажировок не найдено');
+  await expect(feedEmpty.locator('.empty-icon')).toBeVisible();
+  // Клик по кнопке «Сбросить фильтры» внутри empty state
+  await feedEmpty.locator('.empty-cta').click();
+  await expect(feedEmpty).toBeHidden();
+  await expect(page.locator('.feed-jobs .job-card')).toHaveCount(3);
+
+  // 5. Компании: Empty State и сброс фильтров
+  await page.goto('/companies.html');
+  await page.locator('.header__search input').fill('NonExistentCorp123');
+  const compEmpty = page.locator('[data-companies-empty]');
+  await expect(compEmpty).toBeVisible();
+  await compEmpty.locator('.empty-cta').click();
+  await expect(compEmpty).toBeHidden();
+  await expect(page.locator('[data-company-card]')).toHaveCount(6);
+
+  // 6. Динамические даты и счетчики
+  await page.goto('/index.html');
+  const dateText = await page.locator('[data-live-date]').textContent();
+  expect(dateText?.length).toBeGreaterThan(5);
+  await expect(page.locator('[data-feed-banner-title]')).toContainText('стажиров');
+  await expect(page.locator('[data-feed-section-subtext]')).toContainText('Показаны');
 });

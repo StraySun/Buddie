@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // 1. Утилиты: storage, toast, debounce
 // ==========================================
 
@@ -55,6 +55,9 @@ const storage = {
   }
 };
 
+const savedJobs = new Set(storage.readArray('buddie-saved-jobs'));
+const appliedJobs = new Set(storage.readArray('buddie-applied-jobs'));
+
 const toast = document.createElement('div');
 toast.className = 'app-toast';
 toast.setAttribute('role', 'status');
@@ -68,6 +71,7 @@ function announce(message) {
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => toast.classList.remove('is-visible'), 2800);
 }
+const showToast = announce;
 
 function debounce(fn, delay) {
   let timer;
@@ -85,14 +89,115 @@ function setVisible(element, visible) {
 // ==========================================
 // 2. REST API & Database Integration Layer
 // ==========================================
-const api = {
+const DEFAULT_JOBS = [
+  {
+    id: "yandex-analyst",
+    company: "Yandex",
+    companyLogoClass: "company-logo--yandex",
+    companyLetter: "Я",
+    rating: "⭐ 4.7 · Отзывы студентов",
+    matchScore: "✧ 96% совпадение",
+    title: "Стажёр-аналитик данных",
+    salary: "150 000–200 000 ₽",
+    specialty: "analysis",
+    format: "hybrid",
+    tags: [
+      "Стажировка",
+      "Hybrid",
+      "Python",
+      "SQL"
+    ],
+    description: "Анализируй продуктовые данные пользователей и создавай визуализации для продуктовых команд.",
+    location: "⌖ Москва",
+    workload: "▣ 3 дня/неделю",
+    postedTime: "◷ Сегодня",
+    responseBadge: "● Быстрый отклик",
+    targetUniversity: "kfu"
+  },
+  {
+    id: "sber-java",
+    company: "Sber",
+    companyLogoClass: "company-logo--sber",
+    companyLetter: "С",
+    rating: "⭐ 4.6 · Отзывы студентов",
+    matchScore: "✧ 91% совпадение",
+    title: "Младший Java-разработчик",
+    salary: "220–280 ₽/час",
+    specialty: "development",
+    format: "remote",
+    tags: [
+      "Full-time",
+      "Удалёнка",
+      "Java",
+      "Spring Boot"
+    ],
+    description: "Разрабатывай высоконагруженные банковские сервисы вместе с опытной командой.",
+    location: "⌖ Москва / Удалённо",
+    workload: "▣ Удалённо",
+    postedTime: "◷ Вчера",
+    responseBadge: "● Быстрый отклик",
+    targetUniversity: "kfu"
+  },
+  {
+    id: "tbank-data",
+    company: "Т-Банк",
+    companyLogoClass: "company-logo--tbank",
+    companyLetter: "Т",
+    rating: "⭐ 4.8 · Отзывы студентов",
+    matchScore: "✧ 88% совпадение",
+    title: "Стажёр по анализу данных",
+    salary: "80 000–120 000 ₽",
+    specialty: "analysis",
+    format: "hybrid",
+    tags: [
+      "Стажировка",
+      "Hybrid",
+      "ML",
+      "SQL"
+    ],
+    description: "Развивай свои навыки анализа данных и работай с продуктовыми задачами Т-Банка.",
+    location: "⌖ Москва",
+    workload: "▣ 2 дня/неделю",
+    postedTime: "◷ 2 часа назад",
+    responseBadge: "● Дедлайн через 3 дня",
+    responseBadgeClass: "job-card__response--warning",
+    targetUniversity: "all"
+  }
+];
+
+const ApiService = {
   async getDb() {
     try {
       const res = await fetch('/api/db');
-      if (res.ok) return await res.json();
-    } catch {}
-    return null;
+      if (res.ok) {
+        const data = await res.json();
+        storage.write('buddie-db-cache', data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('Network unavailable for db, using local fallback:', e);
+    }
+    return storage.read('buddie-db-cache', null);
   },
+
+  async getJobs() {
+    try {
+      const res = await fetch('/api/jobs');
+      if (res.ok) {
+        const jobs = await res.json();
+        if (Array.isArray(jobs) && jobs.length > 0) {
+          storage.write('buddie-jobs-cache', jobs);
+          return jobs;
+        }
+      }
+    } catch (e) {
+      console.warn('Network unavailable for jobs, using local fallback:', e);
+    }
+    const cached = storage.read('buddie-jobs-cache', null);
+    if (Array.isArray(cached) && cached.length > 0) return cached;
+    return DEFAULT_JOBS;
+  },
+
   async createJob(jobData) {
     try {
       const res = await fetch('/api/jobs', {
@@ -100,21 +205,36 @@ const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobData)
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const created = await res.json();
+        const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
+        storage.write('buddie-jobs-cache', [created, ...cached]);
+        return created;
+      }
     } catch {}
     return null;
   },
-  async applyJob(jobId, title, company) {
+
+  async applyJob(jobId, title, company, location) {
     try {
       const res = await fetch('/api/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, title, company })
+        body: JSON.stringify({ jobId, title, company, location })
       });
       if (res.ok) return await res.json();
     } catch {}
     return null;
   },
+
+  async removeApplication(id) {
+    try {
+      const res = await fetch('/api/applications/' + id, { method: 'DELETE' });
+      if (res.ok) return await res.json();
+    } catch {}
+    return null;
+  },
+
   async saveJob(jobId) {
     try {
       const res = await fetch('/api/saved-jobs', {
@@ -126,6 +246,7 @@ const api = {
     } catch {}
     return null;
   },
+
   async removeSavedJob(jobId) {
     try {
       const res = await fetch('/api/saved-jobs/' + jobId, { method: 'DELETE' });
@@ -133,6 +254,7 @@ const api = {
     } catch {}
     return null;
   },
+
   async updateState(state) {
     try {
       const res = await fetch('/api/state', {
@@ -144,6 +266,35 @@ const api = {
     } catch {}
     return null;
   },
+
+  async getApplications() {
+    try {
+      const res = await fetch('/api/applications');
+      if (res.ok) return await res.json();
+    } catch {}
+    return [];
+  },
+
+  async getCandidates() {
+    try {
+      const res = await fetch('/api/candidates');
+      if (res.ok) return await res.json();
+    } catch {}
+    return [];
+  },
+
+  async updateCandidate(id, data) {
+    try {
+      const res = await fetch('/api/candidates/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return null;
+  },
+
   async updateApplication(id, data) {
     try {
       const res = await fetch('/api/applications/' + id, {
@@ -156,6 +307,8 @@ const api = {
     return null;
   }
 };
+
+const api = ApiService;
 
 
 // ==========================================
@@ -220,10 +373,10 @@ function playButtonSpring(element) {
 // 4. Иконки и кнопки вакансий
 // ==========================================
 const ICONS = {
-  starOutline: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  starFilled: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="currentColor"/></svg>',
+  starOutline: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><use href="#icon-bookmark"></use></svg>',
+  starFilled: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><use href="#icon-saved"></use></svg>',
   check: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg>',
-  arrowUpRight: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  arrowUpRight: '<svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><use href="#icon-send"></use></svg>'
 };
 
 function setJobButton(button, active, label, isSave) {
@@ -307,12 +460,42 @@ function updateTableEmptyMessage(selector, rows, message) {
   if (!table) return;
   let empty = table.parentElement.querySelector('.interaction-empty');
   if (!empty) {
-    empty = document.createElement('p');
+    empty = document.createElement('div');
     empty.className = 'interaction-empty';
     empty.setAttribute('role', 'status');
     table.before(empty);
   }
-  empty.textContent = message;
+  const isCandidate = selector.includes('candidate');
+  const icon = isCandidate ? '#icon-user' : '#icon-application';
+  const resetAttr = isCandidate ? 'data-candidate-reset' : 'data-profile-reset';
+  const subtitle = isCandidate ? 'Попробуйте изменить параметры вуза или статуса' : 'Попробуйте изменить статус отклика или текст поиска';
+
+  empty.innerHTML = `
+    <div class="empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="${icon}"></use></svg></div>
+    <h3>${message}</h3>
+    <p>${subtitle}</p>
+    <button class="button button--small empty-cta" type="button" ${resetAttr}>Сбросить фильтры</button>
+  `;
+  const resetBtn = empty.querySelector(`[${resetAttr}]`);
+  if (resetBtn) {
+    resetBtn.onclick = () => {
+      const searchInput = document.querySelector('.header__search input') || document.querySelector('.profile-controls input') || document.querySelector('.hr-candidate-search');
+      if (searchInput) {
+        searchInput.value = '';
+        searchTerm = '';
+      }
+      if (isCandidate) {
+        const uni = document.querySelector('[data-hr-university]');
+        const status = document.querySelector('[data-hr-status]');
+        if (uni) uni.value = 'all';
+        if (status) status.value = 'all';
+      } else {
+        const status = document.querySelector('[data-application-status]');
+        if (status) status.value = 'all';
+      }
+      updateSearch('');
+    };
+  }
   setVisible(empty, rows.length > 0 && rows.every(row => row.hidden));
 }
 
@@ -360,6 +543,12 @@ function updateSearch(value) {
   const visibleText = element => !searchTerm || element.textContent.toLocaleLowerCase('ru').includes(searchTerm);
 
   document.querySelectorAll('[data-job-id]').forEach(job => updateJobs(job));
+  const subtext = document.querySelector('[data-feed-section-subtext]');
+  if (subtext) {
+    const visibleJobs = document.querySelectorAll('.feed-jobs .job-card:not([hidden])').length;
+    const totalJobs = document.querySelectorAll('.feed-jobs .job-card').length || 3;
+    subtext.textContent = `Показаны ${visibleJobs} из ${totalJobs} персональных подборок · Buddie`;
+  }
 
   const resetFilter = document.querySelector('[data-feed-reset]');
   if (resetFilter) {
@@ -421,6 +610,33 @@ searchInputs.forEach(input => input.addEventListener('input', () => debouncedSea
 document.querySelector('[data-feed-specialty]')?.addEventListener('change', () => updateSearch(searchTerm));
 document.querySelector('[data-feed-format]')?.addEventListener('change', () => updateSearch(searchTerm));
 
+
+// Phase 3: Header University selector and Empty State Resets
+document.querySelectorAll('.header__select select').forEach(sel => {
+  sel.addEventListener('change', (e) => {
+    const val = e.target.value;
+    storage.write('buddie-university', val);
+    document.querySelectorAll('.header__select select').forEach(s => {
+      if (s !== e.target) s.value = val;
+    });
+    updateTargetUniversityBadges(val);
+    const uniName = e.target.selectedOptions[0]?.textContent || val;
+    showToast('Выбран целевой вуз: ' + uniName);
+    announce('Выбран целевой университет: ' + uniName);
+  });
+});
+
+document.querySelectorAll('[data-companies-reset]').forEach(button => button.addEventListener('click', () => {
+  const searchInput = document.querySelector('.header__search input');
+  if (searchInput) {
+    searchInput.value = '';
+    searchTerm = '';
+  }
+  const allCategoryBtn = document.querySelector('[data-company-category="all"]');
+  if (allCategoryBtn) allCategoryBtn.click();
+  else updateSearch('');
+}));
+
 document.querySelectorAll('[data-feed-reset]').forEach(button => button.addEventListener('click', () => {
   const specialty = document.querySelector('[data-feed-specialty]');
   const format = document.querySelector('[data-feed-format]');
@@ -445,51 +661,543 @@ document.querySelectorAll('[data-notification-filter]').forEach(button => button
 
 
 // ==========================================
-// 7. Кнопки вакансий (сохранить / откликнуться)
-// ==========================================
-const savedJobs = new Set(storage.readArray('buddie-saved-jobs'));
-const appliedJobs = new Set(storage.readArray('buddie-applied-jobs'));
 
-document.querySelectorAll('[data-job-id]').forEach(job => {
-  const id = job.dataset.jobId;
-  const save = job.querySelector('[data-job-action="save"]');
-  const apply = job.querySelector('[data-job-action="apply"]');
+// ==========================================
+
+// ==========================================
+// Phase 3: Target University & Dynamic Counters
+// ==========================================
+const UNIVERSITY_PARTNERS = {
+  kfu: ['yandex-analyst', 'sber-java'],
+  itmo: ['yandex-analyst', 'tbank-data'],
+  hse: ['sber-java', 'tbank-data']
+};
+
+function isJobTargetForUniversity(jobOrCard, uni) {
+  if (!uni || uni === 'all') return false;
+  const id = typeof jobOrCard === 'string' ? jobOrCard : (jobOrCard.id || jobOrCard.dataset?.jobId);
+  const target = jobOrCard.targetUniversity || jobOrCard.dataset?.targetUniversity;
+  if (target && (target === uni || target === 'all')) return true;
+  const list = UNIVERSITY_PARTNERS[uni] || [];
+  return list.includes(id);
+}
+
+function updateTargetUniversityBadges(uni) {
+  const activeUni = uni || storage.read('buddie-university', 'kfu');
+  document.querySelectorAll('.feed-jobs .job-card').forEach(card => {
+    const isTarget = isJobTargetForUniversity(card, activeUni);
+    let badges = card.querySelector('.job-card__badges');
+    if (!badges) {
+      const matchBadge = card.querySelector('.match-badge');
+      if (matchBadge) {
+        badges = document.createElement('div');
+        badges.className = 'job-card__badges';
+        matchBadge.before(badges);
+        badges.appendChild(matchBadge);
+      }
+    }
+    let targetBadge = card.querySelector('.badge--target-uni');
+    if (isTarget) {
+      if (!targetBadge && badges) {
+        targetBadge = document.createElement('span');
+        targetBadge.className = 'badge badge--target-uni';
+        targetBadge.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-graduation-cap"></use></svg> Целевой ВУЗ';
+        badges.prepend(targetBadge);
+      }
+    } else {
+      if (targetBadge) targetBadge.remove();
+    }
+  });
+}
+
+function pluralize(n, one, few, many) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 19) return `${n} ${many}`;
+  if (mod10 === 1) return `${n} ${one}`;
+  if (mod10 >= 2 && mod10 <= 4) return `${n} ${few}`;
+  return `${n} ${many}`;
+}
+
+function updateFeedCounters(count) {
+  const total = count || document.querySelectorAll('.feed-jobs .job-card').length || 3;
+  const bannerTitle = document.querySelector('[data-feed-banner-title]');
+  if (bannerTitle) {
+    bannerTitle.textContent = `Buddie подобрал ${pluralize(total, 'стажировку', 'стажировки', 'стажировок')} специально для тебя`;
+  }
+  const sectionSubtext = document.querySelector('[data-feed-section-subtext]');
+  if (sectionSubtext) {
+    const visibleCount = document.querySelectorAll('.feed-jobs .job-card:not([hidden])').length;
+    sectionSubtext.textContent = `Показаны ${visibleCount} из ${total} персональных подборок · Buddie`;
+  }
+  const noticeStrong = document.querySelector('[data-feed-notice-count] strong');
+  if (noticeStrong) {
+    noticeStrong.textContent = pluralize(total, 'новая вакансия', 'новые вакансии', 'новых вакансий');
+  }
+}
+
+function updateLiveDates() {
+  try {
+    const formatter = new Intl.DateTimeFormat('ru-RU', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+    const now = new Date();
+    const formatted = formatter.format(now);
+    const displayDate = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    document.querySelectorAll('[data-live-date]').forEach(el => {
+      el.textContent = displayDate;
+    });
+  } catch (e) {
+    console.warn('Live date format error:', e);
+  }
+}
+
+// Phase 1: Data Layer & Dynamic Rendering Helpers
+// ==========================================
+function createJobCardHtml(j) {
+  const isSaveActive = savedJobs.has(j.id);
+  const isApplyActive = appliedJobs.has(j.id);
+  const saveIcon = isSaveActive ? ICONS.starFilled : ICONS.starOutline;
+  const applyIcon = isApplyActive ? ICONS.check : ICONS.arrowUpRight;
+  const saveLabel = isSaveActive ? 'Сохранено' : 'Сохранить';
+  const applyLabel = isApplyActive ? 'Отклик отмечен' : 'Откликнуться';
+  const saveClass = isSaveActive ? 'button button--outline button--small button--soft' : 'button button--outline button--small';
+  const applyClass = isApplyActive ? 'button button--small button--soft' : 'button button--small';
+  const tagsHtml = (j.tags || ['Стажировка', j.format === 'remote' ? 'Remote' : 'Hybrid']).map(t => '<span class="chip">' + t + '</span>').join('');
+  const respClass = j.responseBadgeClass ? ' ' + j.responseBadgeClass : (j.responseBadge && j.responseBadge.includes('Дедлайн') ? ' job-card__response--warning' : '');
+
+  return '<article class="card job-card" data-job-id="' + j.id + '" data-specialty="' + (j.specialty || 'development') + '" data-format="' + (j.format || 'hybrid') + '">' +
+    '<div class="job-card__top">' +
+      '<div class="job-card__company">' +
+        '<div class="company-logo ' + (j.companyLogoClass || 'company-logo--yandex') + '">' + (j.companyLetter || 'Я') + '</div>' +
+        '<div>' +
+          '<div class="company-name">' + (j.company || 'Компания') + '</div>' +
+          '<div class="company-rating">' + (j.rating || '⭐ 5.0 · Новая аккредитация') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<span class="match-badge">' + (j.matchScore || '✧ 95% совпадение') + '</span>' +
+    '</div>' +
+    '<div class="job-card__title-row">' +
+      '<h3 class="job-card__title">' + j.title + '</h3>' +
+      '<div class="job-card__salary">' + (j.salary || '') + '</div>' +
+    '</div>' +
+    '<div class="job-card__tags">' + tagsHtml + '</div>' +
+    '<p class="job-card__description">' + (j.description || '') + '</p>' +
+    '<div class="job-card__meta">' +
+      '<span>' + (j.location || '⌖ Москва') + '</span>' +
+      '<span>' + (j.workload || '▣ 3 дня/неделю') + '</span>' +
+      '<span>' + (j.postedTime || '◷ Сегодня') + '</span>' +
+    '</div>' +
+    '<div class="job-card__footer">' +
+      '<span class="job-card__response' + respClass + '">' + (j.responseBadge || '● Быстрый отклик') + '</span>' +
+      '<div class="job-card__actions">' +
+        '<button class="' + saveClass + '" type="button" data-job-action="save" aria-pressed="' + isSaveActive + '" aria-label="Сохранить вакансию">' +
+          saveIcon + '<span>' + saveLabel + '</span>' +
+        '</button>' +
+        '<button class="' + applyClass + '" type="button" data-job-action="apply" aria-pressed="' + isApplyActive + '" aria-label="Откликнуться на вакансию">' +
+          applyIcon + '<span>' + applyLabel + '</span>' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</article>';
+}
+
+function bindJobCard(card) {
+  const id = card.dataset.jobId;
+  if (!id) return;
+  const save = card.querySelector('[data-job-action="save"]');
+  const apply = card.querySelector('[data-job-action="apply"]');
   if (savedJobs.has(id)) setJobButton(save, true, 'Сохранено', true);
   if (appliedJobs.has(id)) setJobButton(apply, true, 'Отклик отмечен', false);
-});
 
-document.querySelectorAll('[data-job-action]').forEach(button => button.addEventListener('click', async () => {
-  const card = button.closest('[data-job-id]');
-  const id = card?.dataset.jobId;
-  if (!id) return;
-  const isSave = button.dataset.jobAction === 'save';
-  const collection = isSave ? savedJobs : appliedJobs;
-  const active = !collection.has(id);
+  const title = card.querySelector('.job-card__title')?.textContent.trim() || 'Стажировка';
+  const company = card.querySelector('.company-name')?.textContent.trim() || 'Компания';
+  const location = card.querySelector('.job-card__meta span')?.textContent.trim() || 'Москва · Hybrid';
 
-  if (active) collection.add(id); else collection.delete(id);
-  storage.write(isSave ? 'buddie-saved-jobs' : 'buddie-applied-jobs', [...collection]);
+  card.querySelectorAll('[data-job-action]').forEach(button => {
+    if (button._hasJobAction) return;
+    button._hasJobAction = true;
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      try {
+        const isSave = button.dataset.jobAction === 'save';
+        const collection = isSave ? savedJobs : appliedJobs;
+        const active = !collection.has(id);
 
-  playButtonSpring(button);
+        if (active) collection.add(id); else collection.delete(id);
+        storage.write(isSave ? 'buddie-saved-jobs' : 'buddie-applied-jobs', [...collection]);
 
-  if (isSave) {
-    if (active) await api.saveJob(id); else await api.removeSavedJob(id);
+        playButtonSpring(button);
+
+        if (isSave) {
+          if (active) await ApiService.saveJob(id); else await ApiService.removeSavedJob(id);
+        } else {
+          if (active) {
+            await ApiService.applyJob(id, title, company, location);
+          } else {
+            await ApiService.removeApplication(id);
+          }
+        }
+
+        setJobButton(button, active,
+          isSave ? (active ? 'Сохранено' : 'Сохранить') : (active ? 'Отклик отмечен' : 'Откликнуться'),
+          isSave
+        );
+        if (isSave && document.querySelector('.saved-jobs-container')) {
+          renderSavedJobsInProfile();
+        }
+        announce(isSave
+          ? (active ? 'Стажировка сохранена в этом браузере.' : 'Стажировка удалена из сохранённых.')
+          : (active ? 'Отклик успешно сохранён! Отправка работодателю недоступна в демо.' : 'Отметка об отклике отменена.')
+        );
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+function renderJobsFeed(jobs) {
+  const container = document.querySelector('.feed-jobs');
+  if (!container) return;
+
+  const jobList = Array.isArray(jobs) && jobs.length > 0 ? jobs : DEFAULT_JOBS;
+  container.innerHTML = jobList.map(j => createJobCardHtml(j)).join('');
+
+  container.querySelectorAll('[data-job-id]').forEach(card => {
+    bindJobCard(card);
+  });
+  updateFeedCounters(jobList.length);
+  updateTargetUniversityBadges();
+  updateSearch(searchTerm);
+}
+
+function createApplicationRowHtml(app) {
+  const appsState = storage.read('buddie-applications-state', {});
+  const appState = appsState[app.id || ''] || appsState[app.jobId || ''] || {};
+  const currentStatus = appState.status || app.status;
+  const currentStatusClass = appState.statusClass || app.statusClass;
+  const currentSlot = appState.interviewSlot || app.interviewSlot;
+
+  let badgeLabel = currentStatus;
+  if (currentStatus === 'Приглашение') badgeLabel = '● Приглашение';
+  else if (currentStatus === 'На рассмотрении') badgeLabel = '◷ На рассмотрении';
+  else if (currentStatus === 'Отказ') badgeLabel = '● Отказ';
+  else if (currentStatus === 'Оффер') badgeLabel = '✦ Оффер!';
+  else if (currentStatus === 'Оффер принят') badgeLabel = '✓ Оффер принят';
+
+  const isAccepted = currentStatus === 'Оффер принят';
+  let actionHtml = '';
+
+  if (isAccepted) {
+    actionHtml = '<button class="button button--small button--soft" type="button" disabled>✓ Принято</button>';
+  } else if (app.actionText === 'Фидбек' || currentStatus === 'Отказ') {
+    actionHtml = '<a class="button button--outline button--small application-feedback" href="#feedback">Фидбек</a>';
+  } else if (app.actionText === 'Чат с HR' || currentStatus === 'На рассмотрении') {
+    actionHtml = '<button class="button button--outline button--small" type="button">Чат с HR</button>';
+  } else if (app.actionText === 'Выбрать время' || currentStatus === 'Приглашение') {
+    if (currentSlot) {
+      actionHtml = '<button class="button button--small button--soft" type="button">✓ ' + currentSlot.split(',')[0] + '</button>';
+    } else {
+      actionHtml = '<button class="button button--small" type="button">Выбрать время</button>';
+    }
+  } else if (app.actionText === 'Принять' || currentStatus === 'Оффер') {
+    actionHtml = '<button class="button button--small" type="button">Принять</button>';
   } else {
-    if (active) {
-      const title = card.querySelector('.job-card__title')?.textContent.trim() || 'Стажёр';
-      const company = card.querySelector('.company-name')?.textContent.trim() || 'Компания';
-      await api.applyJob(id, title, company);
+    actionHtml = '<button class="button button--small" type="button">' + (app.actionText || 'Подробнее') + '</button>';
+  }
+
+  const rowIdAttr = (app.rowId || (currentStatus === 'Отказ' ? 'feedback' : '')) ? ' id="' + (app.rowId || 'feedback') + '"' : '';
+  const comp = app.company || 'Компания';
+  const compLower = comp.toLowerCase();
+  const logoClass = app.companyLogoClass || (compLower.includes('yandex') ? 'company-logo--yandex' : compLower.includes('sber') ? 'company-logo--sber' : compLower.includes('vk') ? 'company-logo--vk' : 'company-logo--tbank');
+  const logoLetter = app.companyLetter || (compLower.includes('vk') ? 'VK' : comp[0].toUpperCase());
+
+  return '<tr data-application-id="' + (app.id || '') + '" data-job-id="' + (app.jobId || '') + '"' + rowIdAttr + '>' +
+    '<td>' +
+      '<div class="application-company">' +
+        '<span class="company-logo ' + logoClass + '">' + logoLetter + '</span>' +
+        '<span>' +
+          '<strong>' + app.title + '</strong>' +
+          '<small>' + comp + ' · ' + (app.location || 'Москва · Hybrid') + '</small>' +
+        '</span>' +
+      '</div>' +
+    '</td>' +
+    '<td>' + (app.appliedDate || 'Сегодня') + '</td>' +
+    '<td><span class="status-badge ' + (currentStatusClass || 'status-badge--warning') + '">' + badgeLabel + '</span></td>' +
+    '<td>' + actionHtml + '</td>' +
+  '</tr>';
+}
+
+function bindApplicationRow(row) {
+  const btn = row.querySelector('.button');
+  if (!btn || btn._hasAppAction) return;
+  btn._hasAppAction = true;
+
+  const rowText = row.textContent || '';
+  const appId = row.dataset.applicationId || (
+    rowText.includes('Python') ? 'app-4' :
+    rowText.includes('фронтенд') ? 'app-1' :
+    rowText.includes('Аналитик') ? 'app-2' :
+    rowText.includes('Тестировщик') ? 'app-3' : 'app-1'
+  );
+  const jobId = row.dataset.jobId || (
+    appId === 'app-4' ? 'tbank-python' :
+    appId === 'app-1' ? 'yandex-frontend' :
+    appId === 'app-2' ? 'sber-analyst' : 'vk-qa'
+  );
+
+  const appsState = storage.read('buddie-applications-state', {});
+  const savedState = appsState[appId] || (jobId ? appsState[jobId] : null);
+  if (savedState) {
+    if (savedState.status === 'Оффер принят') {
+      btn.textContent = '✓ Принято';
+      btn.classList.add('button--soft');
+      btn.disabled = true;
+      const statusBadge = row.querySelector('.status-badge');
+      if (statusBadge) {
+        statusBadge.textContent = '✓ Оффер принят';
+        statusBadge.className = 'status-badge status-badge--success';
+      }
+    }
+    if (savedState.interviewSlot) {
+      btn.textContent = '✓ ' + savedState.interviewSlot.split(',')[0];
+      btn.classList.add('button--soft');
     }
   }
 
-  setJobButton(button, active,
-    isSave ? (active ? 'Сохранено' : 'Сохранить') : (active ? 'Отклик отмечен' : 'Откликнуться'),
-    isSave
-  );
-  announce(isSave
-    ? (active ? 'Стажировка сохранена в этом браузере.' : 'Стажировка удалена из сохранённых.')
-    : (active ? 'Отклик отмечен в этом браузере. Отправка работодателю недоступна в демо.' : 'Отметка об отклике отменена.')
-  );
-}));
+  if (btn.textContent.trim() === 'Принять' || btn.textContent.trim() === '✓ Принято') {
+    btn.addEventListener('click', async () => {
+      btn.textContent = '✓ Принято';
+      btn.classList.add('button--soft');
+      btn.disabled = true;
+      const statusBadge = row.querySelector('.status-badge');
+      if (statusBadge) {
+        statusBadge.textContent = '✓ Оффер принят';
+        statusBadge.className = 'status-badge status-badge--success';
+      }
+
+      const currentAppsState = storage.read('buddie-applications-state', {});
+      currentAppsState[appId] = Object.assign(currentAppsState[appId] || {}, { status: 'Оффер принят', statusClass: 'status-badge--success' });
+      if (jobId) currentAppsState[jobId] = currentAppsState[appId];
+      storage.write('buddie-applications-state', currentAppsState);
+
+      if (appId) {
+        await api.updateApplication(appId, { status: 'Оффер принят', statusClass: 'status-badge--success' });
+      }
+      announce('Поздравляем! Вы приняли оффер компании!');
+    });
+  } else if (btn.textContent.includes('Чат с HR')) {
+    btn.addEventListener('click', () => {
+      const company = row.querySelector('strong')?.textContent.trim() || 'HR';
+      openModal(
+        'Чат с рекрутером ' + company,
+        '<p>Задайте интересующие вопросы рекрутеру или согласуйте дату старта.</p>' +
+        '<div class="form-group">' +
+          '<textarea placeholder="Здравствуйте! Уточните, пожалуйста, необходимые документы..."></textarea>' +
+        '</div>',
+        () => announce('Сообщение отправлено рекрутеру!'),
+        'Отправить'
+      );
+    });
+  } else if (btn.textContent.includes('Выбрать время') || btn.textContent.includes('✓')) {
+    btn.addEventListener('click', () => {
+      openModal(
+        'Выбор слота интервью',
+        '<p>Выберите удобное время для онлайн-встречи с командой:</p>' +
+        '<div class="form-group">' +
+          '<select id="interview-time-slot">' +
+            '<option>Завтра, 14:00 (МСК)</option>' +
+            '<option>Завтра, 16:30 (МСК)</option>' +
+            '<option>Пятница, 11:00 (МСК)</option>' +
+          '</select>' +
+        '</div>',
+        async (modal) => {
+          const slot = modal.querySelector('#interview-time-slot').value;
+          btn.textContent = '✓ ' + slot.split(',')[0];
+          btn.classList.add('button--soft');
+
+          const appsState = storage.read('buddie-applications-state', {});
+          appsState[appId] = Object.assign(appsState[appId] || {}, { interviewSlot: slot });
+          if (jobId) appsState[jobId] = appsState[appId];
+          storage.write('buddie-applications-state', appsState);
+
+          if (appId) {
+            await api.updateApplication(appId, { interviewSlot: slot });
+          }
+          announce('Интервью успешно назначено: ' + slot + '!');
+        },
+        'Подтвердить встречу'
+      );
+    });
+  }
+}
+
+function renderApplicationsTable(applications) {
+  const tbody = document.querySelector('.data-table tbody');
+  if (!tbody) return;
+
+  const appList = Array.isArray(applications) ? applications : [];
+
+  if (appList.length === 0) {
+    tbody.innerHTML = '';
+    updateTableEmptyMessage('.data-table', [], 'Отклики не найдены');
+    const footSpan = document.querySelector('.profile-applications__foot span');
+    if (footSpan) footSpan.textContent = 'Показаны 0 из 0 откликов';
+    return;
+  }
+
+  tbody.innerHTML = appList.map(app => createApplicationRowHtml(app)).join('');
+  tbody.querySelectorAll('tr').forEach(row => bindApplicationRow(row));
+
+  const footSpan = document.querySelector('.profile-applications__foot span');
+  if (footSpan) {
+    footSpan.textContent = 'Показаны ' + appList.length + ' из ' + appList.length + ' откликов';
+  }
+
+  updateSearch(searchTerm);
+}
+
+function createCandidateRowHtml(cand) {
+  const skillsHtml = (cand.skills || ['Python', 'SQL']).map(s => '<span>' + s + '</span>').join('');
+  const uni = cand.university || 'КФУ · 3-й курс';
+  const uniData = uni.includes('КФУ') ? 'kfu' : (uni.includes('ИТМО') ? 'itmo' : (uni.includes('ВШЭ') ? 'hse' : 'all'));
+  const isNew = (cand.status === 'new' || (cand.statusLabel && cand.statusLabel.toLowerCase().includes('нов')));
+  const btnClass = isNew ? 'button button--small' : 'button button--outline button--small';
+  const btnText = isNew ? 'Открыть' : 'Профиль';
+  const avatarClass = cand.avatarClass ? ' ' + cand.avatarClass : '';
+
+  return '<tr data-candidate-id="' + (cand.id || '') + '" data-university="' + uniData + '" data-status="' + (cand.status || 'new') + '">' +
+    '<td>' +
+      '<div class="candidate">' +
+        '<span class="candidate__avatar' + avatarClass + '">' + (cand.initials || 'К') + '</span>' +
+        '<span>' +
+          '<strong>' + cand.name + '</strong>' +
+          '<small>' + (cand.role || 'Соискатель') + '</small>' +
+        '</span>' +
+      '</div>' +
+    '</td>' +
+    '<td>' + uni + '</td>' +
+    '<td>' + (cand.jobTitle || 'Стажёр') + '</td>' +
+    '<td><span class="match-score">' + (cand.matchScore || '90%') + '</span></td>' +
+    '<td><div class="hr-skills">' + skillsHtml + '</div></td>' +
+    '<td><span class="status-badge ' + (cand.statusClass || 'status-badge--success') + '">' + (cand.statusLabel || 'Новый') + '</span></td>' +
+    '<td><button class="' + btnClass + '">' + btnText + '</button></td>' +
+  '</tr>';
+}
+
+function bindCandidateRow(row) {
+  const openBtn = row.querySelector('.button');
+  if (!openBtn || openBtn._hasCandAction) return;
+  openBtn._hasCandAction = true;
+
+  const name = row.querySelector('strong')?.textContent.trim() || 'Кандидат';
+  const role = row.querySelector('.candidate small')?.textContent.trim() || '';
+  const score = row.querySelector('.match-score')?.textContent.trim() || '';
+  const skills = [...row.querySelectorAll('.hr-skills span')].map(s => s.textContent).join(', ');
+
+  openBtn.addEventListener('click', () => {
+    openModal(
+      'Профиль кандидата: ' + name,
+      '<p><strong>Специализация:</strong> ' + role + '</p>' +
+      '<p><strong>AI Match Score:</strong> ' + score + '</p>' +
+      '<p><strong>Ключевые навыки:</strong> ' + skills + '</p>' +
+      '<div class="form-group" style="margin-top:16px;">' +
+        '<label>Сообщение или приглашение на интервью:</label>' +
+        '<textarea placeholder="Добрый день! Приглашаем вас пройти техническое интервью..."></textarea>' +
+      '</div>',
+      () => {
+        announce('Приглашение успешно отправлено кандидату ' + name + '!');
+      },
+      'Пригласить на интервью'
+    );
+  });
+}
+
+function renderCandidatesTable(candidates) {
+  const tbody = document.querySelector('.candidate-table tbody');
+  if (!tbody) return;
+
+  const candList = Array.isArray(candidates) ? candidates : [];
+
+  if (candList.length === 0) {
+    tbody.innerHTML = '';
+    updateTableEmptyMessage('.candidate-table', [], 'Кандидаты не найдены');
+    const footSpan = document.querySelector('.hr-table-foot span');
+    if (footSpan) footSpan.textContent = 'Показаны 0 из 0 кандидатов';
+    return;
+  }
+
+  tbody.innerHTML = candList.map(c => createCandidateRowHtml(c)).join('');
+  tbody.querySelectorAll('tr').forEach(row => bindCandidateRow(row));
+
+  const footSpan = document.querySelector('.hr-table-foot span');
+  if (footSpan) {
+    footSpan.textContent = 'Показаны ' + candList.length + ' из 48 кандидатов';
+  }
+
+  updateSearch(searchTerm);
+}
+
+async function loadInitialData() {
+  // 1. Таблица откликов в profile.html
+  const appTable = document.querySelector('.data-table');
+  if (appTable) {
+    appTable.querySelectorAll('tbody tr').forEach(row => bindApplicationRow(row));
+
+    try {
+      const apps = await ApiService.getApplications();
+      if (Array.isArray(apps) && apps.length > 0) {
+        renderApplicationsTable(apps);
+      }
+    } catch (e) {
+      console.warn('loadInitialData applications fetch error:', e);
+    }
+  }
+
+  // 2. Таблица кандидатов в hr.html
+  const candTable = document.querySelector('.candidate-table');
+  if (candTable) {
+    candTable.querySelectorAll('tbody tr').forEach(row => bindCandidateRow(row));
+
+    try {
+      const cands = await ApiService.getCandidates();
+      if (Array.isArray(cands) && cands.length > 0) {
+        renderCandidatesTable(cands);
+      }
+    } catch (e) {
+      console.warn('loadInitialData candidates fetch error:', e);
+    }
+  }
+
+  // 3. Лента вакансий в index.html
+  const container = document.querySelector('.feed-jobs');
+  if (container) {
+    try {
+      const jobs = await ApiService.getJobs();
+      if (Array.isArray(jobs) && jobs.length > 0) {
+        const currentCards = [...container.querySelectorAll('[data-job-id]')];
+        const currentIds = currentCards.map(el => el.dataset.jobId);
+        const newIds = jobs.map(j => j.id);
+        const isDifferent = currentIds.length !== newIds.length || currentIds.some((id, idx) => id !== newIds[idx]);
+        if (isDifferent) {
+          storage.write('buddie-jobs-cache', jobs);
+          renderJobsFeed(jobs);
+        }
+      }
+    } catch (e) {
+      console.warn('loadInitialData jobs fetch error:', e);
+    }
+  }
+}
+
+// ==========================================
+// 7. Кнопки вакансий (сохранить / откликнуться)
+// ==========================================
+document.querySelectorAll('[data-job-id]').forEach(card => bindJobCard(card));
 
 
 // ==========================================
@@ -557,7 +1265,62 @@ document.querySelectorAll('[data-dismiss-notification]').forEach(button => butto
 // ==========================================
 // 11. Модальные окна
 // ==========================================
+let previouslyFocusedElement = null;
+let modalKeydownHandler = null;
+
+function handleModalKeydown(e) {
+  const modal = document.querySelector('.modal-backdrop.is-open');
+  if (!modal) return;
+
+  // 1. Быстрое закрытие любого открытого окна по Escape
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    e.preventDefault();
+    closeModal();
+    return;
+  }
+
+  // 2. Focus Trap при нажатии Tab / Shift+Tab
+  if (e.key === 'Tab') {
+    const dialog = modal.querySelector('.modal-dialog');
+    if (!dialog) return;
+
+    const focusableSelectors = [
+      'button:not([disabled])',
+      '[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+
+    const focusable = Array.from(dialog.querySelectorAll(focusableSelectors))
+      .filter(el => !el.hasAttribute('disabled') && (el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement));
+
+    if (focusable.length === 0) {
+      e.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === first || !dialog.contains(document.activeElement)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last || !dialog.contains(document.activeElement)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+}
+
 function openModal(title, contentHtml, onConfirm, confirmText = 'Подтвердить') {
+  previouslyFocusedElement = document.activeElement;
+
   let modal = document.querySelector('.modal-backdrop');
   if (!modal) {
     modal = document.createElement('div');
@@ -592,17 +1355,66 @@ function openModal(title, contentHtml, onConfirm, confirmText = 'Подтвер�
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.replaceWith(newConfirmBtn);
 
-  newConfirmBtn.addEventListener('click', () => {
-    if (onConfirm) onConfirm(modal);
-    closeModal();
+  // Защита от спам-кликов (Double Submit): блокировка кнопки во время запроса
+  newConfirmBtn.addEventListener('click', async () => {
+    if (newConfirmBtn.disabled) return;
+    newConfirmBtn.disabled = true;
+    newConfirmBtn.classList.add('is-loading');
+    try {
+      if (onConfirm) await onConfirm(modal);
+      closeModal();
+    } catch (err) {
+      console.error('Modal confirmation error:', err);
+    } finally {
+      newConfirmBtn.disabled = false;
+      newConfirmBtn.classList.remove('is-loading');
+    }
   });
 
+  // Enter на текстовых полях отправляет форму
+  modal.querySelectorAll('.modal-body input').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        newConfirmBtn.click();
+      }
+    });
+  });
+
+  // Подключение глобального слушателя Escape и Focus Trap
+  if (!modalKeydownHandler) {
+    modalKeydownHandler = handleModalKeydown;
+    document.addEventListener('keydown', modalKeydownHandler);
+  }
+
+  modal.style.display = 'flex';
   modal.classList.add('is-open');
+
+  // Автофокус на первое доступное поле или кнопку подтверждения
+  const firstInput = modal.querySelector('.modal-body input:not([disabled]), .modal-body select:not([disabled]), .modal-body textarea:not([disabled])');
+  if (firstInput) {
+    firstInput.focus();
+  } else {
+    newConfirmBtn.focus();
+  }
 }
 
 function closeModal() {
   const modal = document.querySelector('.modal-backdrop');
-  if (modal) modal.classList.remove('is-open');
+  if (modal) {
+    modal.classList.remove('is-open');
+    modal.style.display = 'none';
+  }
+  if (modalKeydownHandler) {
+    document.removeEventListener('keydown', modalKeydownHandler);
+    modalKeydownHandler = null;
+  }
+  if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+    try {
+      previouslyFocusedElement.focus();
+    } catch (_) {}
+    previouslyFocusedElement = null;
+  }
 }
 
 // Кнопки кандидатов в hr.html
@@ -655,28 +1467,142 @@ if (postJobBtn) {
           <label>Зарплатная вилка / стипендия:</label>
           <input type="text" id="new-job-salary" placeholder="например, 80 000–120 000 ₽" style="padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);">
         </div>`,
-      (modal) => {
+      async (modal) => {
         const title = modal.querySelector('#new-job-title').value.trim() || 'Новая стажировка';
         const format = modal.querySelector('#new-job-format').value || 'hybrid';
         const salary = modal.querySelector('#new-job-salary').value.trim() || '100 000–140 000 ₽';
+        const companySelect = document.querySelector('.hr-topbar__company select');
+        const company = (companySelect && companySelect.value) ? companySelect.value : 'ООО Партнёр КФУ';
 
-        api.createJob({
+        await api.createJob({
           title,
           format,
           salary,
-          company: 'ООО Партнёр КФУ',
+          company,
           description: 'Новая стажировка, созданная HR-специалистом для студентов университета.',
           targetUniversity: 'kfu'
-        }).then(() => {
-          announce(`Стажировка «${title}» успешно размещена в базе данных!`);
         });
+        announce(`Стажировка «${title}» успешно размещена в базе данных!`);
       },
       'Опубликовать стажировку'
     );
   });
 }
 
-// Кнопки в профиле студента (profile.html)
+// Профиль студента: редактирование и обновление
+function updateProfileDom(prof) {
+  if (!prof) return;
+
+  // 1. Имя студента в карточке, шапке и сайдбаре
+  if (prof.name) {
+    document.querySelectorAll('.student-card__identity h2, .sidebar__user-name').forEach(el => {
+      el.textContent = prof.name;
+    });
+    const headerProf = document.querySelector('.header__profile');
+    if (headerProf) {
+      const course = prof.course || '3-й курс';
+      const initials = prof.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || 'НМ';
+      headerProf.innerHTML = `<span class="avatar">${initials}</span><span>${prof.name}<small>${course}</small></span>`;
+    }
+    const avatarEl = document.querySelector('.student-card__avatar');
+    if (avatarEl) {
+      avatarEl.textContent = prof.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || 'НМ';
+    }
+  }
+
+  // 2. Вуз и курс
+  const courseEl = document.querySelector('.student-card__identity p');
+  if (courseEl && (prof.university || prof.course)) {
+    courseEl.textContent = (prof.university || 'Казанский федеральный университет') + ' · ' + (prof.course || '3-й курс');
+  }
+  const sidebarMeta = document.querySelector('.sidebar__user-meta');
+  if (sidebarMeta && (prof.university || prof.course)) {
+    const uniShort = (prof.university || '').includes('ИТМО') ? 'ИТМО' : ((prof.university || '').includes('ВШЭ') ? 'ВШЭ' : 'КФУ');
+    sidebarMeta.textContent = `${uniShort} · ${prof.course || '3-й курс'}`;
+  }
+
+  // 3. Роль / карьерный фокус
+  const roleEl = document.querySelector('.student-card__identity small');
+  if (roleEl && prof.role) {
+    roleEl.textContent = prof.role + ' · Открыт к стажировкам';
+  }
+
+  document.querySelectorAll('.stack-focus-title, .stack-focus strong').forEach(el => {
+    if (prof.role) el.textContent = prof.role;
+  });
+
+  const aboutEl = document.querySelector('.student-card__about');
+  if (aboutEl && prof.about) {
+    aboutEl.textContent = prof.about;
+  }
+
+  // 4. Стек навыков
+  if (Array.isArray(prof.skills) && prof.skills.length > 0) {
+    document.querySelectorAll('.skill-list').forEach(skillList => {
+      skillList.innerHTML = prof.skills.map(s => {
+        return '<div class="skill"><span>' + s + '</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i></span></div>';
+      }).join('');
+    });
+  }
+}
+
+function initProfileEdit() {
+  document.querySelectorAll('[data-edit-profile-btn], .stack-card .button').forEach(btn => {
+    if (btn._hasEditAction) return;
+    btn._hasEditAction = true;
+
+    btn.addEventListener('click', async () => {
+      const db = await api.getDb();
+      const currentProf = (db && db.profile) || storage.read('buddie-profile-data', {
+        name: 'Нур М.',
+        role: 'Аналитика данных',
+        course: '3-й курс',
+        university: 'Казанский федеральный университет',
+        skills: ['Python', 'SQL', 'Pandas', 'Tableau', 'Git'],
+        about: 'Студент 3-го курса КФУ, открыт к стажировкам.'
+      });
+
+      const skillsStr = Array.isArray(currentProf.skills) ? currentProf.skills.join(', ') : 'Python, SQL, Git';
+
+      openModal(
+        'Редактирование профиля студента',
+        '<div class="form-group" style="margin-bottom:12px;">' +
+          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>' +
+          '<input type="text" id="edit-profile-name" value="' + (currentProf.name || 'Нур М.') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom:12px;">' +
+          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>' +
+          '<input type="text" id="edit-profile-role" value="' + (currentProf.role || 'Frontend-разработчик') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom:12px;">' +
+          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>' +
+          '<input type="text" id="edit-profile-skills" value="' + skillsStr + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">О себе / Контакты:</label>' +
+          '<textarea id="edit-profile-about" style="width:100%;min-height:60px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' + (currentProf.about || 'Студент КФУ, открыт к стажировкам.') + '</textarea>' +
+        '</div>',
+        async (modal) => {
+          const name = modal.querySelector('#edit-profile-name')?.value.trim() || currentProf.name;
+          const role = modal.querySelector('#edit-profile-role')?.value.trim() || currentProf.role;
+          const rawSkills = modal.querySelector('#edit-profile-skills')?.value || '';
+          const skills = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
+          const about = modal.querySelector('#edit-profile-about')?.value.trim() || currentProf.about;
+
+          const updatedProfile = Object.assign({}, currentProf, { name, role, skills, about });
+
+          updateProfileDom(updatedProfile);
+          storage.write('buddie-profile-data', updatedProfile);
+          await api.updateState({ profile: updatedProfile });
+          announce('Изменения профиля успешно сохранены!');
+        },
+        'Сохранить изменения'
+      );
+    });
+  });
+}
+
+// Кнопка скачать резюме PDF
 document.querySelectorAll('.button').forEach(btn => {
   if (btn.textContent.includes('Скачать резюме')) {
     btn.addEventListener('click', () => {
@@ -684,78 +1610,7 @@ document.querySelectorAll('.button').forEach(btn => {
       setTimeout(() => window.print(), 300);
     });
   }
-  if (btn.textContent.includes('Редактировать профиль')) {
-    btn.addEventListener('click', () => {
-      openModal(
-        'Редактирование профиля студента',
-        `<div class="form-group">
-            <label>Специальность / Целевая роль:</label>
-            <input type="text" value="Frontend-разработчик" style="padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);">
-          </div>
-          <div class="form-group">
-            <label>Стек технологий (через запятую):</label>
-            <input type="text" value="React, TypeScript, CSS, Playwright" style="padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);">
-          </div>`,
-        () => announce('Изменения профиля успешно сохранены!'),
-        'Сохранить изменения'
-      );
-    });
-  }
 });
-
-document.querySelectorAll('.data-table tr').forEach(row => {
-  const btn = row.querySelector('.button');
-  if (btn && btn.textContent.trim() === 'Принять') {
-    btn.addEventListener('click', () => {
-      btn.textContent = '✓ Принято';
-      btn.classList.add('button--soft');
-      btn.disabled = true;
-      const statusBadge = row.querySelector('.status-badge');
-      if (statusBadge) {
-        statusBadge.textContent = 'Оффер принят';
-        statusBadge.className = 'status-badge status-badge--success';
-      }
-      announce('Поздравляем! Вы приняли оффер компании!');
-    });
-  }
-  if (btn && btn.textContent.includes('Чат с HR')) {
-    btn.addEventListener('click', () => {
-      const company = row.querySelector('strong')?.textContent.trim() || 'HR';
-      openModal(
-        `Чат с рекрутером ${company}`,
-        `<p>Задайте интересующие вопросы рекрутеру или согласуйте дату старта.</p>
-          <div class="form-group">
-            <textarea placeholder="Здравствуйте! Уточните, пожалуйста, необходимые документы..."></textarea>
-          </div>`,
-        () => announce('Сообщение отправлено рекрутеру!'),
-        'Отправить'
-      );
-    });
-  }
-  if (btn && btn.textContent.includes('Выбрать время')) {
-    btn.addEventListener('click', () => {
-      openModal(
-        'Выбор слота интервью',
-        `<p>Выберите удобное время для онлайн-встречи с командой:</p>
-          <div class="form-group">
-            <select id="interview-time-slot">
-              <option>Завтра, 14:00 (МСК)</option>
-              <option>Завтра, 16:30 (МСК)</option>
-              <option>Пятница, 11:00 (МСК)</option>
-            </select>
-          </div>`,
-        (modal) => {
-          const slot = modal.querySelector('#interview-time-slot').value;
-          btn.textContent = '✓ ' + slot.split(',')[0];
-          btn.classList.add('button--soft');
-          announce(`Интервью успешно назначено: ${slot}!`);
-        },
-        'Подтвердить встречу'
-      );
-    });
-  }
-});
-
 
 // ==========================================
 // 12. Табы в профиле студента
@@ -766,12 +1621,13 @@ function initProfileTabs() {
   if (!tabBtns.length) return;
 
   tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const target = btn.dataset.tab;
       tabBtns.forEach(b => b.classList.toggle('is-active', b === btn));
       tabPanes.forEach(pane => {
         const match = pane.id === 'pane-' + target;
-        pane.style.display = match ? 'block' : 'none';
+        pane.style.display = match ? '' : 'none';
         if (match && typeof anime !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
           anime({
             targets: pane,
@@ -782,6 +1638,10 @@ function initProfileTabs() {
           });
         }
       });
+
+      if (target === 'saved') {
+        renderSavedJobsInProfile();
+      }
     });
   });
 
@@ -796,7 +1656,9 @@ async function renderSavedJobsInProfile() {
   if (!container) return;
 
   const db = await api.getDb();
-  const savedIds = (db && db.savedJobs) || [...savedJobs];
+  const localSaved = storage.readArray('buddie-saved-jobs');
+  const serverSaved = (db && Array.isArray(db.savedJobs)) ? db.savedJobs : [];
+  const savedIds = [...new Set([...localSaved, ...serverSaved])];
 
   if (countBadge) countBadge.textContent = savedIds.length;
   if (badgeRating) badgeRating.textContent = savedIds.length + ' вакансий';
@@ -809,71 +1671,33 @@ async function renderSavedJobsInProfile() {
 
   if (emptyMsg) emptyMsg.style.display = 'none';
 
-  const allJobs = (db && db.jobs) || [];
+  const allJobs = (db && db.jobs && db.jobs.length > 0) ? db.jobs : DEFAULT_JOBS;
   const savedItems = allJobs.filter(j => savedIds.includes(j.id));
 
-  container.innerHTML = savedItems.map(j => `
-    <article class="card job-card" data-job-id="${j.id}" style="margin:0;">
-      <div class="job-card__top">
-        <div class="job-card__company">
-          <div class="company-logo ${j.companyLogoClass || 'company-logo--yandex'}">${j.companyLetter || 'Я'}</div>
-          <div>
-            <div class="company-name">${j.company}</div>
-            <div class="company-rating">${j.rating || ''}</div>
-          </div>
-        </div>
-        <span class="match-badge">${j.matchScore || '90%'}</span>
-      </div>
-      <div class="job-card__title-row">
-        <h3 class="job-card__title">${j.title}</h3>
-        <div class="job-card__salary">${j.salary || ''}</div>
-      </div>
-      <p class="job-card__description">${j.description || ''}</p>
-      <div class="job-card__footer">
-        <span class="job-card__response">${j.responseBadge || '● Быстрый отклик'}</span>
-        <div class="job-card__actions">
-          <button class="button button--small" type="button" data-job-action="apply" aria-pressed="false">
-            ↗ Откликнуться
-          </button>
-        </div>
-      </div>
-    </article>
-  `).join('');
+  container.innerHTML = savedItems.map(j => createJobCardHtml(j)).join('');
+  container.querySelectorAll('[data-job-id]').forEach(card => bindJobCard(card));
 }
 
-// ==========================================
-// 13. Инициализация
-// ==========================================
-const savedUniversity = storage.readString('buddie-university', '');
-document.querySelectorAll('.header__select select').forEach(select => {
-  if (savedUniversity && [...select.options].some(option => option.value === savedUniversity)) {
-    select.value = savedUniversity;
+// Загрузка сохранённого профиля
+const cachedProf = storage.read('buddie-profile-data', null);
+if (cachedProf) {
+  updateProfileDom(cachedProf);
+}
+api.getDb().then(db => {
+  if (db && db.profile) {
+    updateProfileDom(db.profile);
   }
-  select.addEventListener('change', () => {
-    storage.write('buddie-university', select.value);
-    announce('Университет сохранён в этом браузере.');
-  });
 });
+initProfileEdit();
 
-document.querySelectorAll('.hr-topbar__company select').forEach(select => {
-  const savedCompany = storage.readString('buddie-hr-company', '');
-  if (savedCompany && [...select.options].some(option => option.value === savedCompany)) {
-    select.value = savedCompany;
-  }
-  select.addEventListener('change', () => {
-    storage.write('buddie-hr-company', select.value);
-    announce('Компания сохранена в этом браузере.');
-  });
-});
-
-document.querySelectorAll('.table-scroll').forEach(scroller => {
-  scroller.addEventListener('keydown', event => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    scroller.scrollLeft += event.key === 'ArrowRight' ? 96 : -96;
-    event.preventDefault();
-  });
-});
-
-updateSearch('');
-playEntranceAnimations();
 initProfileTabs();
+
+// Phase 3 initialization
+updateLiveDates();
+const currentUni = storage.read('buddie-university', 'kfu');
+document.querySelectorAll('.header__select select').forEach(s => { s.value = currentUni; });
+updateTargetUniversityBadges(currentUni);
+updateFeedCounters();
+
+loadInitialData();
+updateSearch(searchTerm);

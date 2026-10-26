@@ -11,10 +11,11 @@
 .student-card__progress-head strong { color: #6e35b1; font-size: 12px; }
 .student-card .progress-track { background: #eeeaf2; }
 .profile-tabs { display: flex; gap: 20px; overflow-x: auto; border-bottom: 1px solid #e6e1eb; }
-.profile-tabs a { position: relative; min-height: 40px; display: inline-flex; align-items: center; flex: 0 0 auto; padding: 0 0 9px; color: #5B6474; font-size: 12px; }
-.profile-tabs a.is-active { color: #7038b5; font-weight: 700; }
-.profile-tabs a.is-active::after { content: ''; position: absolute; inset: auto 0 -1px; height: 2px; background: #8b50dc; }
-.profile-tabs span { margin-left: 4px; padding: 2px 5px; border-radius: 6px; color: #7943bf; background: #f1e8fc; }
+.profile-tabs a, .profile-tab-btn { position: relative; min-height: 40px; display: inline-flex; align-items: center; flex: 0 0 auto; padding: 0 0 9px; color: #5B6474; font-size: 13px; font-family: inherit; background: none; border: none; cursor: pointer; }
+.profile-tabs a:focus-visible, .profile-tab-btn:focus-visible { outline: 2px solid var(--color-primary, #6C5CE7); outline-offset: 2px; border-radius: 4px; }
+.profile-tabs a.is-active, .profile-tab-btn.is-active { color: #7038b5; font-weight: 700; }
+.profile-tabs a.is-active::after, .profile-tab-btn.is-active::after { content: ''; position: absolute; inset: auto 0 -1px; height: 2px; background: #8b50dc; }
+.profile-tabs span, .profile-tab-count { margin-left: 6px; padding: 2px 6px; border-radius: 6px; color: #7943bf; background: #f1e8fc; font-size: 11px; font-weight: 600; }
 .profile-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
 .profile-applications { overflow: hidden; }
 .profile-applications__head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 9px; }
@@ -23,7 +24,7 @@
 .profile-controls { display: flex; gap: 8px; padding: 0 14px 10px; }
 .profile-controls .search-field { flex: 1; }
 .profile-controls select { width: 100px; min-height: 40px; border: 1px solid #e9e6ed; border-radius: 9px; background: white; color: #5B6474; font-size: 12px; }
-.table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
+.table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; box-shadow: inset -12px 0 12px -8px rgba(15, 11, 30, 0.15); border-radius: var(--radius-md); }
 .data-table { width: 100%; min-width: 720px; border-collapse: collapse; text-align: left; }
 .data-table th { padding: 8px 10px; color: #5B6474; background: #faf9fc; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .data-table td { padding: 9px 10px; border-top: 1px solid #f0edf3; font-size: 12px; white-space: nowrap; }
@@ -105,4 +106,335 @@
 
 .tab-pane {
   transition: opacity 0.2s ease;
+}
+
+
+/* Student resume contacts & about on screen */
+.student-card__contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.student-card__about {
+  margin: 6px 0 0;
+  color: var(--color-text-main);
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+/* ==========================================
+   Resume Print Stylesheet (BUG-08 / Task 2.3)
+   ========================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 1. Hide the entire application shell, navigation, modals, and extraneous UI */
+  .sidebar,
+  .header,
+  .page-heading,
+  .profile-tabs,
+  .profile-controls,
+  .profile-tip,
+  .profile-metrics,
+  #pane-saved,
+  .profile-footnote,
+  .app-toast,
+  .modal-backdrop,
+  .button,
+  button,
+  [data-edit-profile-btn],
+  .student-card__progress,
+  .data-table th:last-child,
+  .data-table td:last-child,
+  .profile-side {
+    display: none !important;
+  }
+
+  /* 2. Reset containers to full page flow */
+  .page-shell,
+  .app-main,
+  .content,
+  .profile-layout,
+  .profile-main {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* 3. Resume Header: Student Card */
+  .student-card {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding: 0 0 16px 0 !important;
+    margin-bottom: 20px !important;
+    border: none !important;
+    border-bottom: 2px solid #E5E7EB !important;
+    background: transparent !important;
+  }
+
+  .student-card__avatar {
+    width: 54px !important;
+    height: 54px !important;
+    flex: 0 0 54px !important;
+    font-size: 18px !important;
+    border: 2px solid #7C3AED !important;
+    color: #7C3AED !important;
+    background: #F5F3FF !important;
+    border-radius: 50% !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .student-card__identity {
+    flex: 1 !important;
+  }
+
+  .student-card__identity h2 {
+    font-size: 20pt !important;
+    font-weight: 800 !important;
+    margin: 0 0 4px !important;
+    color: #111827 !important;
+  }
+
+  .student-card__identity p {
+    font-size: 11pt !important;
+    color: #4B5563 !important;
+    margin: 0 0 4px !important;
+  }
+
+  .student-card__identity small {
+    display: inline-block !important;
+    font-size: 10.5pt !important;
+    color: #6D28D9 !important;
+    font-weight: 700 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .student-card__contacts {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    font-size: 10pt !important;
+    color: #4B5563 !important;
+    margin-top: 6px !important;
+  }
+
+  .student-card__about {
+    display: block !important;
+    font-size: 10.5pt !important;
+    color: #1F2937 !important;
+    margin-top: 8px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* 4. Skills & Focus Section */
+  #pane-stack.tab-pane {
+    display: block !important;
+    opacity: 1 !important;
+    margin-bottom: 22px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    page-break-inside: avoid;
+  }
+
+  #pane-stack h2 {
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    border-bottom: 1.5px solid #E5E7EB !important;
+    padding-bottom: 6px !important;
+    margin: 0 0 12px 0 !important;
+    color: #111827 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stack-focus {
+    background: #F9FAFB !important;
+    border: 1px solid #E5E7EB !important;
+    border-radius: 6px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .stack-focus small {
+    color: #6B7280 !important;
+    font-size: 8.5pt !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+  }
+
+  .stack-focus strong {
+    font-size: 11pt !important;
+    color: #111827 !important;
+  }
+
+  .stack-focus__chips .chip {
+    display: inline-block !important;
+    padding: 2px 8px !important;
+    font-size: 9pt !important;
+    border-radius: 4px !important;
+    border: 1px solid #D1D5DB !important;
+    background: #FFFFFF !important;
+    color: #374151 !important;
+  }
+
+  .skill-list {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin: 12px 0 !important;
+  }
+
+  .skill {
+    display: inline-flex !important;
+    align-items: center !important;
+    background: #F3F4F6 !important;
+    border: 1px solid #E5E7EB !important;
+    border-radius: 6px !important;
+    padding: 5px 12px !important;
+    font-size: 10pt !important;
+    font-weight: 600 !important;
+    color: #1F2937 !important;
+  }
+
+  .skill__bars {
+    display: none !important;
+  }
+
+  /* 5. Experience / Applications Section */
+  #pane-applications.tab-pane,
+  .profile-applications {
+    display: block !important;
+    opacity: 1 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    page-break-inside: avoid;
+  }
+
+  .profile-applications__head {
+    padding: 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .profile-applications__head h2 {
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    border-bottom: 1.5px solid #E5E7EB !important;
+    padding-bottom: 6px !important;
+    margin: 0 0 4px 0 !important;
+    color: #111827 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .profile-applications__head p,
+  .profile-applications__head .company-rating,
+  .profile-applications__foot {
+    display: none !important;
+  }
+
+  .table-scroll {
+    overflow: visible !important;
+  }
+
+  .data-table {
+    width: 100% !important;
+    min-width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .data-table th {
+    background: #F9FAFB !important;
+    color: #4B5563 !important;
+    border-bottom: 2px solid #E5E7EB !important;
+    padding: 8px 10px !important;
+    font-size: 9pt !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .data-table td {
+    border-top: 1px solid #E5E7EB !important;
+    padding: 9px 10px !important;
+    font-size: 10pt !important;
+    color: #1F2937 !important;
+    white-space: normal !important;
+  }
+
+  .application-company strong {
+    font-size: 10.5pt !important;
+    color: #111827 !important;
+  }
+
+  .application-company small {
+    font-size: 9pt !important;
+    color: #6B7280 !important;
+  }
+
+  .status-badge {
+    display: inline-block !important;
+    border: 1px solid #D1D5DB !important;
+    background: #FFFFFF !important;
+    color: #374151 !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+  }
+
+  .status-badge--success {
+    border-color: #10B981 !important;
+    color: #065F46 !important;
+    background: #ECFDF5 !important;
+  }
+
+  .status-badge--purple {
+    border-color: #8B5CF6 !important;
+    color: #5B21B6 !important;
+    background: #F5F3FF !important;
+  }
+
+  .status-badge--warning {
+    border-color: #F59E0B !important;
+    color: #92400E !important;
+    background: #FFFBEB !important;
+  }
+
+  .status-badge--danger {
+    border-color: #EF4444 !important;
+    color: #991B1B !important;
+    background: #FEF2F2 !important;
+  }
 }

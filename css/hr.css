@@ -27,7 +27,7 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .hr-candidate-search:focus { outline: 3px solid #8b50dc; outline-offset: 2px; }
 .hr-actions select { min-height: 40px; padding: 0 10px; border: 1px solid #e8e3ed; border-radius: 9px; background: white; color: #5B6474; font-size: 12px; }
 .candidate-panel { overflow: hidden; }
-.candidate-panel .table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
+.candidate-panel .table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; box-shadow: inset -12px 0 12px -8px rgba(15, 11, 30, 0.15); border-radius: var(--radius-md); }
 .candidate-panel__head { display: flex; align-items: center; justify-content: space-between; padding: 18px; }
 .candidate-panel__head h2 { margin: 0; font-size: 14px; }
 .candidate-panel__head span { color: #5B6474; font-size: 12px; }
