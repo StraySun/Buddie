@@ -4,13 +4,15 @@
 
 ---
 
-## 1. Состав специализированных агентов («Тройка»)
+## 1. Состав специализированных ролей и навыков
 
 | Агент / Навык | Название типа | Назначение | Ключевые файлы |
 | :--- | :--- | :--- | :--- |
-| **Backend & Data Architect** | `backend-specialist` | REST API в `server.js`, схемы и валидация `data/db.json`, защита UTF-8 на Windows | [SKILL.md](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/.agents/skills/backend-data-agent/SKILL.md), `server.js`, `data/db.json` |
-| **UI/UX & Design Tokens Specialist** | `frontend-specialist` | Семантическая вёрстка HTML5, дизайн-токены в `css/variables.css`, WCAG AA доступность, SVG-иконки, нулевой оверфлоу | [SKILL.md](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/.agents/skills/ui-frontend-specialist/SKILL.md), `css/`, `*.html` |
-| **Autonomous QA & Regression Specialist** | `qa-specialist` | Сквозные e2e тесты Playwright (28 сценариев), адаптивность (320px, 375px, 1440px), устойчивость к сбоям `localStorage` | [SKILL.md](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/.agents/skills/qa-testing/SKILL.md), `tests/app.spec.js`, `playwright.config.js` |
+| **Backend & Data Architect** | `backend-data-agent` | REST API в `server.js`, схемы и валидация `data/db.json`, защита UTF-8 на Windows | `server.js`, `data/db.json` |
+| **Data Contract Validator** | `data-contract-validator` | Атомарная запись `temp -> rename`, ссылочная целостность (Application <-> Candidate), Zero Data Loss | `server.js`, `data/db.json` |
+| **UI/UX & Design Tokens** | `ui-frontend-specialist` | Семантическая вёрстка HTML5, токен-архитектура, WCAG AA доступность, SVG-спрайты | `css/variables.css`, `css/*.css`, `*.html` |
+| **Design System Guardian** | `design-system-guardian` | Контроль запрета хардкодных цветов, тач-таргеты 44×44px, фокус-ринги, Zero Horizontal Overflow | `css/`, `*.html` |
+| **Fast QA & Regression Pilot** | `qa-testing` | Двухуровневый контур верификации, таргетированные спеки Playwright, 33 E2E сценария | `tests/app.spec.js`, `playwright.config.js` |
 
 ---
 
@@ -18,38 +20,43 @@
 
 ```
 .agents/
-├── _archive/                      # Локальный архив дублирующихся навыков ui-ux-pro-max
-│   ├── banner-design/             # (сохранены локально, но не перегружают контекст)
-│   ├── brand/
-│   ├── design/
-│   ├── design-system/
-│   ├── slides/
-│   ├── ui-styling/
-│   └── ui-ux-pro-max/
+├── _archive/                      # Локальный архив (игнорируется в git через .gitignore)
 ├── skills/                        # Активные навыки, регистрируемые средой
 │   ├── backend-data-agent/
+│   ├── data-contract-validator/
 │   ├── ui-frontend-specialist/
+│   ├── design-system-guardian/
 │   └── qa-testing/
 └── README.md                      # Данный документ
 ```
 
 ---
 
-## 3. Гибридный режим работы (Hybrid Orchestration)
+## 3. Двухуровневый контур верификации (Self-Healing Loop)
 
-1. **Повседневные задачи**: Выполняются основным агентом в текущем диалоге с автоматическим использованием правил из `skills/`.
-2. **Изолированные / тяжёлые задачи**: Основной агент может вызвать специализированного субагента через инструмент `invoke_subagent`:
-   - `backend-specialist` — для миграции базы данных или добавления новых REST-эндпоинтов.
-   - `frontend-specialist` — для редизайна страниц и аудита контрастности.
-   - `qa-specialist` — для полного регрессионного прогона тестов и фиксации скриншотов.
+Для максимальной скорости обратной связи и экономии токенов под Gemini 3.8 Flash:
+
+```
+[Агент вносит изменение]
+         │
+         ▼
+[Tier 1: Pre-flight Syntax Check (< 100 мс)]
+npm run lint:syntax (node --check js/app.js && node --check server.js)
+         │
+         ▼
+[Tier 2: Targeted Playwright Spec (1-3 сек)]
+npm run test:fast -- -g "название сценария"
+         │
+         ▼
+[Tier 3: Full Regression Sweep (перед сдачей задачи)]
+npm test (33 теста Playwright)
+```
 
 ---
 
 ## 4. Защита от сбоев под Gemini 3.8 Flash
 
-1. **Таргетированные тесты**: Вместо тяжелых полных прогонов используется запуск по имени:
-   ```bash
-   npx playwright test -g "название теста"
-   ```
-2. **Windows UTF-8**: Исключено повреждение кириллицы при работе с файлами (строгое указание кодировки `'utf8'` в Node.js).
+1. **Atomic Write**: Все мутации `data/db.json` идут через временный файл `db.json.tmp` и `fs.renameSync()`.
+2. **Windows UTF-8**: Исключено повреждение кириллицы при работе с файлами (строгое указание `'utf8'`).
 3. **Безопасные селекторы**: Исключены проверки динамически меняющегося текста в фильтрах локаторов Playwright.
+4. **Git Hygiene**: Каталог `_archive/` и тестовые логи скрыты в `.gitignore`, сохраняя чистоту вывода `git status`.

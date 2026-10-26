@@ -4,14 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node ./scripts/static-server.js",
+    "dev": "node server.js",
+    "lint:syntax": "node --check js/app.js && node --check server.js",
+    "pretest": "npm run lint:syntax",
     "test": "playwright test",
+    "test:fast": "playwright test -g",
     "test:install": "playwright install chromium"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.64.0"
+    "@playwright/test": "^1.64.0",
+    "potrace": "^2.1.8"
   }
 }

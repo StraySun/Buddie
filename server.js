@@ -1,4 +1,4 @@
-﻿const http = require('http');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
@@ -26,10 +26,15 @@ function readDb() {
 }
 
 function writeDb(data) {
+  const tmpPath = DB_PATH + '.tmp';
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+    fs.renameSync(tmpPath, DB_PATH);
   } catch (err) {
-    console.error('Error writing db:', err);
+    console.error('Error atomically writing db:', err);
+    try {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    } catch {}
   }
 }
 
@@ -89,9 +94,17 @@ const server = http.createServer(async (req, res) => {
       newJob.postedTime = '◷ Только что';
       newJob.rating = newJob.rating || '⭐ 5.0 · Новая аккредитация';
       newJob.matchScore = newJob.matchScore || '✧ 95% совпадение';
-      newJob.tags = newJob.tags || ['Стажировка', newJob.format === 'remote' ? 'Remote' : 'Hybrid'];
-      newJob.companyLetter = (newJob.company || 'К')[0].toUpperCase();
-      newJob.companyLogoClass = 'company-logo--yandex';
+      const formatTag = newJob.format === 'remote' ? 'Remote' : (newJob.format === 'office' ? 'Office' : 'Hybrid');
+      newJob.specialty = newJob.specialty || (/ml|frontend|python|java|backend|developer|разработ/i.test(newJob.title || '') ? 'development' : 'analysis');
+      newJob.tags = newJob.tags || ['Стажировка', formatTag, newJob.specialty === 'development' ? 'Dev' : 'Data'];
+      newJob.company = newJob.company || 'ООО Партнёр КФУ';
+      newJob.companyLetter = newJob.companyLetter || (newJob.company || 'П')[0].toUpperCase();
+      newJob.companyLogoClass = newJob.companyLogoClass || 'company-logo--yandex';
+      newJob.responseBadge = '● Новая стажировка';
+      newJob.targetUniversity = newJob.targetUniversity || db.university || 'kfu';
+      newJob.location = newJob.location || '⌖ Казань / Удалённо';
+      newJob.workload = newJob.workload || '▣ 20–30 ч/неделю';
+      newJob.description = newJob.description || 'Новая стажировка, созданная HR-специалистом для студентов университета.';
       
       db.jobs = db.jobs || [];
       db.jobs.unshift(newJob);
@@ -118,12 +131,22 @@ const server = http.createServer(async (req, res) => {
       // Проверяем, откликались ли уже
       const existing = db.applications.find(a => a.jobId === app.jobId);
       if (!existing) {
+        const comp = app.company || 'Компания';
+        const compLower = comp.toLowerCase();
+        const logoLetter = compLower.includes('vk') ? 'VK' : comp[0].toUpperCase();
+        const logoClass = compLower.includes('yandex') ? 'company-logo--yandex' :
+                          compLower.includes('sber') ? 'company-logo--sber' :
+                          compLower.includes('vk') ? 'company-logo--vk' : 'company-logo--tbank';
+
         const newApp = {
           id: 'app-' + Date.now(),
           jobId: app.jobId,
           title: app.title || 'Стажёр',
-          company: app.company || 'Компания',
-          appliedDate: 'Только что',
+          company: comp,
+          companyLetter: logoLetter,
+          companyLogoClass: logoClass,
+          location: app.location || 'Москва · Hybrid',
+          appliedDate: 'Сегодня, только что',
           status: 'На рассмотрении',
           statusClass: 'status-badge--warning',
           actionText: 'Чат с HR'
@@ -134,6 +157,7 @@ const server = http.createServer(async (req, res) => {
         // Автоматически создаём кандидата в кабинете HR!
         db.candidates.unshift({
           id: 'cand-' + Date.now(),
+          jobId: app.jobId,
           name: db.profile?.name || 'Нур М.',
           initials: 'НМ',
           avatarClass: '',
@@ -157,7 +181,42 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 5. POST & DELETE /api/saved-jobs
+    if (reqPath.startsWith('/api/applications/') && req.method === 'DELETE') {
+      const targetId = reqPath.split('/api/applications/')[1];
+      db.applications = (db.applications || []).filter(a => a.id !== targetId && a.jobId !== targetId);
+      db.appliedJobs = (db.appliedJobs || []).filter(id => id !== targetId);
+      db.candidates = (db.candidates || []).filter(c => c.id !== targetId && c.jobId !== targetId);
+      writeDb(db);
+      res.writeHead(200);
+      res.end(JSON.stringify({ success: true, applications: db.applications }));
+      return;
+    }
+
+    // 5. GET & PUT /api/candidates - Кандидаты для HR
+    if (reqPath === '/api/candidates' && req.method === 'GET') {
+      res.writeHead(200);
+      res.end(JSON.stringify(db.candidates || []));
+      return;
+    }
+
+    if (reqPath.startsWith('/api/candidates/') && req.method === 'PUT') {
+      const candId = reqPath.split('/api/candidates/')[1];
+      const update = await parseBody(req);
+      db.candidates = db.candidates || [];
+      const candidate = db.candidates.find(c => c.id === candId);
+      if (candidate) {
+        Object.assign(candidate, update);
+        writeDb(db);
+        res.writeHead(200);
+        res.end(JSON.stringify(candidate));
+      } else {
+        res.writeHead(404);
+        res.end(JSON.stringify({ error: 'Candidate not found' }));
+      }
+      return;
+    }
+
+    // 6. POST & DELETE /api/saved-jobs
     if (reqPath === '/api/saved-jobs' && req.method === 'POST') {
       const { jobId } = await parseBody(req);
       db.savedJobs = db.savedJobs || [];
@@ -177,7 +236,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 6. PUT /api/state - Обновление вуза / профиля
+    // 7. PUT /api/state - Обновление вуза / профиля
     if (reqPath === '/api/state' && req.method === 'PUT') {
       const stateUpdate = await parseBody(req);
       Object.assign(db, stateUpdate);
@@ -187,7 +246,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 7. PUT /api/applications/:id - Обновление статуса заявки
+    // 8. PUT /api/applications/:id - Обновление статуса заявки
     if (reqPath.startsWith('/api/applications/') && req.method === 'PUT') {
       const appId = reqPath.split('/api/applications/')[1];
       const update = await parseBody(req);
