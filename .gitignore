@@ -1,3 +1,6 @@
 node_modules/
 test-results/
 playwright-report/
+.agents/_archive/
+.agents/scratch/
+*.tmp
