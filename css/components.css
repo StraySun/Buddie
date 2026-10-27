@@ -193,19 +193,23 @@ select option {
 
 /* Header select custom styling */
 .header__select {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: 42px;
+  height: 42px;
   max-width: 240px;
   min-width: 170px;
-  padding: 5px 12px;
+  padding: 0;
   border: 1px solid #E9D5FF;
   border-radius: var(--radius-md, 10px);
   background-color: #FFFFFF;
   color: var(--color-text-main, #1F2937);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
   cursor: pointer;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .header__select:hover {
   border-color: #C084FC;
@@ -215,19 +219,29 @@ select option {
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
 }
 .header__select small {
+  position: absolute;
+  top: 5px;
+  left: 12px;
+  margin: 0;
   display: block;
-  margin-bottom: 2px;
   color: #7C3AED;
   font-size: 10px;
   font-weight: 700;
   line-height: 1.1;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
 }
 .header__select select {
-  width: 100%;
-  min-width: 0;
-  padding: 0 20px 0 0;
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  padding: 16px 26px 4px 12px;
+  margin: 0;
   border: 0;
   outline: none;
   color: var(--color-text-main, #1F2937);
@@ -240,10 +254,12 @@ select option {
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237C3AED' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0 center;
+  background-position: right 10px center;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  box-sizing: border-box;
+  z-index: 1;
 }
 .header__select select:focus {
   outline: none;

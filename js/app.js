@@ -830,6 +830,24 @@ document.querySelectorAll('.header__select select').forEach(sel => {
   });
 });
 
+document.querySelectorAll('.header__select').forEach(wrapper => {
+  wrapper.addEventListener('click', (e) => {
+    const sel = wrapper.querySelector('select');
+    if (!sel) return;
+    if (e.target !== sel) {
+      if (typeof sel.showPicker === 'function') {
+        try {
+          sel.showPicker();
+        } catch {
+          sel.focus();
+        }
+      } else {
+        sel.focus();
+      }
+    }
+  });
+});
+
 document.querySelectorAll('[data-companies-reset]').forEach(button => button.addEventListener('click', () => {
   const searchInput = document.querySelector('.header__search input');
   if (searchInput) {

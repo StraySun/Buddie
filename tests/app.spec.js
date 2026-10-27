@@ -998,4 +998,25 @@ test('applied search filters are prominently highlighted, synchronized with chip
   await appStatusSelect.selectOption('all');
   await expect(appStatusSelect).not.toHaveClass(/filter-pill--active/);
   await expect(appStatusSelect).toHaveAttribute('data-active-filter', 'false');
+
+  // 10. Проверяем, что выбор университета кликабелен по всей своей площади
+  await page.goto('/index.html');
+  const uniWrapper = page.locator('.header__select');
+  const uniSelect = page.locator('.header__select select');
+  const uniSmall = page.locator('.header__select small');
+
+  // Надпись «УНИВЕРСИТЕТ» пропускает клики сквозь себя на select
+  const smallPointerEvents = await uniSmall.evaluate(el => getComputedStyle(el).pointerEvents);
+  expect(smallPointerEvents).toBe('none');
+
+  // select занимает 100% площади контейнера
+  const wrapBox = await uniWrapper.boundingBox();
+  const selBox = await uniSelect.boundingBox();
+  expect(selBox.width).toBeGreaterThanOrEqual(wrapBox.width - 2);
+  expect(selBox.height).toBeGreaterThanOrEqual(wrapBox.height - 2);
+
+  // Клик в верхний левый угол плашки (зона заголовка) активирует выбор
+  await uniWrapper.click({ position: { x: 8, y: 6 } });
+  await uniSelect.selectOption('hse');
+  await expect(uniSelect).toHaveValue('hse');
 });
