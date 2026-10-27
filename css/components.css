@@ -3,7 +3,23 @@
 .button:hover { background: linear-gradient(135deg,#8240e1,#6626ca); transform: translateY(-1px); }
 .button--outline { color: #5c4a78; background: white; border: 1px solid #e5dced; }
 .button--outline:hover { color: var(--color-primary); background: #fbf9ff; }
-.button--soft { color: #7139bc; background: #f2e9ff; }
+.button--soft {
+  color: #6d28d9;
+  background: #f3e8ff;
+  border: 1px solid #e9d5ff;
+}
+.button--soft:hover,
+.button--soft:focus-visible {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;
+  border-color: transparent !important;
+  transform: translateY(-1px);
+}
+.button--soft:hover svg,
+.button--soft:focus-visible svg {
+  color: #ffffff !important;
+  fill: currentColor !important;
+}
 .button--small { min-height: 40px; padding: 0 13px; font-size: 12px; }
 .button--full { width: 100%; }
 .chip { display: inline-flex; align-items: center; min-height: 26px; padding: 4px 10px; border-radius: var(--radius-pill); color: #694493; background: #f2e9ff; font-size: 12px; font-weight: 600; }
@@ -22,7 +38,12 @@
 .job-card__top,.job-card__title-row,.job-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .job-card__company { display: flex; align-items: center; gap: 9px; }
 .job-card__title-row { align-items: baseline; margin: 16px 0 10px; }
-.job-card__title { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.35; }
+.job-card__title { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.35; cursor: pointer; transition: color 0.15s ease; }
+.job-card__title:hover { color: #8b50dc; text-decoration: underline; }
+.job-card--highlighted {
+  box-shadow: 0 0 0 2px #8b50dc, 0 8px 24px rgba(139, 80, 220, 0.25) !important;
+  transition: box-shadow 0.3s ease;
+}
 .job-card__salary { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .job-card__tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .job-card__description { margin: 12px 0; color: #5B6474; font-size: 12px; line-height: 1.6; }

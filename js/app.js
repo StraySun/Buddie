@@ -384,13 +384,17 @@ function setJobButton(button, active, label, isSave) {
   button.setAttribute('aria-pressed', String(active));
   button.classList.toggle('button--soft', active);
 
-  let iconSvg = '';
-  if (typeof isSave === 'boolean') {
-    iconSvg = isSave ? (active ? ICONS.starFilled : ICONS.starOutline) : (active ? ICONS.check : ICONS.arrowUpRight);
-  } else {
-    const isSaveAction = button.dataset.jobAction === 'save';
-    iconSvg = isSaveAction ? (active ? ICONS.starFilled : ICONS.starOutline) : (active ? ICONS.check : ICONS.arrowUpRight);
-  }
+  const isSaveAction = typeof isSave === 'boolean' ? isSave : button.dataset.jobAction === 'save';
+  const iconSvg = isSaveAction ? (active ? ICONS.starFilled : ICONS.starOutline) : (active ? ICONS.check : ICONS.arrowUpRight);
+
+  button.setAttribute('title', active
+    ? (isSaveAction ? 'Удалить из сохранённых' : 'Отменить отклик')
+    : (isSaveAction ? 'Сохранить вакансию' : 'Откликнуться на вакансию')
+  );
+  button.setAttribute('aria-label', active
+    ? (isSaveAction ? 'Удалить вакансию из сохранённых' : 'Отменить отклик на вакансию')
+    : (isSaveAction ? 'Сохранить вакансию' : 'Откликнуться на вакансию')
+  );
 
   button.innerHTML = iconSvg + '<span>' + (label || '') + '</span>';
 }
@@ -729,11 +733,12 @@ const UNIVERSITY_PARTNERS = {
 
 function isJobTargetForUniversity(jobOrCard, uni) {
   if (!uni || uni === 'all') return false;
-  const id = typeof jobOrCard === 'string' ? jobOrCard : (jobOrCard.id || jobOrCard.dataset?.jobId);
+  const rawId = typeof jobOrCard === 'string' ? jobOrCard : (jobOrCard.dataset?.jobId || jobOrCard.id || '');
+  const id = rawId.replace(/^job-/, '');
   const target = jobOrCard.targetUniversity || jobOrCard.dataset?.targetUniversity;
   if (target && (target === uni || target === 'all')) return true;
   const list = UNIVERSITY_PARTNERS[uni] || [];
-  return list.includes(id);
+  return list.includes(id) || list.includes(rawId);
 }
 
 function updateTargetUniversityBadges(uni) {
@@ -834,7 +839,7 @@ function createJobCardHtml(j) {
       '<span class="match-badge">' + (j.matchScore || '✧ 95% совпадение') + '</span>' +
     '</div>' +
     '<div class="job-card__title-row">' +
-      '<h3 class="job-card__title">' + j.title + '</h3>' +
+      '<h3 class="job-card__title" role="button" tabindex="0" title="Подробнее о вакансии ' + j.title + '">' + j.title + '</h3>' +
       '<div class="job-card__salary">' + (j.salary || '') + '</div>' +
     '</div>' +
     '<div class="job-card__tags">' + tagsHtml + '</div>' +
@@ -869,6 +874,31 @@ function bindJobCard(card) {
   const title = card.querySelector('.job-card__title')?.textContent.trim() || 'Стажировка';
   const company = card.querySelector('.company-name')?.textContent.trim() || 'Компания';
   const location = card.querySelector('.job-card__meta span')?.textContent.trim() || 'Москва · Hybrid';
+
+  const titleEl = card.querySelector('.job-card__title');
+  if (titleEl && !titleEl._hasDetailClick) {
+    titleEl._hasDetailClick = true;
+    titleEl.style.cursor = 'pointer';
+    const showDetail = () => {
+      const dbJob = (window._currentJobs || DEFAULT_JOBS).find(j => j.id === id) || {
+        id, title, company, location,
+        salary: card.querySelector('.job-card__salary')?.textContent.trim() || '',
+        description: card.querySelector('.job-card__description')?.textContent.trim() || '',
+        rating: card.querySelector('.company-rating')?.textContent.trim() || '⭐ 4.8 · Аккредитованный партнёр',
+        matchScore: card.querySelector('.match-badge')?.textContent.trim() || '✧ 95% совпадение',
+        companyLetter: card.querySelector('.company-logo')?.textContent.trim() || company[0],
+        companyLogoClass: card.querySelector('.company-logo')?.className.split(' ').find(c => c.startsWith('company-logo--')) || 'company-logo--yandex'
+      };
+      openJobDetailsModal(dbJob);
+    };
+    titleEl.addEventListener('click', showDetail);
+    titleEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showDetail();
+      }
+    });
+  }
 
   card.querySelectorAll('[data-job-action]').forEach(button => {
     if (button._hasJobAction) return;
@@ -919,6 +949,7 @@ function renderJobsFeed(jobs) {
   if (!container) return;
 
   const jobList = Array.isArray(jobs) && jobs.length > 0 ? jobs : DEFAULT_JOBS;
+  window._currentJobs = jobList;
   container.innerHTML = jobList.map(j => createJobCardHtml(j)).join('');
 
   container.querySelectorAll('[data-job-id]').forEach(card => {
@@ -1194,6 +1225,174 @@ function renderCandidatesTable(candidates) {
   }
 
   updateSearch(searchTerm);
+}
+
+
+// ==========================================
+// 13. Обложка и детальный просмотр вакансии (Якоря #job-...)
+// ==========================================
+function openJobDetailsModal(j) {
+  if (!j) return;
+  const isSaveActive = savedJobs.has(j.id);
+  const isApplyActive = appliedJobs.has(j.id);
+  const tagsHtml = (j.tags || ['Стажировка', j.format === 'remote' ? 'Remote' : 'Hybrid']).map(t => '<span class="chip">' + t + '</span>').join('');
+
+  openModal(
+    'Обложка вакансии · ' + j.company,
+    '<div class="job-cover-modal">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div class="company-logo ' + (j.companyLogoClass || 'company-logo--yandex') + '">' + (j.companyLetter || j.company?.[0] || 'Я') + '</div>' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:15px;color:var(--color-text-main,#2d3748);">' + j.company + '</div>' +
+            '<div style="font-size:12px;color:#5B6474;">' + (j.rating || '⭐ 5.0 · Аккредитованная компания') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<span class="match-badge">' + (j.matchScore || '✧ 95% совпадение') + '</span>' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<h3 style="font-size:18px;font-weight:800;color:#1a202c;margin:0 0 4px;">' + j.title + '</h3>' +
+        '<div style="font-size:16px;font-weight:700;color:#8b50dc;">' + (j.salary || 'По договорённости') + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">' + tagsHtml + '</div>' +
+      '</div>' +
+      '<div style="background:#faf8fd;border:1px solid #f0eaf8;padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;line-height:1.6;color:#2d3748;">' +
+        '<div style="font-weight:700;margin-bottom:6px;color:#4a5568;">О стажировке и задачах:</div>' +
+        '<p style="margin:0;">' + (j.description || 'Приглашаем студентов присоединиться к нашей команде и получить реальный опыт работы над масштабными задачами.') + '</p>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;font-size:12px;color:#5B6474;margin-bottom:16px;background:#f7fafc;padding:10px 12px;border-radius:8px;">' +
+        '<div><strong style="display:block;color:#4a5568;">Локация:</strong>' + (j.location || '⌖ Москва') + '</div>' +
+        '<div><strong style="display:block;color:#4a5568;">Занятость:</strong>' + (j.workload || '▣ Гибкий график') + '</div>' +
+        '<div><strong style="display:block;color:#4a5568;">Формат:</strong>' + (j.format === 'remote' ? 'Удалённо' : (j.format === 'office' ? 'В офисе' : 'Гибридный')) + '</div>' +
+        '<div><strong style="display:block;color:#4a5568;">Публикация:</strong>' + (j.postedTime || '◷ Недавно') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">' +
+        '<button class="button button--outline" type="button" id="modal-save-btn">' + (isSaveActive ? '✓ В сохранённых' : '⭐ Сохранить') + '</button>' +
+        '<button class="button' + (isApplyActive ? ' button--soft' : '') + '" type="button" id="modal-apply-btn">' + (isApplyActive ? '✓ Отклик отмечен' : 'Откликнуться на стажировку') + '</button>' +
+      '</div>' +
+    '</div>',
+    null,
+    'Закрыть'
+  );
+
+  const newHash = '#job-' + j.id;
+  if (window.location.hash !== newHash) {
+    if (window.history && window.history.pushState) {
+      window.history.pushState(null, '', newHash);
+    }
+  }
+
+  setTimeout(() => {
+    const modalApply = document.querySelector('#modal-apply-btn');
+    const modalSave = document.querySelector('#modal-save-btn');
+    const card = document.querySelector('[data-job-id="' + j.id + '"]');
+
+    if (modalApply && card) {
+      modalApply.addEventListener('click', () => {
+        const cardApplyBtn = card.querySelector('[data-job-action="apply"]');
+        if (cardApplyBtn) {
+          cardApplyBtn.click();
+          setTimeout(() => {
+            const active = appliedJobs.has(j.id);
+            modalApply.textContent = active ? '✓ Отклик отмечен' : 'Откликнуться на стажировку';
+            modalApply.classList.toggle('button--soft', active);
+          }, 50);
+        }
+      });
+    }
+
+    if (modalSave && card) {
+      modalSave.addEventListener('click', () => {
+        const cardSaveBtn = card.querySelector('[data-job-action="save"]');
+        if (cardSaveBtn) {
+          cardSaveBtn.click();
+          setTimeout(() => {
+            const active = savedJobs.has(j.id);
+            modalSave.textContent = active ? '✓ В сохранённых' : '⭐ Сохранить';
+          }, 50);
+        }
+      });
+    }
+  }, 50);
+}
+
+function handleJobDeepLink() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const cleanId = hash.replace(/^#job-/, '').replace(/^#/, '');
+  if (!cleanId || cleanId === 'recommendations' || cleanId === 'applications' || cleanId === 'saved' || cleanId === 'stack' || cleanId === 'analytics' || cleanId === 'edit') return;
+
+  const card = document.querySelector('[data-job-id="' + cleanId + '"]') || document.querySelector('#job-' + cleanId);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('job-card--highlighted');
+    setTimeout(() => {
+      const dbJob = (window._currentJobs || DEFAULT_JOBS).find(j => j.id === cleanId) || {
+        id: cleanId,
+        title: card.querySelector('.job-card__title')?.textContent.trim() || 'Стажировка',
+        company: card.querySelector('.company-name')?.textContent.trim() || 'Компания',
+        location: card.querySelector('.job-card__meta span')?.textContent.trim() || 'Москва',
+        salary: card.querySelector('.job-card__salary')?.textContent.trim() || '',
+        description: card.querySelector('.job-card__description')?.textContent.trim() || '',
+        rating: card.querySelector('.company-rating')?.textContent.trim() || '⭐ 4.8 · Аккредитованный партнёр',
+        matchScore: card.querySelector('.match-badge')?.textContent.trim() || '✧ 95% совпадение',
+        companyLetter: card.querySelector('.company-logo')?.textContent.trim() || 'Я',
+        companyLogoClass: card.querySelector('.company-logo')?.className.split(' ').find(c => c.startsWith('company-logo--')) || 'company-logo--yandex'
+      };
+      openJobDetailsModal(dbJob);
+    }, 200);
+  }
+}
+
+// ==========================================
+// 14. Автосинхронизация HR-партнёра с базой
+// ==========================================
+function initHrAutoSync() {
+  const candTable = document.querySelector('.candidate-table');
+  if (!candTable) return;
+
+  let isSyncing = false;
+  let lastDataHash = '';
+
+  async function syncHrData() {
+    if (isSyncing || document.hidden) return;
+    isSyncing = true;
+    try {
+      const [cands, jobs] = await Promise.all([
+        ApiService.getCandidates(),
+        ApiService.getJobs()
+      ]);
+
+      if (Array.isArray(cands)) {
+        const dataHash = JSON.stringify(cands.map(c => [c.id, c.status, c.jobTitle, c.university]));
+        if (dataHash !== lastDataHash) {
+          lastDataHash = dataHash;
+          renderCandidatesTable(cands);
+        }
+      }
+
+      // Обновляем числовые метрики в hr.html
+      const metricNumbers = document.querySelectorAll('.hr-metric__number');
+      if (metricNumbers.length >= 4) {
+        if (Array.isArray(jobs) && jobs.length > 0) metricNumbers[0].textContent = jobs.length;
+        if (Array.isArray(cands)) {
+          metricNumbers[1].textContent = cands.length;
+          const interviews = cands.filter(c => c.status === 'interview' || (c.statusLabel && c.statusLabel.toLowerCase().includes('интервью'))).length;
+          metricNumbers[2].textContent = interviews;
+        }
+      }
+    } catch (e) {
+      console.warn('HR auto-sync error:', e);
+    } finally {
+      isSyncing = false;
+    }
+  }
+
+  // Периодическая проверка раз в 3.5 секунды
+  setInterval(syncHrData, 3500);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncHrData();
+  });
 }
 
 async function loadInitialData() {
@@ -1543,25 +1742,104 @@ if (postJobBtn) {
   });
 }
 
-// Профиль студента: редактирование и обновление
+// Профиль студента: форматирование имени, навыки и редактирование
+function formatShortName(fullName) {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  const first = parts[0];
+  const second = parts[1];
+  const initial = second.endsWith('.') ? second : (second[0].toUpperCase() + '.');
+  return `${first} ${initial}`;
+}
+
+function getInitials(fullName) {
+  if (!fullName) return 'НМ';
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'НМ';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function bindSkillBars(container) {
+  if (!container) return;
+  container.querySelectorAll('.skill').forEach(skillRow => {
+    const skillName = skillRow.dataset.skillName || skillRow.querySelector('span')?.textContent.trim();
+    if (!skillName) return;
+
+    skillRow.querySelectorAll('.skill__bars i').forEach(bar => {
+      if (bar._hasSkillAction) return;
+      bar._hasSkillAction = true;
+
+      const setLevel = async (level) => {
+        const cachedProf = storage.read('buddie-profile-data', {}) || {};
+        cachedProf.skillLevels = cachedProf.skillLevels || {};
+        cachedProf.skillLevels[skillName] = level;
+
+        // Синхронизируем уровень владения навыком во ВСЕХ блоках стека на странице (#pane-stack и #stack)
+        document.querySelectorAll('.skill').forEach(row => {
+          const rowSkillName = row.dataset.skillName || row.querySelector('span')?.textContent.trim();
+          if (rowSkillName === skillName) {
+            const bars = row.querySelectorAll('.skill__bars i');
+            bars.forEach((b, idx) => {
+              b.classList.toggle('is-filled', (idx + 1) <= level);
+            });
+            const barsGroup = row.querySelector('.skill__bars');
+            if (barsGroup) {
+              barsGroup.setAttribute('aria-label', `Уровень владения ${skillName}: ${level} из 4`);
+            }
+          }
+        });
+
+        storage.write('buddie-profile-data', cachedProf);
+        await api.updateState({ profile: cachedProf });
+        announce(`Уровень навыка ${skillName} изменён на ${level} из 4`);
+      };
+
+      bar.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const level = parseInt(bar.dataset.barLevel, 10) || 1;
+        setLevel(level);
+      });
+
+      bar.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const level = parseInt(bar.dataset.barLevel, 10) || 1;
+          setLevel(level);
+        }
+      });
+    });
+  });
+}
+
 function updateProfileDom(prof) {
   if (!prof) return;
 
-  // 1. Имя студента в карточке, шапке и сайдбаре
+  // 1. Имя студента в карточке, шапке и сайдбаре (с сокращением «Имя Ф.»)
   if (prof.name) {
-    document.querySelectorAll('.student-card__identity h2, .sidebar__user-name').forEach(el => {
+    const shortName = formatShortName(prof.name);
+    const initials = getInitials(prof.name);
+
+    document.querySelectorAll('.student-card__identity h2').forEach(el => {
       el.textContent = prof.name;
     });
+
+    document.querySelectorAll('.sidebar__user-name').forEach(el => {
+      el.textContent = shortName;
+    });
+
     const headerProf = document.querySelector('.header__profile');
     if (headerProf) {
       const course = prof.course || '3-й курс';
-      const initials = prof.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || 'НМ';
-      headerProf.innerHTML = `<span class="avatar">${initials}</span><span>${prof.name}<small>${course}</small></span>`;
+      headerProf.innerHTML = `<span class="avatar">${initials}</span><span>${shortName}<small>${course}</small></span>`;
     }
-    const avatarEl = document.querySelector('.student-card__avatar');
-    if (avatarEl) {
-      avatarEl.textContent = prof.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || 'НМ';
-    }
+
+    document.querySelectorAll('.student-card__avatar, .sidebar__user .avatar').forEach(avatarEl => {
+      avatarEl.textContent = initials;
+    });
   }
 
   // 2. Вуз и курс
@@ -1590,70 +1868,138 @@ function updateProfileDom(prof) {
     aboutEl.textContent = prof.about;
   }
 
-  // 4. Стек навыков
-  if (Array.isArray(prof.skills) && prof.skills.length > 0) {
-    document.querySelectorAll('.skill-list').forEach(skillList => {
-      skillList.innerHTML = prof.skills.map(s => {
-        return '<div class="skill"><span>' + s + '</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i></span></div>';
-      }).join('');
-    });
-  }
+  // 4. Стек навыков с интерактивными уровнями
+  const skills = Array.isArray(prof.skills) && prof.skills.length > 0
+    ? prof.skills
+    : ['Python', 'SQL', 'Figma', 'Git'];
+  const cachedProfData = storage.read('buddie-profile-data', {}) || {};
+  const skillLevels = (prof && prof.skillLevels) || cachedProfData.skillLevels || { 'Python': 4, 'SQL': 4, 'Figma': 2, 'Git': 3, 'Pandas': 4, 'Tableau': 3 };
+
+  document.querySelectorAll('.skill-list').forEach(skillList => {
+    const levelLabels = ['Базовый', 'Уверенный', 'Продвинутый', 'Эксперт'];
+    skillList.innerHTML = skills.map(skill => {
+      const level = (skillLevels && typeof skillLevels[skill] === 'number') ? skillLevels[skill] : (skillLevels[skill] || 4);
+      let barsHtml = '';
+      for (let i = 1; i <= 4; i++) {
+        const isFilled = i <= level ? ' is-filled' : '';
+        barsHtml += `<i class="${isFilled}" data-bar-level="${i}" role="button" tabindex="0" aria-label="${skill}: уровень ${i} из 4 (${levelLabels[i-1]})" title="${skill}: ${levelLabels[i-1]} (${i}/4)"></i>`;
+      }
+      return `<div class="skill" data-skill-name="${skill}"><span>${skill}</span><span class="skill__bars" role="group" aria-label="Уровень владения ${skill}: ${level} из 4">${barsHtml}</span></div>`;
+    }).join('');
+
+    bindSkillBars(skillList);
+  });
+}
+
+async function openProfileEditModal() {
+  const db = await api.getDb();
+  const currentProf = (db && db.profile) || storage.read('buddie-profile-data', {
+    name: 'Нур М.',
+    role: 'Аналитика данных',
+    course: '3-й курс',
+    university: 'Казанский федеральный университет',
+    skills: ['Python', 'SQL', 'Pandas', 'Tableau', 'Git'],
+    about: 'Студент 3-го курса КФУ, открыт к стажировкам.'
+  });
+
+  const skillsStr = Array.isArray(currentProf.skills) ? currentProf.skills.join(', ') : 'Python, SQL, Git';
+
+  openModal(
+    'Редактирование профиля студента',
+    '<div class="form-group" style="margin-bottom:12px;">' +
+      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>' +
+      '<input type="text" id="edit-profile-name" value="' + (currentProf.name || 'Нур М.') + '" placeholder="Например: Иван Иванов" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+      '<small style="display:block;margin-top:3px;font-size:11px;color:#718096;">В меню и шапке будет автоматически сокращаться до формата «Имя Ф.»</small>' +
+    '</div>' +
+    '<div class="form-group" style="margin-bottom:12px;">' +
+      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>' +
+      '<input type="text" id="edit-profile-role" value="' + (currentProf.role || 'Frontend-разработчик') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+    '</div>' +
+    '<div class="form-group" style="margin-bottom:12px;">' +
+      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>' +
+      '<input type="text" id="edit-profile-skills" value="' + skillsStr + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+      '<small style="display:block;margin-top:3px;font-size:11px;color:#718096;">Уровни владения технологиями можно интерактивно кликать в блоке стека профиля</small>' +
+    '</div>' +
+    '<div class="form-group">' +
+      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">О себе / Контакты:</label>' +
+      '<textarea id="edit-profile-about" style="width:100%;min-height:60px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' + (currentProf.about || 'Студент КФУ, открыт к стажировкам.') + '</textarea>' +
+    '</div>',
+    async (modal) => {
+      const name = modal.querySelector('#edit-profile-name')?.value.trim() || currentProf.name;
+      const role = modal.querySelector('#edit-profile-role')?.value.trim() || currentProf.role;
+      const rawSkills = modal.querySelector('#edit-profile-skills')?.value || '';
+      const skills = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
+      const about = modal.querySelector('#edit-profile-about')?.value.trim() || currentProf.about;
+
+      const cachedProfData = storage.read('buddie-profile-data', {}) || {};
+      const skillLevels = currentProf.skillLevels || cachedProfData.skillLevels || {};
+      const updatedProfile = Object.assign({}, currentProf, { name, role, skills, about, skillLevels });
+
+      updateProfileDom(updatedProfile);
+      storage.write('buddie-profile-data', updatedProfile);
+      await api.updateState({ profile: updatedProfile });
+      announce('Изменения профиля успешно сохранены!');
+    },
+    'Сохранить изменения'
+  );
 }
 
 function initProfileEdit() {
   document.querySelectorAll('[data-edit-profile-btn], .stack-card .button').forEach(btn => {
     if (btn._hasEditAction) return;
     btn._hasEditAction = true;
-
-    btn.addEventListener('click', async () => {
-      const db = await api.getDb();
-      const currentProf = (db && db.profile) || storage.read('buddie-profile-data', {
-        name: 'Нур М.',
-        role: 'Аналитика данных',
-        course: '3-й курс',
-        university: 'Казанский федеральный университет',
-        skills: ['Python', 'SQL', 'Pandas', 'Tableau', 'Git'],
-        about: 'Студент 3-го курса КФУ, открыт к стажировкам.'
-      });
-
-      const skillsStr = Array.isArray(currentProf.skills) ? currentProf.skills.join(', ') : 'Python, SQL, Git';
-
-      openModal(
-        'Редактирование профиля студента',
-        '<div class="form-group" style="margin-bottom:12px;">' +
-          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>' +
-          '<input type="text" id="edit-profile-name" value="' + (currentProf.name || 'Нур М.') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
-        '</div>' +
-        '<div class="form-group" style="margin-bottom:12px;">' +
-          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>' +
-          '<input type="text" id="edit-profile-role" value="' + (currentProf.role || 'Frontend-разработчик') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
-        '</div>' +
-        '<div class="form-group" style="margin-bottom:12px;">' +
-          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>' +
-          '<input type="text" id="edit-profile-skills" value="' + skillsStr + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">О себе / Контакты:</label>' +
-          '<textarea id="edit-profile-about" style="width:100%;min-height:60px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' + (currentProf.about || 'Студент КФУ, открыт к стажировкам.') + '</textarea>' +
-        '</div>',
-        async (modal) => {
-          const name = modal.querySelector('#edit-profile-name')?.value.trim() || currentProf.name;
-          const role = modal.querySelector('#edit-profile-role')?.value.trim() || currentProf.role;
-          const rawSkills = modal.querySelector('#edit-profile-skills')?.value || '';
-          const skills = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
-          const about = modal.querySelector('#edit-profile-about')?.value.trim() || currentProf.about;
-
-          const updatedProfile = Object.assign({}, currentProf, { name, role, skills, about });
-
-          updateProfileDom(updatedProfile);
-          storage.write('buddie-profile-data', updatedProfile);
-          await api.updateState({ profile: updatedProfile });
-          announce('Изменения профиля успешно сохранены!');
-        },
-        'Сохранить изменения'
-      );
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openProfileEditModal();
     });
   });
+
+  // Клик по боковой панели пользователя (.sidebar__user)
+  document.querySelectorAll('.sidebar__user').forEach(userEl => {
+    if (userEl._hasUserClick) return;
+    userEl._hasUserClick = true;
+    userEl.setAttribute('role', 'button');
+    userEl.setAttribute('tabindex', '0');
+    userEl.setAttribute('aria-label', 'Редактировать профиль');
+    userEl.setAttribute('title', 'Редактировать профиль');
+
+    const handleAction = (e) => {
+      e.preventDefault();
+      if (document.querySelector('.student-card') || window.location.pathname.includes('profile')) {
+        openProfileEditModal();
+      } else {
+        window.location.href = 'profile.html#edit';
+      }
+    };
+
+    userEl.addEventListener('click', handleAction);
+    userEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        handleAction(e);
+      }
+    });
+  });
+
+  // Клик по ссылке «Дополнить профиль →» в сайдбаре
+  document.querySelectorAll('.sidebar__link').forEach(link => {
+    if (link.textContent.includes('Дополнить профиль')) {
+      if (link._hasProfileLink) return;
+      link._hasProfileLink = true;
+      link.addEventListener('click', (e) => {
+        if (document.querySelector('.student-card') || window.location.pathname.includes('profile')) {
+          e.preventDefault();
+          openProfileEditModal();
+        }
+      });
+    }
+  });
+
+  // Автоматическое открытие при переходе по ссылке #edit
+  if ((document.querySelector('.student-card') || window.location.pathname.includes('profile')) && window.location.hash === '#edit') {
+    setTimeout(() => {
+      openProfileEditModal();
+    }, 150);
+  }
 }
 
 // Кнопка скачать резюме PDF
@@ -1828,3 +2174,11 @@ updateFeedCounters();
 
 loadInitialData();
 updateSearch(searchTerm);
+
+initHrAutoSync();
+handleJobDeepLink();
+window.addEventListener('hashchange', () => {
+  if (window.location.hash.startsWith('#job-')) {
+    handleJobDeepLink();
+  }
+});

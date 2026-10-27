@@ -128,7 +128,7 @@
             </div>
             <div class="feed-filters"><button class="filter-pill filter-pill--active" type="button" data-feed-reset aria-pressed="true">Все стажировки</button><select class="filter-pill" aria-label="Специальность" data-feed-specialty><option value="all">Любая специальность</option><option value="analysis">Аналитика и данные</option><option value="development">Разработка</option></select><select class="filter-pill" aria-label="Формат работы" data-feed-format><option value="all">Любой формат</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select><button class="filter-pill" type="button" data-feed-reset>Сбросить фильтры</button></div>
             <div class="feed-jobs">
-              <article class="card job-card" data-job-id="yandex-analyst" data-specialty="analysis" data-format="hybrid">
+              <article class="card job-card" id="job-yandex-analyst" data-job-id="yandex-analyst" data-specialty="analysis" data-format="hybrid">
                 <div class="job-card__top">
                   <div class="job-card__company">
                     <div class="company-logo company-logo--yandex">Я</div>
@@ -151,7 +151,7 @@
                   <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false" aria-label="Сохранить вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Сохранить</span></button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false" aria-label="Откликнуться на вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Откликнуться</span></button></div>
                 </div>
               </article>
-              <article class="card job-card" data-job-id="sber-java" data-specialty="development" data-format="remote">
+              <article class="card job-card" id="job-sber-java" data-job-id="sber-java" data-specialty="development" data-format="remote">
                 <div class="job-card__top">
                   <div class="job-card__company">
                     <div class="company-logo company-logo--sber">С</div>
@@ -175,7 +175,7 @@
                   <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false" aria-label="Сохранить вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Сохранить</span></button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false" aria-label="Откликнуться на вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Откликнуться</span></button></div>
                 </div>
               </article>
-              <article class="card job-card" data-job-id="tbank-data" data-specialty="analysis" data-format="hybrid">
+              <article class="card job-card" id="job-tbank-data" data-job-id="tbank-data" data-specialty="analysis" data-format="hybrid">
                 <div class="job-card__top">
                   <div class="job-card__company">
                     <div class="company-logo company-logo--tbank">Т</div>
@@ -236,14 +236,42 @@
             <section class="card widget">
               <h2 class="widget__title">События и дедлайны</h2>
               <div class="feed-notices">
-                <div class="feed-notice"><span class="feed-notice__icon" aria-hidden="true">◷</span><strong>Дедлайн через 5
-                    дней</strong><span>Sber · Младший Java-разработчик</span></div>
-                <div class="feed-notice"><span class="feed-notice__icon" aria-hidden="true">▣</span><strong>7 новых
-                    вакансий</strong><span>Совпадают с твоими навыками SQL и Python</span></div>
-                <div class="feed-notice"><span class="feed-notice__icon" aria-hidden="true">✦</span><strong>На
-                    рассмотрении</strong><span>Sber рассматривает твой отклик</span></div>
-                <div class="feed-notice"><span class="feed-notice__icon" aria-hidden="true">✦</span><strong>Улучши своё
-                    резюме</strong><span>Добавь проекты университета</span></div>
+                <div class="feed-notice">
+                  <span class="feed-notice__icon feed-notice__icon--warning" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </span>
+                  <div class="feed-notice__content">
+                    <strong>Дедлайн через 5 дней</strong>
+                    <span>Sber · Младший Java-разработчик</span>
+                  </div>
+                </div>
+                <div class="feed-notice">
+                  <span class="feed-notice__icon feed-notice__icon--purple" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                  </span>
+                  <div class="feed-notice__content">
+                    <strong>7 новых вакансий</strong>
+                    <span>Совпадают с твоими навыками SQL и Python</span>
+                  </div>
+                </div>
+                <div class="feed-notice">
+                  <span class="feed-notice__icon feed-notice__icon--info" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
+                  </span>
+                  <div class="feed-notice__content">
+                    <strong>На рассмотрении</strong>
+                    <span>Sber рассматривает твой отклик</span>
+                  </div>
+                </div>
+                <div class="feed-notice">
+                  <span class="feed-notice__icon feed-notice__icon--success" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                  </span>
+                  <div class="feed-notice__content">
+                    <strong>Улучши своё резюме</strong>
+                    <span>Добавь проекты университета</span>
+                  </div>
+                </div>
               </div>
             </section>
           </aside>

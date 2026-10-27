@@ -42,8 +42,11 @@
 .stack-focus strong { font-size: 13px; }
 .skill-list { display: grid; gap: 10px; margin: 13px 0; }
 .skill { display: grid; grid-template-columns: 1fr auto; gap: 7px; align-items: center; font-size: 12px; }
-.skill__bars { display: flex; gap: 3px; }
-.skill__bars i { width: 10px; height: 3px; border-radius: 3px; background: #e9e4ef; }
+.skill__bars { display: flex; gap: 4px; align-items: center; }
+.skill__bars i { width: 12px; height: 6px; border-radius: 3px; background: #e9e4ef; cursor: pointer; position: relative; transition: transform 0.15s ease, background 0.15s ease; }
+.skill__bars i::after { content: ''; position: absolute; top: -8px; bottom: -8px; left: -3px; right: -3px; }
+.skill__bars i:hover { transform: scaleY(1.4); background: #d8b4fe; }
+.skill__bars i:focus-visible { outline: 2px solid var(--color-primary, #6C5CE7); outline-offset: 2px; }
 .skill__bars i.is-filled { background: #8b50dc; }
 .profile-tip { background: linear-gradient(150deg,#fff,#f4edff); }
 .profile-tip__callout { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
