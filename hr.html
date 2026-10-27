@@ -92,10 +92,12 @@
             </article>
         </section>
         <div class="hr-actions" id="post"><a class="button" href="#post">＋ Разместить стажировку</a>
-            <div class="hr-actions__filters"><input class="hr-candidate-search" type="search" placeholder="Поиск кандидата..." aria-label="Поиск кандидата" data-search-input><select aria-label="Целевой университет" data-hr-university>
+            <div class="hr-actions__filters"><input class="hr-candidate-search" type="search" placeholder="Поиск кандидата..." aria-label="Поиск кандидата" data-search-input><select class="filter-pill" aria-label="Целевой университет" data-hr-university>
                     <option value="kfu">Целевой ВУЗ: КФУ</option>
                     <option value="all">Все университеты</option>
-                </select><select aria-label="Фильтр статуса" data-hr-status>
+                </select><select class="filter-pill" aria-label="Фильтр по вакансии" data-hr-job>
+                    <option value="all">Все вакансии</option>
+                </select><select class="filter-pill" aria-label="Фильтр статуса" data-hr-status>
                     <option value="all">Все статусы</option>
                     <option value="new">Новые</option>
                     <option value="interview">Интервью</option>

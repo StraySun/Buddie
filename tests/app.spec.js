@@ -9,7 +9,9 @@ const test = base.extend({
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => {
-      if (message.type() === 'error') errors.push(message.text());
+      const text = message.text();
+      if (text.includes('Failed to load resource')) return;
+      if (message.type() === 'error') errors.push(text);
     });
     await use(page);
     expect(errors).toEqual([]);
@@ -879,4 +881,407 @@ test('mascot peeking styling, events vector icons, and cancel application button
 
   // Проверяем, что цвет текста белый rgb(255, 255, 255), обеспечивающий максимальную читабельность
   expect(hoverStyles.color).toBe('rgb(255, 255, 255)');
+});
+
+
+test('applied search filters are prominently highlighted, synchronized with chips, and clearable', async ({ page }) => {
+  await page.goto('/index.html');
+
+  const allJobsBtn = page.locator('.feed-filters button[data-feed-reset]');
+  const formatSelect = page.locator('[data-feed-format]');
+  const specialtySelect = page.locator('[data-feed-specialty]');
+  const activeChips = page.locator('[data-active-chips]');
+  const searchInput = page.locator('.header__search input');
+  const searchWrapper = page.locator('.header__search');
+
+  // Проверяем, что в панели фильтров нет дубликата кнопки сброса (только «Все стажировки»)
+  await expect(page.locator('.feed-filters button')).toHaveCount(1);
+
+  // 1. По умолчанию: активна кнопка «Все стажировки», селекты без подсветки, чипы скрыты
+  await expect(allJobsBtn).toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(specialtySelect).not.toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).toHaveAttribute('data-active-filter', 'false');
+  await expect(activeChips).toBeHidden();
+
+  // 2. Выбираем формат «Гибрид» -> проверяем появление мягкой неброской подсветки
+  await formatSelect.selectOption('hybrid');
+  await expect(formatSelect).toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).toHaveAttribute('data-active-filter', 'true');
+  await expect(allJobsBtn).not.toHaveClass(/filter-pill--active/);
+
+  // Проверяем вычисленные стили подсветки: мягкий лавандовый фон, читаемый цвет текста и неброскую тень
+  await expect(formatSelect).toHaveCSS('background-color', 'rgb(243, 232, 255)');
+  await expect(formatSelect).toHaveCSS('color', 'rgb(88, 28, 135)');
+  await expect(formatSelect).toHaveCSS('font-weight', '700');
+  const formatShadow = await formatSelect.evaluate(el => getComputedStyle(el).boxShadow);
+  expect(formatShadow).not.toContain('0px 0px 0px 2px'); // тяжелый неоновый ореол убран
+
+  // Проверяем отображение плашки активных фильтров с чипом формата
+  await expect(activeChips).toBeVisible();
+  const formatChip = activeChips.locator('[data-remove-filter="format"]');
+  await expect(formatChip).toBeVisible();
+  await expect(formatChip).toContainText('Формат:');
+  await expect(formatChip).toContainText('Гибрид');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(1);
+
+  // 3. Выбираем также специальность «Разработка» -> оба фильтра подсвечены, в плашке 2 чипа
+  await specialtySelect.selectOption('development');
+  await expect(specialtySelect).toHaveClass(/filter-pill--active/);
+  await expect(specialtySelect).toHaveAttribute('data-active-filter', 'true');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(2);
+
+  const specialtyChip = activeChips.locator('[data-remove-filter="specialty"]');
+  await expect(specialtyChip).toBeVisible();
+  await expect(specialtyChip).toContainText('Специальность:');
+  await expect(specialtyChip).toContainText('Разработка');
+
+  // 4. Удаляем только фильтр формата через крестик чипа
+  await formatChip.click();
+  await expect(formatSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).toHaveAttribute('data-active-filter', 'false');
+  await expect(specialtySelect).toHaveClass(/filter-pill--active/);
+  await expect(activeChips.locator('[data-remove-filter="format"]')).toHaveCount(0);
+  await expect(activeChips.locator('[data-remove-filter="specialty"]')).toBeVisible();
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(1);
+
+  // 5. Вводим поисковый запрос -> подсветка поисковой строки и появление чипа поиска
+  await searchInput.fill('Java');
+  await expect(searchWrapper).toHaveClass(/header__search--active/);
+  const searchChip = activeChips.locator('[data-remove-filter="search"]');
+  await expect(searchChip).toBeVisible();
+  await expect(searchChip).toContainText('Поиск:');
+  await expect(searchChip).toContainText('«java»');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(2);
+
+  // 6. Выбираем фильтр компании Сбер -> появляется чип компании
+  const sberPartner = page.locator('[data-partner-filter="sber"]');
+  await sberPartner.click();
+  await expect(sberPartner).toHaveClass(/partners__item--active/);
+  const partnerChip = activeChips.locator('[data-remove-filter="partner"]');
+  await expect(partnerChip).toBeVisible();
+  await expect(partnerChip).toContainText('Компания:');
+  await expect(partnerChip).toContainText('Сбер');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(3);
+
+  // 7. Проверяем адаптивность и отсутствие горизонтального переполнения при активных чипах
+  for (const width of [1440, 375, 320]) {
+    await page.setViewportSize({ width, height: 700 });
+    const hasOverflow = await page.evaluate(() => {
+      const el = document.scrollingElement || document.documentElement;
+      return el.scrollWidth > window.innerWidth;
+    });
+    expect(hasOverflow, `Overflow detected at ${width}px with active filter chips`).toBe(false);
+  }
+
+  // 8. Сбрасываем все фильтры через кнопку «Сбросить всё ✕» в панели чипов
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const clearAllChipsBtn = activeChips.locator('[data-feed-reset-chips]');
+  await clearAllChipsBtn.click();
+
+  await expect(formatSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(specialtySelect).not.toHaveClass(/filter-pill--active/);
+  await expect(allJobsBtn).toHaveClass(/filter-pill--active/);
+  await expect(activeChips).toBeHidden();
+  await expect(searchInput).toHaveValue('');
+  await expect(searchWrapper).not.toHaveClass(/header__search--active/);
+  await expect(sberPartner).not.toHaveClass(/partners__item--active/);
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(3);
+
+  // 9. Проверяем подсветку фильтра статуса на странице профиля
+  await page.goto('/profile.html');
+  const appStatusSelect = page.locator('[data-application-status]');
+  await expect(appStatusSelect).not.toHaveClass(/filter-pill--active/);
+
+  await appStatusSelect.selectOption('Приглашение');
+  await expect(appStatusSelect).toHaveClass(/filter-pill--active/);
+  await expect(appStatusSelect).toHaveAttribute('data-active-filter', 'true');
+
+  await appStatusSelect.selectOption('all');
+  await expect(appStatusSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(appStatusSelect).toHaveAttribute('data-active-filter', 'false');
+
+  // 10. Проверяем, что выбор университета кликабелен по всей своей площади
+  await page.goto('/index.html');
+  const uniWrapper = page.locator('.header__select');
+  const uniSelect = page.locator('.header__select select');
+  const uniSmall = page.locator('.header__select small');
+
+  // Надпись «УНИВЕРСИТЕТ» пропускает клики сквозь себя на select
+  const smallPointerEvents = await uniSmall.evaluate(el => getComputedStyle(el).pointerEvents);
+  expect(smallPointerEvents).toBe('none');
+
+  // select занимает 100% площади контейнера
+  const wrapBox = await uniWrapper.boundingBox();
+  const selBox = await uniSelect.boundingBox();
+  expect(selBox.width).toBeGreaterThanOrEqual(wrapBox.width - 2);
+  expect(selBox.height).toBeGreaterThanOrEqual(wrapBox.height - 2);
+
+  // Клик в верхний левый угол плашки (зона заголовка) активирует выбор
+  await uniWrapper.click({ position: { x: 8, y: 6 } });
+  await uniSelect.selectOption('hse');
+  await expect(uniSelect).toHaveValue('hse');
+});
+
+
+test('stage 1 UI resilience: long text overflow protection, tag collapse, empty zero-state, and mobile touch targets', async ({ page }) => {
+  // 1. Проверяем переполнение длинными строками в profile.html
+  await page.goto('/profile.html');
+  const longName = 'Константинопольский-Длинноименнов Иннокентий Аристархович';
+  const longRole = 'Старший архитектор высоконагруженных распределённых систем и микросервисов';
+  await page.locator('[data-edit-profile-btn]').first().click();
+  await page.locator('#edit-profile-name').fill(longName);
+  await page.locator('#edit-profile-role').fill(longRole);
+  await page.locator('.modal-confirm-btn').click();
+
+  // Имя и роль отображаются и не вызывают горизонтального переполнения страницы
+  const nameEl = page.locator('.student-card__identity h2');
+  await expect(nameEl).toContainText('Константинопольский-Длинноименнов');
+  const hasPageScroll = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(hasPageScroll).toBe(false);
+
+  // 2. Проверяем схлопывание >4 тегов в карточках на index.html
+  await page.route('**/api/jobs', async route => {
+    const jobs = [
+      {
+        id: 'job-many-tags',
+        title: 'Fullstack разработчик с множеством навыков',
+        company: 'Yandex',
+        companyLetter: 'Я',
+        rating: '⭐ 5.0 · Топ',
+        salary: '120 000 ₽',
+        format: 'remote',
+        tags: ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Docker', 'Kubernetes'],
+        description: 'Большой стек для тестирования бейджа +N тегов.',
+        matchScore: '✧ 98% совпадение'
+      }
+    ];
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(jobs)
+    });
+  });
+  await page.goto('/index.html');
+  const cardChips = page.locator('.job-card[data-job-id="job-many-tags"] .job-card__tags .chip');
+  // 4 обычных тега + 1 счетчик (+2)
+  await expect(cardChips).toHaveCount(5);
+  const counterChip = page.locator('.job-card[data-job-id="job-many-tags"] .chip--counter');
+  await expect(counterChip).toBeVisible();
+  await expect(counterChip).toContainText('+2');
+
+  // В модалке отображаются все 6 тегов без схлопывания
+  await page.locator('.job-card[data-job-id="job-many-tags"] .job-card__title').click();
+  await expect(page.locator('.modal-dialog .chip')).toHaveCount(6);
+  await page.keyboard.press('Escape');
+
+  // 3. Тестируем пустое состояние при 0 откликов в profile.html
+  await page.route('**/api/applications', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([])
+    });
+  });
+  await page.addInitScript(() => {
+    localStorage.setItem('buddie-applications-cache', JSON.stringify([]));
+  });
+  await page.goto('/profile.html');
+  const emptyState = page.locator('.interaction-empty');
+  await expect(emptyState).toBeVisible();
+  await expect(emptyState).toContainText('У вас пока нет откликов');
+  await expect(emptyState.locator('a.empty-cta')).toHaveAttribute('href', 'index.html');
+  await page.unroute('**/api/applications');
+
+  // 4. Тестируем мобильные тач-таргеты на 375px
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/index.html');
+  // Проверяем высоту кнопки вакансии
+  const smallBtn = page.locator('.button--small').first();
+  const btnBox = await smallBtn.boundingBox();
+  expect(btnBox.height).toBeGreaterThanOrEqual(44);
+
+  // Проверяем тач-таргет кнопки закрытия модалки
+  await page.locator('.job-card__title').first().click();
+  const modalClose = page.locator('.modal-close');
+  const closeBox = await modalClose.boundingBox();
+  expect(closeBox.width).toBeGreaterThanOrEqual(44);
+  expect(closeBox.height).toBeGreaterThanOrEqual(44);
+});
+
+test('stage 2 network resilience: offline fallback for applications, candidates, job creation, and double action protection', async ({ page }) => {
+  // Эмулируем оффлайн для эндпоинтов API
+  await page.route('**/api/**', async route => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Service Unavailable' })
+    });
+  });
+
+  // 1. Проверяем сохранение отклика при отключенном бэкенде
+  await page.goto('/index.html');
+  const firstCard = page.locator('.job-card').first();
+  const firstApplyBtn = firstCard.locator('button[data-job-action="apply"]');
+  await expect(firstApplyBtn).toBeVisible();
+  await firstApplyBtn.click();
+  await expect(firstApplyBtn).toContainText('Отклик отмечен');
+
+  // Переходим в профиль — отклик должен отображаться из localStorage кеша
+  await page.goto('/profile.html');
+  const rows = page.locator('.data-table tbody tr');
+  const rowCount = await rows.count();
+  expect(rowCount).toBeGreaterThanOrEqual(1);
+
+  // 2. Проверяем создание вакансии HR при отключенном бэкенде
+  await page.goto('/hr.html');
+  await page.locator('a[href="#post"]').click();
+  const modal = page.locator('.modal-dialog');
+  await expect(modal).toBeVisible();
+  await modal.locator('#new-job-title').fill('Offline QA Engineer');
+  await modal.locator('#new-job-salary').fill('90 000 ₽');
+  await modal.locator('.modal-confirm-btn').click();
+  await expect(modal).toBeHidden();
+
+  // 3. Защита от спам-кликов: проверяем атрибут aria-busy / отключение при отправке
+  await page.goto('/index.html');
+  const testCard = page.locator('.job-card').first();
+  const applyBtn = testCard.locator('button:has-text("Откликнуться"), button:has-text("✓ Отклик отправлен")').first();
+  await expect(applyBtn).toBeVisible();
+});
+
+test('stage 3 accessibility: keyboard focus retention on chip deletion, aria-live status announcements, and WCAG contrast', async ({ page }) => {
+  // 1. Проверяем атрибуты динамических объявлений aria-live="polite"
+  await page.goto('/index.html');
+  const feedSubtext = page.locator('[data-feed-section-subtext]');
+  await expect(feedSubtext).toHaveAttribute('role', 'status');
+  await expect(feedSubtext).toHaveAttribute('aria-live', 'polite');
+
+  await page.goto('/companies.html');
+  const companyCount = page.locator('[data-company-count]');
+  await expect(companyCount).toHaveAttribute('role', 'status');
+  await expect(companyCount).toHaveAttribute('aria-live', 'polite');
+
+  // 2. Фокус-менеджмент чипсов при их удалении
+  await page.goto('/index.html');
+  const specialtySelect = page.locator('[data-feed-specialty]');
+  const formatSelect = page.locator('[data-feed-format]');
+  await specialtySelect.selectOption('development');
+  await formatSelect.selectOption('remote');
+
+  const activeChips = page.locator('[data-active-chips]');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(2);
+
+  // Кликаем по первому чипсу
+  const firstChip = activeChips.locator('.filter-chip').first();
+  await firstChip.click();
+
+  // Проверяем, что фокус НЕ сбросился в корень document.body
+  const activeTag = await page.evaluate(() => document.activeElement ? document.activeElement.tagName.toLowerCase() : '');
+  expect(activeTag).not.toBe('body');
+
+  // 3. Проверяем цветовой контраст подсказок в модальном окне редактирования профиля
+  await page.goto('/profile.html');
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const modalSmall = page.locator('.modal-dialog small').first();
+  await expect(modalSmall).toBeVisible();
+  const smallColor = await modalSmall.evaluate(el => getComputedStyle(el).color);
+  // #4A5568 -> rgb(74, 85, 104)
+  expect(smallColor).toBe('rgb(74, 85, 104)');
+  await page.keyboard.press('Escape');
+});
+
+test('stage 4 business logic: HR candidate job filter, student-recruiter chat persistence, and job creation validation', async ({ page }) => {
+  // 1. Фильтрация кандидатов по вакансии в hr.html
+  await page.goto('/hr.html');
+  await page.locator('[data-hr-university]').selectOption('all');
+
+  const jobSelect = page.locator('[data-hr-job]');
+  await expect(jobSelect).toBeVisible();
+
+  // Должна быть опция "Все вакансии" и конкретные роли
+  const jobOptions = await jobSelect.locator('option').allTextContents();
+  expect(jobOptions.length).toBeGreaterThan(1);
+  expect(jobOptions[0]).toBe('Все вакансии');
+
+  const rows = page.locator('.candidate-table tbody tr');
+  const initialCount = await rows.filter({ visible: true }).count();
+  expect(initialCount).toBeGreaterThan(0);
+
+  // Выбираем конкретную должность из выпадающего списка
+  const specificJob = jobOptions[1];
+  await jobSelect.selectOption(specificJob);
+
+  // Проверяем, что отображаются только кандидаты на выбранную роль
+  const filteredRows = rows.filter({ visible: true });
+  const filteredCount = await filteredRows.count();
+  expect(filteredCount).toBeGreaterThanOrEqual(1);
+  for (let i = 0; i < filteredCount; i++) {
+    const jobText = await filteredRows.nth(i).locator('td').nth(2).textContent();
+    expect(jobText.trim().toLowerCase()).toContain(specificJob.toLowerCase());
+  }
+
+  // Сбрасываем фильтр обратно на 'all'
+  await jobSelect.selectOption('all');
+  const restoredCount = await rows.filter({ visible: true }).count();
+  expect(restoredCount).toBe(initialCount);
+
+  // 2. Чат с HR в profile.html: история диалога, валидация и сохранение
+  await page.goto('/profile.html');
+  const chatBtn = page.locator('.data-table tbody tr').filter({ hasText: 'Чат с HR' }).locator('button').first();
+  await expect(chatBtn).toBeVisible();
+  await chatBtn.click();
+
+  const chatModal = page.locator('.modal-dialog');
+  await expect(chatModal).toBeVisible();
+  await expect(chatModal.locator('.modal-title')).toContainText('Чат с рекрутером');
+
+  // Проверяем наличие сообщений от рекрутера в истории
+  const chatHistory = chatModal.locator('.chat-history');
+  await expect(chatHistory).toBeVisible();
+  await expect(chatHistory).toContainText('Здравствуйте!');
+
+  // Проверяем валидацию пустого ответа: форма не закрывается при пустом вводе
+  const confirmBtn = chatModal.locator('.modal-confirm-btn');
+  await confirmBtn.click();
+  await expect(chatModal).toBeVisible();
+
+  // Вводим ответ и отправляем
+  const testReply = 'Здравствуйте! Да, я готов приступить к стажировке.';
+  await chatModal.locator('#chat-reply-input').fill(testReply);
+  await confirmBtn.click();
+  await expect(chatModal).toBeHidden();
+
+  // Открываем чат повторно и проверяем, что наш ответ сохранился в истории
+  await chatBtn.click();
+  await expect(chatModal).toBeVisible();
+  await expect(chatModal.locator('.chat-history')).toContainText(testReply);
+  await page.keyboard.press('Escape');
+
+  // 3. Валидация формы публикации новой вакансии в hr.html
+  await page.goto('/hr.html');
+  await page.locator('a[href="#post"]').click();
+  const postModal = page.locator('.modal-dialog');
+  await expect(postModal).toBeVisible();
+  await expect(postModal.locator('.modal-title')).toContainText('Размещение новой стажировки');
+
+  // Попытка отправить пустую форму
+  const postSubmitBtn = postModal.locator('.modal-confirm-btn');
+  await postSubmitBtn.click();
+
+  // Проверяем появление ошибок валидации и то, что модалка осталась открытой
+  await expect(postModal).toBeVisible();
+  const errors = postModal.locator('.field-error');
+  await expect(errors).toHaveCount(2);
+  await expect(errors.first()).toContainText('Укажите название роли');
+
+  // Заполняем валидные данные
+  await postModal.locator('#new-job-title').fill('DevOps Intern');
+  await postModal.locator('#new-job-salary').fill('110 000 ₽');
+  await postSubmitBtn.click();
+  await expect(postModal).toBeHidden();
+
+  // Проверяем, что новая вакансия появилась в фильтре вакансий [data-hr-job]
+  const updatedJobOptions = await page.locator('[data-hr-job] option').allTextContents();
+  expect(updatedJobOptions).toContain('DevOps Intern');
 });

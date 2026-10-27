@@ -34,14 +34,15 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .candidate-table { width: 100%; min-width: 860px; border-collapse: collapse; text-align: left; }
 .candidate-table th { padding: 12px 11px; color: #5B6474; background: #faf9fc; font-size: 12px; white-space: nowrap; }
 .candidate-table td { padding: 11px; border-top: 1px solid #f0edf3; font-size: 12px; white-space: nowrap; }
-.candidate { display: flex; align-items: center; gap: 7px; }
+.candidate { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.candidate > div:last-child { min-width: 0; }
 .candidate__avatar { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 30px; border-radius: 50%; color: #763bb7; background: #f0ddff; font-size: 12px; font-weight: 800; }
 .candidate__avatar--green { color: #12633a; background: #dff7e8; }
 .candidate__avatar--blue { color: #10559c; background: #e1f0ff; }
 .candidate__avatar--orange { color: #8a3d20; background: #ffeadf; }
 .candidate__avatar--purple { color: #59328d; background: #f0e5ff; }
-.candidate strong { display: block; font-size: 14px; }
-.candidate small { display: block; margin-top: 3px; color: #5B6474; font-size: 12px; }
+.candidate strong { display: block; font-size: 14px; overflow-wrap: break-word; word-break: break-word; }
+.candidate small { display: block; margin-top: 3px; color: #5B6474; font-size: 12px; overflow-wrap: break-word; }
 .match-score { color: #7540bc; font-weight: 800; }
 .hr-skills { display: flex; gap: 3px; }
 .hr-skills span { padding: 3px 5px; border-radius: 5px; background: #f2e9ff; color: #664391; font-size: 12px; }
