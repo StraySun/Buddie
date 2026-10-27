@@ -470,6 +470,128 @@ test('profile edit modal updates profile and persists across reload', async ({ p
   await expect(page.locator('.student-card__identity small')).toContainText('Product Lead & Architect');
 });
 
+test('profile editing via sidebar, short name format (Имя Ф.), and interactive skill levels', async ({ page }) => {
+  // 1. Проверяем переход в редактирование из сайдбара на главной (index.html -> profile.html#edit)
+  await page.goto('/index.html');
+  await page.locator('.sidebar__user').click();
+  await expect(page).toHaveURL(/profile\.html#edit$/);
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+
+  // 2. Вводим полное имя и фамилию
+  await page.locator('#edit-profile-name').fill('Нурлан Мухамедов');
+  await page.locator('.modal-confirm-btn').click();
+  await expect(page.locator('.modal-backdrop')).toBeHidden();
+
+  // 3. Проверяем форматирование: полное имя в карточке, сокращение «Имя Ф.» в сайдбаре и шапке
+  await expect(page.locator('.student-card__identity h2')).toHaveText('Нурлан Мухамедов');
+  await expect(page.locator('.sidebar__user-name')).toHaveText('Нурлан М.');
+  await expect(page.locator('.header__profile')).toContainText('Нурлан М.');
+  await expect(page.locator('.student-card__avatar')).toHaveText('НМ');
+
+  // 4. Переходим на вкладку стека и проверяем интерактивное изменение уровней навыков
+  await page.locator('.profile-tab-btn[data-tab="stack"]').click();
+  const sqlRow = page.locator('#pane-stack .skill[data-skill-name="SQL"]');
+  await expect(sqlRow).toBeVisible();
+  const sqlBars = sqlRow.locator('.skill__bars i');
+  await expect(sqlBars).toHaveCount(4);
+
+  // Кликаем на 2-й уровень (2 из 4) в первой таблице (#pane-stack)
+  await sqlBars.nth(1).click();
+  await expect(sqlBars.nth(0)).toHaveClass(/is-filled/);
+  await expect(sqlBars.nth(1)).toHaveClass(/is-filled/);
+  await expect(sqlBars.nth(2)).not.toHaveClass(/is-filled/);
+  await expect(sqlBars.nth(3)).not.toHaveClass(/is-filled/);
+
+  // Синхронизация: проверяем, что во второй таблице/виджете (#stack) уровень SQL тоже изменился на 2 из 4
+  const sideSqlBars = page.locator('#stack .skill[data-skill-name="SQL"] .skill__bars i');
+  await expect(sideSqlBars.nth(0)).toHaveClass(/is-filled/);
+  await expect(sideSqlBars.nth(1)).toHaveClass(/is-filled/);
+  await expect(sideSqlBars.nth(2)).not.toHaveClass(/is-filled/);
+  await expect(sideSqlBars.nth(3)).not.toHaveClass(/is-filled/);
+
+  // Обратная синхронизация: меняем уровень Python в боковом виджете (#stack) на 1 из 4
+  const sidePythonBars = page.locator('#stack .skill[data-skill-name="Python"] .skill__bars i');
+  await sidePythonBars.nth(0).click();
+  await expect(sidePythonBars.nth(0)).toHaveClass(/is-filled/);
+  await expect(sidePythonBars.nth(1)).not.toHaveClass(/is-filled/);
+
+  // Проверяем, что в основной таблице (#pane-stack) Python тоже стал 1 из 4
+  const mainPythonBars = page.locator('#pane-stack .skill[data-skill-name="Python"] .skill__bars i');
+  await expect(mainPythonBars.nth(0)).toHaveClass(/is-filled/);
+  await expect(mainPythonBars.nth(1)).not.toHaveClass(/is-filled/);
+
+  // 5. Перезагрузка: проверяем сохранение имени, сокращения и уровня стека
+  await page.reload();
+  await expect(page.locator('.student-card__identity h2')).toHaveText('Нурлан Мухамедов');
+  await expect(page.locator('.sidebar__user-name')).toHaveText('Нурлан М.');
+  await page.locator('.profile-tab-btn[data-tab="stack"]').click();
+  const reloadedSqlBars = page.locator('#pane-stack .skill[data-skill-name="SQL"] .skill__bars i');
+  await expect(reloadedSqlBars.nth(1)).toHaveClass(/is-filled/);
+  await expect(reloadedSqlBars.nth(2)).not.toHaveClass(/is-filled/);
+
+  // 6. Клик по сайдбару прямо на странице profile.html также открывает модалку
+  await page.locator('.sidebar__user').click();
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.modal-backdrop')).toBeHidden();
+});
+
+test('vacancy deep links, title clicks, and cover modal view across pages', async ({ page }) => {
+  // 1. Переход из companies.html по ссылке вакансии Яндекса
+  await page.goto('/companies.html');
+  const yandexAction = page.locator('.company-card').filter({ hasText: /Yandex|Яндекс/i }).locator('.company-card__action');
+  await expect(yandexAction).toHaveAttribute('href', 'index.html#job-yandex-analyst');
+  await yandexAction.click();
+
+  // 2. Проверяем URL и открытие обложки вакансии в модалке
+  await expect(page).toHaveURL(/index\.html#job-yandex-analyst$/);
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+  await expect(page.locator('.modal-dialog')).toContainText('Обложка вакансии · Yandex');
+  await expect(page.locator('.modal-dialog')).toContainText('Стажёр-аналитик данных');
+  await expect(page.locator('#modal-apply-btn')).toBeVisible();
+
+  // 3. Откликаемся прямо из модалки обложки
+  await page.locator('#modal-apply-btn').click();
+  await expect(page.locator('#modal-apply-btn')).toHaveText('✓ Отклик отмечен');
+
+  // Закрываем модалку
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.modal-backdrop')).toBeHidden();
+
+  // Кнопка на самой карточке в ленте тоже синхронизирована
+  const yandexCard = page.locator('[data-job-id="yandex-analyst"]');
+  await expect(yandexCard.locator('[data-job-action="apply"]')).toHaveAttribute('aria-pressed', 'true');
+
+  // 4. Клик по заголовку карточки вакансии снова открывает обложку
+  await yandexCard.locator('.job-card__title').click();
+  await expect(page.locator('.modal-backdrop')).toBeVisible();
+  await expect(page.locator('.modal-dialog')).toContainText('Стажёр-аналитик данных');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.modal-backdrop')).toBeHidden();
+});
+
+test('HR dashboard auto-syncs with backend database in real time', async ({ page, request }) => {
+  // 1. Открываем hr.html и проверяем исходное количество кандидатов (5)
+  await page.goto('/hr.html');
+  const candidateRows = page.locator('.candidate-table tbody tr');
+  await expect(candidateRows).toHaveCount(5);
+
+  // 2. В фоне через REST API создаем новый отклик студента
+  const postRes = await request.post('/api/applications', {
+    data: {
+      jobId: 'live-sync-test-job',
+      title: 'Realtime Sync Candidate',
+      company: 'Sync Corp',
+      location: 'Казань · Remote'
+    }
+  });
+  expect(postRes.status()).toBe(201);
+
+  // 3. Проверяем, что в hr.html без перезагрузки страницы (F5) данные автоматически синхронизируются
+  await expect(candidateRows).toHaveCount(6, { timeout: 10000 });
+  await expect(page.locator('.candidate-table')).toContainText('Realtime Sync Candidate');
+});
+
 test('HR can publish a new job and it dynamically appears in the student feed on index.html', async ({ page }) => {
   // 1. HR открывает hr.html и размещает новую стажировку
   await page.goto('/hr.html');
@@ -698,4 +820,63 @@ test('partner interactive filters toggle feed jobs and reset cleanly', async ({ 
   await expect(feedEmpty).toBeHidden();
   await expect(vkBtn).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(3);
+});
+
+
+test('mascot peeking styling, events vector icons, and cancel application button hover contrast', async ({ page }) => {
+  await page.goto('/index.html');
+
+  // 1. Проверяем выглядывающего маскота Buddie в блоке советов
+  const mascotBox = page.locator('.feed-tip__mascot');
+  await expect(mascotBox).toBeVisible();
+  const mascotImg = mascotBox.locator('img');
+  await expect(mascotImg).toBeVisible();
+  const boxStyles = await mascotBox.evaluate(el => {
+    const s = getComputedStyle(el);
+    return { overflow: s.overflow, position: s.position, borderRadius: s.borderRadius };
+  });
+  expect(boxStyles.overflow).toBe('hidden');
+
+  // 2. Проверяем векторные SVG иконки в «События и дедлайны» и их границы
+  const noticeIcons = page.locator('.feed-notice__icon svg');
+  await expect(noticeIcons).toHaveCount(4);
+  await expect(page.locator('.feed-notice__icon--warning svg')).toBeVisible();
+  await expect(page.locator('.feed-notice__icon--purple svg')).toBeVisible();
+  await expect(page.locator('.feed-notice__icon--info svg')).toBeVisible();
+  await expect(page.locator('.feed-notice__icon--success svg')).toBeVisible();
+
+  // Проверяем, что иконки находятся строго внутри плашек и не вылезают за границы
+  const iconsContained = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('.feed-notice__icon')).every(span => {
+      const svg = span.querySelector('svg');
+      if (!svg) return false;
+      const spanR = span.getBoundingClientRect();
+      const svgR = svg.getBoundingClientRect();
+      return (
+        svgR.left >= spanR.left - 0.5 &&
+        svgR.right <= spanR.right + 0.5 &&
+        svgR.top >= spanR.top - 0.5 &&
+        svgR.bottom <= spanR.bottom + 0.5
+      );
+    });
+  });
+  expect(iconsContained).toBe(true);
+
+  // 3. Откликаемся на вакансию, затем проверяем читабельность кнопки отмены отклика при наведении
+  const yandexCard = page.locator('[data-job-id="yandex-analyst"]');
+  const applyBtn = yandexCard.locator('[data-job-action="apply"]');
+  await applyBtn.click();
+  await expect(applyBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(applyBtn).toHaveClass(/button--soft/);
+  await expect(applyBtn).toHaveAttribute('title', 'Отменить отклик');
+
+  // Наводим курсор на кнопку отмены отклика
+  await applyBtn.hover();
+  const hoverStyles = await applyBtn.evaluate(el => {
+    const s = getComputedStyle(el);
+    return { color: s.color, background: s.background || s.backgroundColor };
+  });
+
+  // Проверяем, что цвет текста белый rgb(255, 255, 255), обеспечивающий максимальную читабельность
+  expect(hoverStyles.color).toBe('rgb(255, 255, 255)');
 });
