@@ -15,56 +15,9 @@
     ],
     "about": "Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, A/B-тестированием и визуализацией данных."
   },
-  "savedJobs": [
-    "yandex-analyst",
-    "sber-java",
-    "tbank-data"
-  ],
-  "appliedJobs": [
-    "yandex-analyst",
-    "sber-java",
-    "tbank-data"
-  ],
+  "savedJobs": [],
+  "appliedJobs": [],
   "applications": [
-    {
-      "id": "app-1792981129223",
-      "jobId": "tbank-data",
-      "title": "Стажёр по анализу данных",
-      "company": "Т-Банк",
-      "companyLetter": "Т",
-      "companyLogoClass": "company-logo--tbank",
-      "location": "⌖ Москва",
-      "appliedDate": "Сегодня, только что",
-      "status": "На рассмотрении",
-      "statusClass": "status-badge--warning",
-      "actionText": "Чат с HR"
-    },
-    {
-      "id": "app-1792981128587",
-      "jobId": "sber-java",
-      "title": "Младший Java-разработчик",
-      "company": "Sber",
-      "companyLetter": "S",
-      "companyLogoClass": "company-logo--sber",
-      "location": "⌖ Москва / Удалённо",
-      "appliedDate": "Сегодня, только что",
-      "status": "На рассмотрении",
-      "statusClass": "status-badge--warning",
-      "actionText": "Чат с HR"
-    },
-    {
-      "id": "app-1792981127894",
-      "jobId": "yandex-analyst",
-      "title": "Стажёр-аналитик данных",
-      "company": "Yandex",
-      "companyLetter": "Y",
-      "companyLogoClass": "company-logo--yandex",
-      "location": "⌖ Москва",
-      "appliedDate": "Сегодня, только что",
-      "status": "На рассмотрении",
-      "statusClass": "status-badge--warning",
-      "actionText": "Чат с HR"
-    },
     {
       "id": "app-1",
       "jobId": "yandex-frontend",
@@ -194,69 +147,6 @@
     }
   ],
   "candidates": [
-    {
-      "id": "cand-1792981129223",
-      "jobId": "tbank-data",
-      "name": "Нур М.",
-      "initials": "НМ",
-      "avatarClass": "",
-      "role": "Стажёр по анализу данных",
-      "university": "КФУ · 3-й курс",
-      "jobTitle": "Стажёр по анализу данных",
-      "matchScore": "94%",
-      "skills": [
-        "Python",
-        "SQL",
-        "Pandas",
-        "Tableau",
-        "Git"
-      ],
-      "status": "new",
-      "statusLabel": "Новый",
-      "statusClass": "status-badge--success"
-    },
-    {
-      "id": "cand-1792981128587",
-      "jobId": "sber-java",
-      "name": "Нур М.",
-      "initials": "НМ",
-      "avatarClass": "",
-      "role": "Младший Java-разработчик",
-      "university": "КФУ · 3-й курс",
-      "jobTitle": "Младший Java-разработчик",
-      "matchScore": "94%",
-      "skills": [
-        "Python",
-        "SQL",
-        "Pandas",
-        "Tableau",
-        "Git"
-      ],
-      "status": "new",
-      "statusLabel": "Новый",
-      "statusClass": "status-badge--success"
-    },
-    {
-      "id": "cand-1792981127894",
-      "jobId": "yandex-analyst",
-      "name": "Нур М.",
-      "initials": "НМ",
-      "avatarClass": "",
-      "role": "Стажёр-аналитик данных",
-      "university": "КФУ · 3-й курс",
-      "jobTitle": "Стажёр-аналитик данных",
-      "matchScore": "94%",
-      "skills": [
-        "Python",
-        "SQL",
-        "Pandas",
-        "Tableau",
-        "Git"
-      ],
-      "status": "new",
-      "statusLabel": "Новый",
-      "statusClass": "status-badge--success"
-    },
     {
       "id": "cand-1",
       "name": "Нур М.",
