@@ -557,6 +557,195 @@ function updateEmptyStates() {
   updateNotificationEmptyMessage(notifications);
 }
 
+function escapeFilterHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function updateActiveFilterChips() {
+  const container = document.querySelector('[data-active-chips]');
+  if (!container) return;
+
+  const specialtySelect = document.querySelector('[data-feed-specialty]');
+  const formatSelect = document.querySelector('[data-feed-format]');
+
+  const isSpecialtyActive = specialtySelect && specialtySelect.value !== 'all';
+  const isFormatActive = formatSelect && formatSelect.value !== 'all';
+  const isPartnerActive = currentPartnerFilter !== 'all';
+  const isSearchActive = Boolean(searchTerm);
+
+  if (!isSpecialtyActive && !isFormatActive && !isPartnerActive && !isSearchActive) {
+    container.hidden = true;
+    container.innerHTML = '';
+    return;
+  }
+
+  const partnerNames = {
+    yandex: 'Yandex',
+    sber: 'Сбер',
+    vk: 'VK',
+    ozon: 'OZON',
+    tbank: 'Т-Банк'
+  };
+
+  const chips = [];
+
+  if (isSpecialtyActive) {
+    const text = specialtySelect.options[specialtySelect.selectedIndex]?.textContent || specialtySelect.value;
+    chips.push(`
+      <button type="button" class="filter-chip" data-remove-filter="specialty" aria-label="Сбросить фильтр специальности: ${escapeFilterHtml(text)}" title="Нажмите, чтобы убрать этот фильтр">
+        <span>Специальность: <strong>${escapeFilterHtml(text)}</strong></span>
+        <span class="filter-chip__x" aria-hidden="true">✕</span>
+      </button>
+    `);
+  }
+
+  if (isFormatActive) {
+    const text = formatSelect.options[formatSelect.selectedIndex]?.textContent || formatSelect.value;
+    chips.push(`
+      <button type="button" class="filter-chip" data-remove-filter="format" aria-label="Сбросить фильтр формата: ${escapeFilterHtml(text)}" title="Нажмите, чтобы убрать этот фильтр">
+        <span>Формат: <strong>${escapeFilterHtml(text)}</strong></span>
+        <span class="filter-chip__x" aria-hidden="true">✕</span>
+      </button>
+    `);
+  }
+
+  if (isPartnerActive) {
+    const pName = partnerNames[currentPartnerFilter] || currentPartnerFilter;
+    chips.push(`
+      <button type="button" class="filter-chip" data-remove-filter="partner" aria-label="Сбросить фильтр компании: ${escapeFilterHtml(pName)}" title="Нажмите, чтобы убрать этот фильтр">
+        <span>Компания: <strong>${escapeFilterHtml(pName)}</strong></span>
+        <span class="filter-chip__x" aria-hidden="true">✕</span>
+      </button>
+    `);
+  }
+
+  if (isSearchActive) {
+    chips.push(`
+      <button type="button" class="filter-chip" data-remove-filter="search" aria-label="Очистить поиск: ${escapeFilterHtml(searchTerm)}" title="Нажмите, чтобы очистить поиск">
+        <span>Поиск: <strong>«${escapeFilterHtml(searchTerm)}»</strong></span>
+        <span class="filter-chip__x" aria-hidden="true">✕</span>
+      </button>
+    `);
+  }
+
+  container.hidden = false;
+  container.innerHTML = `
+    <span class="feed-active-chips__label">
+      <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+      Применённые фильтры:
+    </span>
+    ${chips.join('')}
+    <button type="button" class="filter-chip__clear-all" data-feed-reset-chips aria-label="Сбросить все фильтры">Сбросить всё ✕</button>
+  `;
+
+  container.querySelectorAll('[data-remove-filter]').forEach(chipBtn => {
+    chipBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const filterType = chipBtn.dataset.removeFilter;
+      if (filterType === 'specialty' && specialtySelect) {
+        specialtySelect.value = 'all';
+      } else if (filterType === 'format' && formatSelect) {
+        formatSelect.value = 'all';
+      } else if (filterType === 'partner') {
+        setPartnerFilter(currentPartnerFilter);
+        return;
+      } else if (filterType === 'search') {
+        searchTerm = '';
+        searchInputs.forEach(input => { input.value = ''; });
+      }
+      updateSearch(searchTerm);
+    });
+  });
+
+  const clearAllBtn = container.querySelector('[data-feed-reset-chips]');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const resetBtn = document.querySelector('[data-feed-reset]');
+      if (resetBtn) resetBtn.click();
+    });
+  }
+}
+
+function updateActiveFilterUI() {
+  const specialtySelect = document.querySelector('[data-feed-specialty]');
+  const formatSelect = document.querySelector('[data-feed-format]');
+  const resetButtons = [...document.querySelectorAll('[data-feed-reset]')];
+  const allJobsBtn = resetButtons[0];
+  const resetActionBtn = resetButtons.find(btn => btn !== allJobsBtn && !btn.classList.contains('empty-cta'));
+
+  const isSpecialtyActive = specialtySelect && specialtySelect.value !== 'all';
+  const isFormatActive = formatSelect && formatSelect.value !== 'all';
+  const isPartnerActive = currentPartnerFilter !== 'all';
+  const isSearchActive = Boolean(searchTerm);
+
+  if (specialtySelect) {
+    specialtySelect.classList.toggle('filter-pill--active', isSpecialtyActive);
+    specialtySelect.setAttribute('data-active-filter', String(isSpecialtyActive));
+    const selectedText = specialtySelect.options[specialtySelect.selectedIndex]?.textContent || '';
+    specialtySelect.setAttribute('aria-label', isSpecialtyActive ? `Специальность: ${selectedText}` : 'Специальность');
+  }
+
+  if (formatSelect) {
+    formatSelect.classList.toggle('filter-pill--active', isFormatActive);
+    formatSelect.setAttribute('data-active-filter', String(isFormatActive));
+    const selectedText = formatSelect.options[formatSelect.selectedIndex]?.textContent || '';
+    formatSelect.setAttribute('aria-label', isFormatActive ? `Формат работы: ${selectedText}` : 'Формат работы');
+  }
+
+  let activeFeedCount = 0;
+  if (isSpecialtyActive) activeFeedCount++;
+  if (isFormatActive) activeFeedCount++;
+  if (isPartnerActive) activeFeedCount++;
+  if (isSearchActive) activeFeedCount++;
+
+  const isFeedDefault = activeFeedCount === 0;
+
+  if (allJobsBtn) {
+    allJobsBtn.classList.toggle('filter-pill--active', isFeedDefault);
+    allJobsBtn.setAttribute('aria-pressed', String(isFeedDefault));
+  }
+
+  if (resetActionBtn) {
+    resetActionBtn.classList.toggle('filter-pill--reset-active', !isFeedDefault);
+    resetActionBtn.setAttribute('aria-disabled', String(isFeedDefault));
+    if (!isFeedDefault) {
+      resetActionBtn.textContent = `✕ Сбросить фильтры (${activeFeedCount})`;
+    } else {
+      resetActionBtn.textContent = 'Сбросить фильтры';
+    }
+  }
+
+  document.querySelectorAll('.header__search, .search-field').forEach(wrapper => {
+    const input = wrapper.querySelector('input');
+    const hasQuery = Boolean(input && input.value.trim());
+    wrapper.classList.toggle('header__search--active', hasQuery);
+    wrapper.classList.toggle('search-field--active', hasQuery);
+  });
+
+  const appStatusSelect = document.querySelector('[data-application-status]');
+  if (appStatusSelect) {
+    const isAppStatusActive = appStatusSelect.value !== 'all';
+    appStatusSelect.classList.toggle('filter-pill--active', isAppStatusActive);
+    appStatusSelect.setAttribute('data-active-filter', String(isAppStatusActive));
+  }
+
+  const hrStatusSelect = document.querySelector('[data-hr-status]');
+  if (hrStatusSelect) {
+    const isHrStatusActive = hrStatusSelect.value !== 'all';
+    hrStatusSelect.classList.toggle('filter-pill--active', isHrStatusActive);
+    hrStatusSelect.setAttribute('data-active-filter', String(isHrStatusActive));
+  }
+
+  updateActiveFilterChips();
+}
+
 function updateSearch(value) {
   searchTerm = value.trim().toLocaleLowerCase('ru');
   searchInputs.forEach(input => {
@@ -572,15 +761,7 @@ function updateSearch(value) {
     subtext.textContent = `Показаны ${visibleJobs} из ${totalJobs} персональных подборок · Buddie`;
   }
 
-  const resetFilter = document.querySelector('[data-feed-reset]');
-  if (resetFilter) {
-    const isDefault = !searchTerm &&
-      currentPartnerFilter === 'all' &&
-      (document.querySelector('[data-feed-specialty]')?.value ?? 'all') === 'all' &&
-      (document.querySelector('[data-feed-format]')?.value ?? 'all') === 'all';
-    resetFilter.classList.toggle('filter-pill--active', isDefault);
-    resetFilter.setAttribute('aria-pressed', String(isDefault));
-  }
+  updateActiveFilterUI();
 
   document.querySelectorAll('[data-company-card]').forEach(card => {
     const visible = visibleText(card) && matchesCompanyCategory(card);

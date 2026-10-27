@@ -880,3 +880,118 @@ test('mascot peeking styling, events vector icons, and cancel application button
   // Проверяем, что цвет текста белый rgb(255, 255, 255), обеспечивающий максимальную читабельность
   expect(hoverStyles.color).toBe('rgb(255, 255, 255)');
 });
+
+
+test('applied search filters are prominently highlighted, synchronized with chips, and clearable', async ({ page }) => {
+  await page.goto('/index.html');
+
+  const allJobsBtn = page.locator('.feed-filters button[data-feed-reset]').first();
+  const resetBtn = page.locator('.feed-filters button[data-feed-reset]').last();
+  const formatSelect = page.locator('[data-feed-format]');
+  const specialtySelect = page.locator('[data-feed-specialty]');
+  const activeChips = page.locator('[data-active-chips]');
+  const searchInput = page.locator('.header__search input');
+  const searchWrapper = page.locator('.header__search');
+
+  // 1. По умолчанию: активна кнопка «Все стажировки», селекты без подсветки, чипы скрыты
+  await expect(allJobsBtn).toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(specialtySelect).not.toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).toHaveAttribute('data-active-filter', 'false');
+  await expect(activeChips).toBeHidden();
+
+  // 2. Выбираем формат «Гибрид» -> проверяем появление подсветки выбранного фильтра
+  await formatSelect.selectOption('hybrid');
+  await expect(formatSelect).toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).toHaveAttribute('data-active-filter', 'true');
+  await expect(allJobsBtn).not.toHaveClass(/filter-pill--active/);
+  await expect(resetBtn).toHaveClass(/filter-pill--reset-active/);
+  await expect(resetBtn).toContainText('Сбросить фильтры (1)');
+
+  // Проверяем вычисленные стили подсветки: фиолетовый фон и контрастный цвет текста с авто-ожиданием переходов
+  await expect(formatSelect).toHaveCSS('background-color', 'rgb(243, 232, 255)');
+  await expect(formatSelect).toHaveCSS('color', 'rgb(88, 28, 135)');
+  await expect(formatSelect).toHaveCSS('font-weight', '700');
+
+  // Проверяем отображение плашки активных фильтров с чипом формата
+  await expect(activeChips).toBeVisible();
+  const formatChip = activeChips.locator('[data-remove-filter="format"]');
+  await expect(formatChip).toBeVisible();
+  await expect(formatChip).toContainText('Формат:');
+  await expect(formatChip).toContainText('Гибрид');
+
+  // 3. Выбираем также специальность «Разработка» -> оба фильтра подсвечены
+  await specialtySelect.selectOption('development');
+  await expect(specialtySelect).toHaveClass(/filter-pill--active/);
+  await expect(specialtySelect).toHaveAttribute('data-active-filter', 'true');
+  await expect(resetBtn).toContainText('Сбросить фильтры (2)');
+
+  const specialtyChip = activeChips.locator('[data-remove-filter="specialty"]');
+  await expect(specialtyChip).toBeVisible();
+  await expect(specialtyChip).toContainText('Специальность:');
+  await expect(specialtyChip).toContainText('Разработка');
+
+  // 4. Удаляем только фильтр формата через крестик чипа
+  await formatChip.click();
+  await expect(formatSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(formatSelect).toHaveAttribute('data-active-filter', 'false');
+  await expect(specialtySelect).toHaveClass(/filter-pill--active/);
+  await expect(activeChips.locator('[data-remove-filter="format"]')).toHaveCount(0);
+  await expect(activeChips.locator('[data-remove-filter="specialty"]')).toBeVisible();
+  await expect(resetBtn).toContainText('Сбросить фильтры (1)');
+
+  // 5. Вводим поисковый запрос -> подсветка поисковой строки и появление чипа поиска
+  await searchInput.fill('Java');
+  await expect(searchWrapper).toHaveClass(/header__search--active/);
+  const searchChip = activeChips.locator('[data-remove-filter="search"]');
+  await expect(searchChip).toBeVisible();
+  await expect(searchChip).toContainText('Поиск:');
+  await expect(searchChip).toContainText('«java»');
+  await expect(resetBtn).toContainText('Сбросить фильтры (2)');
+
+  // 6. Выбираем фильтр компании Сбер -> появляется чип компании
+  const sberPartner = page.locator('[data-partner-filter="sber"]');
+  await sberPartner.click();
+  await expect(sberPartner).toHaveClass(/partners__item--active/);
+  const partnerChip = activeChips.locator('[data-remove-filter="partner"]');
+  await expect(partnerChip).toBeVisible();
+  await expect(partnerChip).toContainText('Компания:');
+  await expect(partnerChip).toContainText('Сбер');
+
+  // 7. Проверяем адаптивность и отсутствие горизонтального переполнения при активных чипах
+  for (const width of [1440, 375, 320]) {
+    await page.setViewportSize({ width, height: 700 });
+    const hasOverflow = await page.evaluate(() => {
+      const el = document.scrollingElement || document.documentElement;
+      return el.scrollWidth > window.innerWidth;
+    });
+    expect(hasOverflow, `Overflow detected at ${width}px with active filter chips`).toBe(false);
+  }
+
+  // 8. Сбрасываем все фильтры через кнопку «Сбросить всё ✕» в панели чипов
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const clearAllChipsBtn = activeChips.locator('[data-feed-reset-chips]');
+  await clearAllChipsBtn.click();
+
+  await expect(formatSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(specialtySelect).not.toHaveClass(/filter-pill--active/);
+  await expect(allJobsBtn).toHaveClass(/filter-pill--active/);
+  await expect(activeChips).toBeHidden();
+  await expect(searchInput).toHaveValue('');
+  await expect(searchWrapper).not.toHaveClass(/header__search--active/);
+  await expect(sberPartner).not.toHaveClass(/partners__item--active/);
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(3);
+
+  // 9. Проверяем подсветку фильтра статуса на странице профиля
+  await page.goto('/profile.html');
+  const appStatusSelect = page.locator('[data-application-status]');
+  await expect(appStatusSelect).not.toHaveClass(/filter-pill--active/);
+
+  await appStatusSelect.selectOption('Приглашение');
+  await expect(appStatusSelect).toHaveClass(/filter-pill--active/);
+  await expect(appStatusSelect).toHaveAttribute('data-active-filter', 'true');
+
+  await appStatusSelect.selectOption('all');
+  await expect(appStatusSelect).not.toHaveClass(/filter-pill--active/);
+  await expect(appStatusSelect).toHaveAttribute('data-active-filter', 'false');
+});

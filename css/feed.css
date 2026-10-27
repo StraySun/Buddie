@@ -13,6 +13,106 @@
 .feed-section-heading p { margin: 0; color: #5B6474; font-size: 12px; line-height: 1.5; }
 .feed-section-heading a { color: #6e38b4; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .feed-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.feed-active-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: #fbf9fe;
+  border: 1px dashed #d8cdf0;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.feed-active-chips[hidden] {
+  display: none !important;
+}
+.feed-active-chips__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b21a8;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.feed-active-chips__label svg {
+  width: 14px;
+  height: 14px;
+  fill: #7c3aed;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: #ede4fb;
+  border: 1px solid #c4b5fd;
+  color: #4c1d95;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1.4;
+  box-sizing: border-box;
+  max-width: 100%;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.filter-chip:hover {
+  background: #dfcefc;
+  border-color: #8b5cf6;
+}
+.filter-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #7c3aed;
+}
+.filter-chip strong {
+  font-weight: 700;
+  color: #3b0764;
+}
+.filter-chip__x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(109, 40, 217, 0.15);
+  color: #5b21b6;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.filter-chip:hover .filter-chip__x {
+  background: #6d28d9;
+  color: #ffffff;
+}
+.filter-chip__clear-all {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #7c3aed;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.filter-chip__clear-all:hover {
+  background: #ede4fb;
+  color: #4c1d95;
+  text-decoration: underline;
+}
+.filter-chip__clear-all:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #7c3aed;
+}
 .feed-jobs { display: grid; gap: 14px; }
 .feed-side { display: grid; gap: 14px; }
 .feed-tip { overflow: hidden; background: linear-gradient(145deg,#fff 10%,#f5edff 100%); }
