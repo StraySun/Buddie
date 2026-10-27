@@ -181,14 +181,82 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 4.1. DELETE /api/applications/:id - Отмена / удаление заявки с каскадным удалением кандидата из db.candidates
     if (reqPath.startsWith('/api/applications/') && req.method === 'DELETE') {
-      const targetId = reqPath.split('/api/applications/')[1];
-      db.applications = (db.applications || []).filter(a => a.id !== targetId && a.jobId !== targetId);
-      db.appliedJobs = (db.appliedJobs || []).filter(id => id !== targetId);
-      db.candidates = (db.candidates || []).filter(c => c.id !== targetId && c.jobId !== targetId);
+      let targetId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
+      try {
+        targetId = decodeURIComponent(targetId);
+      } catch {}
+
+      if (!targetId) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Application ID is required' }));
+        return;
+      }
+
+      db.applications = db.applications || [];
+      db.appliedJobs = db.appliedJobs || [];
+      db.candidates = db.candidates || [];
+
+      // 1. Находим все удаляемые заявки по id или jobId
+      const matchedApps = db.applications.filter(a => a.id === targetId || a.jobId === targetId);
+
+      // 2. Находим всех кандидатов, связанных по id, jobId или по timestamp (cand-xxx для app-xxx)
+      const matchedCandidates = db.candidates.filter(c => {
+        if (c.id === targetId || c.jobId === targetId) return true;
+        if (targetId.startsWith('app-') && c.id === targetId.replace('app-', 'cand-')) return true;
+        return false;
+      });
+
+      // 3. Собираем связанные jobId для гарантированной очистки
+      const relatedJobIds = new Set();
+      relatedJobIds.add(targetId);
+      matchedApps.forEach(a => { if (a.jobId) relatedJobIds.add(a.jobId); });
+      matchedCandidates.forEach(c => { if (c.jobId) relatedJobIds.add(c.jobId); });
+
+      // 4. Собираем идентификаторы заявок и кандидатов
+      const appIdsToRemove = new Set(matchedApps.map(a => a.id));
+      appIdsToRemove.add(targetId);
+      if (targetId.startsWith('cand-')) {
+        appIdsToRemove.add(targetId.replace('cand-', 'app-'));
+      }
+
+      const candidateIdsToRemove = new Set(matchedCandidates.map(c => c.id));
+      candidateIdsToRemove.add(targetId);
+      if (targetId.startsWith('app-')) {
+        candidateIdsToRemove.add(targetId.replace('app-', 'cand-'));
+      }
+
+      // 5. Каскадное удаление из db.applications
+      const initialAppCount = db.applications.length;
+      db.applications = db.applications.filter(a => {
+        if (appIdsToRemove.has(a.id)) return false;
+        if (a.jobId && relatedJobIds.has(a.jobId)) return false;
+        return true;
+      });
+      const deletedApps = initialAppCount - db.applications.length;
+
+      // 6. Каскадное удаление из db.appliedJobs
+      db.appliedJobs = db.appliedJobs.filter(id => !relatedJobIds.has(id) && id !== targetId);
+
+      // 7. Каскадное удаление из db.candidates (предотвращает утечку данных в пайплайне HR)
+      const initialCandCount = db.candidates.length;
+      db.candidates = db.candidates.filter(c => {
+        if (candidateIdsToRemove.has(c.id)) return false;
+        if (c.jobId && relatedJobIds.has(c.jobId)) return false;
+        return true;
+      });
+      const deletedCandidates = initialCandCount - db.candidates.length;
+
       writeDb(db);
       res.writeHead(200);
-      res.end(JSON.stringify({ success: true, applications: db.applications }));
+      res.end(JSON.stringify({
+        success: true,
+        deletedApplications: deletedApps,
+        deletedCandidates: deletedCandidates,
+        applications: db.applications,
+        candidates: db.candidates
+      }));
       return;
     }
 
@@ -200,7 +268,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (reqPath.startsWith('/api/candidates/') && req.method === 'PUT') {
-      const candId = reqPath.split('/api/candidates/')[1];
+      let candId = reqPath.slice('/api/candidates/'.length).replace(/\/+$/, '');
+      try { candId = decodeURIComponent(candId); } catch {}
       const update = await parseBody(req);
       db.candidates = db.candidates || [];
       const candidate = db.candidates.find(c => c.id === candId);
@@ -228,7 +297,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (reqPath.startsWith('/api/saved-jobs/') && req.method === 'DELETE') {
-      const jobId = reqPath.split('/api/saved-jobs/')[1];
+      let jobId = reqPath.slice('/api/saved-jobs/'.length).replace(/\/+$/, '');
+      try { jobId = decodeURIComponent(jobId); } catch {}
       db.savedJobs = (db.savedJobs || []).filter(id => id !== jobId);
       writeDb(db);
       res.writeHead(200);
@@ -248,7 +318,8 @@ const server = http.createServer(async (req, res) => {
 
     // 8. PUT /api/applications/:id - Обновление статуса заявки
     if (reqPath.startsWith('/api/applications/') && req.method === 'PUT') {
-      const appId = reqPath.split('/api/applications/')[1];
+      let appId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
+      try { appId = decodeURIComponent(appId); } catch {}
       const update = await parseBody(req);
       db.applications = db.applications || [];
       const app = db.applications.find(a => a.id === appId || a.jobId === appId);

@@ -1667,38 +1667,111 @@ document.querySelectorAll('.button').forEach(btn => {
 });
 
 // ==========================================
-// 12. Табы в профиле студента
+// 12. Табы в профиле студента с поддержкой Deep Linking (#saved, #stack, #analytics)
 // ==========================================
 function initProfileTabs() {
-  const tabBtns = document.querySelectorAll('.profile-tab-btn');
-  const tabPanes = document.querySelectorAll('.tab-pane');
+  const tabBtns = Array.from(document.querySelectorAll('.profile-tab-btn'));
+  const tabPanes = Array.from(document.querySelectorAll('.tab-pane'));
   if (!tabBtns.length) return;
 
-  tabBtns.forEach(btn => {
+  function getTabFromHash(hash) {
+    if (!hash) return null;
+    const clean = String(hash).replace(/^#/, '').toLowerCase().trim();
+    const validTabs = ['applications', 'saved', 'stack', 'analytics'];
+    if (validTabs.includes(clean)) return clean;
+    if (clean.startsWith('pane-')) {
+      const sub = clean.replace('pane-', '');
+      if (validTabs.includes(sub)) return sub;
+    }
+    if (clean === 'feedback') return 'applications';
+    return null;
+  }
+
+  function switchTab(target, updateHash = true, animate = false) {
+    const validTabs = ['applications', 'saved', 'stack', 'analytics'];
+    const activeTab = validTabs.includes(target) ? target : 'applications';
+
+    tabBtns.forEach(b => {
+      const isMatch = b.dataset.tab === activeTab;
+      b.classList.toggle('is-active', isMatch);
+      b.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+
+    tabPanes.forEach(pane => {
+      const isMatch = pane.id === 'pane-' + activeTab;
+      pane.style.display = isMatch ? '' : 'none';
+      pane.classList.toggle('is-active', isMatch);
+      if (isMatch && animate && typeof anime !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        anime({
+          targets: pane,
+          opacity: [0, 1],
+          translateY: [10, 0],
+          duration: 300,
+          easing: 'easeOutCubic'
+        });
+      }
+    });
+
+    if (activeTab === 'saved') {
+      renderSavedJobsInProfile();
+    }
+
+    if (updateHash) {
+      const targetHash = '#' + activeTab;
+      if (window.location.hash !== targetHash) {
+        if (window.history && window.history.pushState) {
+          window.history.pushState(null, '', targetHash);
+        } else {
+          window.location.hash = targetHash;
+        }
+      }
+    }
+  }
+
+  tabBtns.forEach((btn, index) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const target = btn.dataset.tab;
-      tabBtns.forEach(b => b.classList.toggle('is-active', b === btn));
-      tabPanes.forEach(pane => {
-        const match = pane.id === 'pane-' + target;
-        pane.style.display = match ? '' : 'none';
-        if (match && typeof anime !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          anime({
-            targets: pane,
-            opacity: [0, 1],
-            translateY: [10, 0],
-            duration: 300,
-            easing: 'easeOutCubic'
-          });
-        }
-      });
+      switchTab(btn.dataset.tab, true, true);
+    });
 
-      if (target === 'saved') {
-        renderSavedJobsInProfile();
+    // WAI-ARIA APG Tabs Keyboard Navigation
+    btn.addEventListener('keydown', (e) => {
+      let nextIndex = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        nextIndex = (index + 1) % tabBtns.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        nextIndex = (index - 1 + tabBtns.length) % tabBtns.length;
+      } else if (e.key === 'Home') {
+        nextIndex = 0;
+      } else if (e.key === 'End') {
+        nextIndex = tabBtns.length - 1;
+      }
+      if (nextIndex !== null) {
+        e.preventDefault();
+        const nextBtn = tabBtns[nextIndex];
+        nextBtn.focus();
+        switchTab(nextBtn.dataset.tab, true, true);
       }
     });
   });
 
+  window.addEventListener('hashchange', () => {
+    const tabFromHash = getTabFromHash(window.location.hash);
+    if (tabFromHash) {
+      switchTab(tabFromHash, false, true);
+    }
+  });
+
+  window.addEventListener('popstate', () => {
+    const tabFromHash = getTabFromHash(window.location.hash) || 'applications';
+    switchTab(tabFromHash, false, true);
+  });
+
+  // Deep linking при начальной загрузке страницы (F5, переход по прямой ссылке с хэшем)
+  const initialTab = getTabFromHash(window.location.hash);
+  if (initialTab) {
+    switchTab(initialTab, false, false);
+  }
   renderSavedJobsInProfile();
 }
 

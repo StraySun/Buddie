@@ -291,6 +291,68 @@ test('applying on index.html dynamically creates application in profile and cand
   await expect(candidateRows.first()).toContainText('94%');
 });
 
+test('cancelling application on index.html cascades deletion to profile and HR candidates without 404 or data leak', async ({ page }) => {
+  await page.goto('/index.html');
+  const yandex = page.locator('[data-job-id="yandex-analyst"]');
+  const applyBtn = yandex.locator('[data-job-action="apply"]');
+
+  // 1. Откликаемся
+  await applyBtn.click();
+  await expect(applyBtn).toHaveAttribute('aria-pressed', 'true');
+
+  // 2. Отменяем отклик (unapply)
+  await applyBtn.click();
+  await expect(applyBtn).toHaveAttribute('aria-pressed', 'false');
+  await expect(applyBtn).toHaveText('Откликнуться');
+
+  // 3. Проверяем profile.html: заявки нет, счетчик вернулся к 4
+  await page.goto('/profile.html');
+  const profileRows = page.locator('.data-table tbody tr');
+  await expect(profileRows).toHaveCount(4);
+
+  // 4. Проверяем hr.html: кандидата нет в пайплайне HR, счетчик вернулся к 5 (каскадное удаление без утечки данных)
+  await page.goto('/hr.html');
+  const candidateRows = page.locator('.candidate-table tbody tr');
+  await expect(candidateRows).toHaveCount(5);
+  await expect(page.locator('.candidate-table')).not.toContainText('94%');
+});
+
+test('DELETE /api/applications/:id handles cascade deletion and prevents 404', async ({ request }) => {
+  // 1. Создаем отклик через API
+  const postRes = await request.post('/api/applications', {
+    data: {
+      jobId: 'cascade-test-job',
+      title: 'Cascade QA Engineer',
+      company: 'Test Corp',
+      location: 'Казань · Hybrid'
+    }
+  });
+  expect(postRes.status()).toBe(201);
+  const createdApp = await postRes.json();
+  expect(createdApp.id).toBeDefined();
+
+  // 2. Проверяем, что кандидат появился в HR пайплайне
+  const getCandRes = await request.get('/api/candidates');
+  const candidatesBefore = await getCandRes.json();
+  const foundCand = candidatesBefore.find(c => c.jobId === 'cascade-test-job');
+  expect(foundCand).toBeDefined();
+
+  // 3. Удаляем по ID заявки DELETE /api/applications/:id
+  const deleteRes = await request.delete('/api/applications/' + createdApp.id);
+  expect(deleteRes.status()).toBe(200);
+  const deleteData = await deleteRes.json();
+  expect(deleteData.success).toBe(true);
+
+  // 4. Проверяем каскадное удаление кандидата из db.candidates (отсутствие утечки данных)
+  const getCandAfter = await request.get('/api/candidates');
+  const candidatesAfter = await getCandAfter.json();
+  expect(candidatesAfter.find(c => c.jobId === 'cascade-test-job')).toBeUndefined();
+
+  // 5. Проверяем идемпотентность (повторный DELETE не падает с 404)
+  const repeatDelete = await request.delete('/api/applications/' + createdApp.id);
+  expect(repeatDelete.status()).toBe(200);
+});
+
 test('profile tabs switch panes and render saved jobs container', async ({ page }) => {
   await page.goto('/profile.html');
   const appPane = page.locator('#pane-applications');
@@ -321,6 +383,44 @@ test('profile tabs switch panes and render saved jobs container', async ({ page 
   await page.locator('.profile-tab-btn[data-tab="applications"]').click();
   await expect(appPane).toBeVisible();
   await expect(analyticsPane).toBeHidden();
+});
+
+test('profile tabs support deep linking with hash on initial load, F5 reload, and history navigation', async ({ page }) => {
+  // 1. Прямой переход по ссылке с хэшем #saved
+  await page.goto('/profile.html#saved');
+  await expect(page.locator('.profile-tab-btn[data-tab="saved"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-saved')).toBeVisible();
+  await expect(page.locator('#pane-applications')).toBeHidden();
+
+  // 2. Прямой переход по ссылке с хэшем #stack
+  await page.goto('/profile.html#stack');
+  await expect(page.locator('.profile-tab-btn[data-tab="stack"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-stack')).toBeVisible();
+  await expect(page.locator('#pane-saved')).toBeHidden();
+
+  // 3. Прямой переход по ссылке с хэшем #analytics
+  await page.goto('/profile.html#analytics');
+  await expect(page.locator('.profile-tab-btn[data-tab="analytics"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-analytics')).toBeVisible();
+  await expect(page.locator('#pane-stack')).toBeHidden();
+
+  // 4. Клик по вкладке обновляет хэш в URL
+  await page.locator('.profile-tab-btn[data-tab="saved"]').click();
+  await expect(page).toHaveURL(/#saved$/);
+
+  // 5. Перезагрузка страницы (F5) сохраняет выбранную вкладку
+  await page.reload();
+  await expect(page.locator('.profile-tab-btn[data-tab="saved"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-saved')).toBeVisible();
+  await expect(page.locator('#pane-applications')).toBeHidden();
+
+  // 6. Навигация стрелками клавиатуры (WAI-ARIA APG Tabs)
+  const savedBtn = page.locator('.profile-tab-btn[data-tab="saved"]');
+  await savedBtn.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.profile-tab-btn[data-tab="stack"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-stack')).toBeVisible();
+  await expect(page).toHaveURL(/#stack$/);
 });
 
 test('profile actions persist across reload (accept offer and interview slot)', async ({ page }) => {

@@ -1,0 +1,241 @@
+{
+  "university": "kfu",
+  "faculty": "itis",
+  "profile": {
+    "name": "Нур М.",
+    "role": "Аналитика данных",
+    "course": "3-й курс",
+    "university": "Казанский федеральный университет",
+    "skills": [
+      "Python",
+      "SQL",
+      "Pandas",
+      "Tableau",
+      "Git"
+    ],
+    "about": "Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, A/B-тестированием и визуализацией данных."
+  },
+  "savedJobs": [],
+  "appliedJobs": [],
+  "applications": [
+    {
+      "id": "app-1",
+      "jobId": "yandex-frontend",
+      "title": "Младший фронтенд-разработчик",
+      "company": "Yandex",
+      "companyLetter": "Я",
+      "companyLogoClass": "company-logo--yandex",
+      "location": "Москва · Hybrid",
+      "appliedDate": "05.10.2026",
+      "status": "Приглашение",
+      "statusClass": "status-badge--success",
+      "actionText": "Выбрать время"
+    },
+    {
+      "id": "app-2",
+      "jobId": "sber-analyst",
+      "title": "Аналитик данных",
+      "company": "Sber",
+      "companyLetter": "С",
+      "companyLogoClass": "company-logo--sber",
+      "location": "Казань · Удалённо",
+      "appliedDate": "03.10.2026",
+      "status": "На рассмотрении",
+      "statusClass": "status-badge--warning",
+      "actionText": "Чат с HR"
+    },
+    {
+      "id": "app-3",
+      "jobId": "vk-qa",
+      "title": "Тестировщик",
+      "company": "VK",
+      "companyLetter": "VK",
+      "companyLogoClass": "company-logo--vk",
+      "location": "Москва · Офис",
+      "appliedDate": "01.10.2026",
+      "status": "Отказ",
+      "statusClass": "status-badge--danger",
+      "actionText": "Фидбек",
+      "rowId": "feedback"
+    },
+    {
+      "id": "app-4",
+      "jobId": "tbank-python",
+      "title": "Python-разработчик",
+      "company": "Т-Банк",
+      "companyLetter": "Т",
+      "companyLogoClass": "company-logo--tbank",
+      "location": "Москва · Удалённо",
+      "appliedDate": "28.09.2026",
+      "status": "Оффер",
+      "statusClass": "status-badge--purple",
+      "actionText": "Принять"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "yandex-analyst",
+      "company": "Yandex",
+      "companyLogoClass": "company-logo--yandex",
+      "companyLetter": "Я",
+      "rating": "⭐ 4.7 · Отзывы студентов",
+      "matchScore": "✧ 96% совпадение",
+      "title": "Стажёр-аналитик данных",
+      "salary": "150 000–200 000 ₽",
+      "specialty": "analysis",
+      "format": "hybrid",
+      "tags": [
+        "Стажировка",
+        "Hybrid",
+        "Python",
+        "SQL"
+      ],
+      "description": "Анализируй продуктовые данные пользователей и создавай визуализации для продуктовых команд.",
+      "location": "⌖ Москва",
+      "workload": "▣ 3 дня/неделю",
+      "postedTime": "◷ Сегодня",
+      "responseBadge": "● Быстрый отклик",
+      "targetUniversity": "kfu"
+    },
+    {
+      "id": "sber-java",
+      "company": "Сбер",
+      "companyLogoClass": "company-logo--sber",
+      "companyLetter": "С",
+      "rating": "⭐ 4.8 · Аккредитованный партнёр КФУ",
+      "matchScore": "✧ 91% совпадение",
+      "title": "Младший Java-разработчик",
+      "salary": "90 000–130 000 ₽",
+      "specialty": "development",
+      "format": "remote",
+      "tags": [
+        "Junior",
+        "Remote",
+        "Java",
+        "Spring"
+      ],
+      "description": "Разработка сервисов для корпоративных клиентов, написание интеграционных тестов и code review.",
+      "location": "⌖ Казань / Удалённо",
+      "workload": "▣ 40 ч/неделю",
+      "postedTime": "◷ Вчера",
+      "responseBadge": "● Оплата обучения",
+      "targetUniversity": "kfu"
+    },
+    {
+      "id": "tbank-data",
+      "company": "Т-Банк",
+      "companyLogoClass": "company-logo--tbank",
+      "companyLetter": "Т",
+      "rating": "⭐ 4.9 · Лучший работодатель для студентов",
+      "matchScore": "✧ 88% совпадение",
+      "title": "Data Engineer Intern",
+      "salary": "110 000–140 000 ₽",
+      "specialty": "analysis",
+      "format": "hybrid",
+      "tags": [
+        "Intern",
+        "Hybrid",
+        "ETL",
+        "Spark"
+      ],
+      "description": "Построение витрин данных, оптимизация пайплайнов обработки и поддержка аналитических баз.",
+      "location": "⌖ Казань, ул. Баумана",
+      "workload": "▣ 20–30 ч/неделю",
+      "postedTime": "◷ 2 дня назад",
+      "responseBadge": "● Менторство",
+      "targetUniversity": "all"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "cand-1",
+      "name": "Нур М.",
+      "initials": "НМ",
+      "avatarClass": "",
+      "role": "Аналитика данных",
+      "university": "КФУ · 3-й курс",
+      "jobTitle": "Стажёр-аналитик данных",
+      "matchScore": "96%",
+      "skills": [
+        "Python",
+        "SQL",
+        "Pandas"
+      ],
+      "status": "new",
+      "statusLabel": "Новый",
+      "statusClass": "status-badge--success"
+    },
+    {
+      "id": "cand-2",
+      "name": "Алина И.",
+      "initials": "АИ",
+      "avatarClass": "candidate__avatar--green",
+      "role": "Frontend-разработка",
+      "university": "КФУ · 4-й курс",
+      "jobTitle": "Frontend-разработчик",
+      "matchScore": "92%",
+      "skills": [
+        "React",
+        "TypeScript",
+        "Git"
+      ],
+      "status": "interview",
+      "statusLabel": "Интервью",
+      "statusClass": "status-badge--purple"
+    },
+    {
+      "id": "cand-3",
+      "name": "Дамир К.",
+      "initials": "ДК",
+      "avatarClass": "candidate__avatar--blue",
+      "role": "Java-разработка",
+      "university": "КФУ · 3-й курс",
+      "jobTitle": "Младший Java-разработчик",
+      "matchScore": "89%",
+      "skills": [
+        "Java",
+        "Spring",
+        "SQL"
+      ],
+      "status": "review",
+      "statusLabel": "На рассмотрении",
+      "statusClass": "status-badge--warning"
+    },
+    {
+      "id": "cand-4",
+      "name": "Елена М.",
+      "initials": "ЕМ",
+      "avatarClass": "candidate__avatar--orange",
+      "role": "Продуктовая аналитика",
+      "university": "КФУ · 2-й курс",
+      "jobTitle": "Стажёр-аналитик данных",
+      "matchScore": "86%",
+      "skills": [
+        "SQL",
+        "Tableau",
+        "Python"
+      ],
+      "status": "new",
+      "statusLabel": "Новый",
+      "statusClass": "status-badge--success"
+    },
+    {
+      "id": "cand-5",
+      "name": "Роман С.",
+      "initials": "РС",
+      "avatarClass": "candidate__avatar--purple",
+      "role": "Машинное обучение",
+      "university": "КФУ · 4-й курс",
+      "jobTitle": "ML Engineer Intern",
+      "matchScore": "83%",
+      "skills": [
+        "Python",
+        "ML",
+        "PyTorch"
+      ],
+      "status": "review",
+      "statusLabel": "На рассмотрении",
+      "statusClass": "status-badge--warning"
+    }
+  ]
+}
