@@ -13,6 +13,7 @@
 | **UI/UX & Design Tokens** | `ui-frontend-specialist` | Семантическая вёрстка HTML5, токен-архитектура, WCAG AA доступность, SVG-спрайты | `css/variables.css`, `css/*.css`, `*.html` |
 | **Design System Guardian** | `design-system-guardian` | Контроль запрета хардкодных цветов, тач-таргеты 44×44px, фокус-ринги, Zero Horizontal Overflow | `css/`, `*.html` |
 | **Fast QA & Regression Pilot** | `qa-testing` | Двухуровневый контур верификации, таргетированные спеки Playwright, 33 E2E сценария | `tests/app.spec.js`, `playwright.config.js` |
+| **Security & Data Sanitizer** | `security-sanitizer` | Защита от XSS, устранение Race Conditions (Double submit), валидация и trim строковых полей | `js/app.js`, `server.js` |
 
 ---
 
@@ -26,6 +27,7 @@
 │   ├── data-contract-validator/
 │   ├── ui-frontend-specialist/
 │   ├── design-system-guardian/
+│   ├── security-sanitizer/
 │   └── qa-testing/
 └── README.md                      # Данный документ
 ```
