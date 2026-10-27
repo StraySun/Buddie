@@ -44,12 +44,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible { 
 .sidebar__hr-link { min-height: 40px; display: flex; align-items: center; padding: 0 7px; color: #e2d4f6; font-size: 11px; font-weight: 600; }
 .sidebar__hr-link:hover { color: #fff; text-decoration: underline; }
 .status-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: #34d399; }
-.sidebar__user { display: flex; gap: 8px; align-items: center; margin-top: 17px; padding: 8px 6px; border-top: 1px solid rgba(255,255,255,.09); cursor: pointer; border-radius: 6px; transition: background 0.15s ease; user-select: none; }
+.sidebar__user { display: flex; gap: 8px; align-items: center; margin-top: 17px; padding: 8px 6px; border-top: 1px solid rgba(255,255,255,.09); cursor: pointer; border-radius: 6px; transition: background 0.15s ease; user-select: none; min-width: 0; }
+.sidebar__user > div:last-child { min-width: 0; flex: 1; }
 .sidebar__user:hover { background: rgba(255,255,255,0.08); }
 .sidebar__user:focus-visible { outline: 2px solid #8b50dc; outline-offset: 2px; }
 .sidebar__user .avatar { width: 25px; height: 25px; font-size: 9px; }
-.sidebar__user-name { font-size: 11px; font-weight: 700; }
-.sidebar__user-meta { margin-top: 3px; color: #c2b9d2; font-size: 10px; }
+.sidebar__user-name { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar__user-meta { margin-top: 3px; color: #c2b9d2; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-main { min-height: 100vh; min-width: 0; max-width: 100%; margin-left: 208px; }
 .header { position: sticky; z-index: 4; top: 0; height: 57px; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: rgba(255,255,255,.94); border-bottom: 1px solid #eceaf1; backdrop-filter: blur(12px); }
 .header__search { min-height: 40px; min-width: 0; flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #eceaf1; border-radius: var(--radius-pill); background: #faf9fc; color: #5B6474; }

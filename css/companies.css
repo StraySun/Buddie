@@ -3,9 +3,10 @@
 .companies-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .companies-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 13px; }
 .company-card { padding: 15px; display: flex; flex-direction: column; min-height: 190px; }
-.company-card__top { display: flex; align-items: center; gap: 10px; }
+.company-card__top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.company-card__top > div:last-child { min-width: 0; flex: 1; }
 .company-card__top .company-logo { width: 39px; height: 39px; flex-basis: 39px; font-size: 18px; }
-.company-card__name { margin: 0 0 4px; font-size: 14px; }
+.company-card__name { margin: 0 0 4px; font-size: 14px; overflow-wrap: break-word; word-break: break-word; }
 .company-card__partner { color: #7b48b4; font-size: 12px; }
 .company-card__count { margin: 13px 0 9px; color: #5B6474; font-size: 12px; }
 .company-card__tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }

@@ -2,10 +2,11 @@
 .profile-main,.profile-side { display: grid; gap: 12px; min-width: 0; }
 .student-card { display: flex; align-items: center; gap: 14px; padding: 15px; }
 .student-card__avatar { width: 48px; height: 48px; display: grid; place-items: center; flex: 0 0 48px; border-radius: 50%; color: #803ccc; background: #eedbff; font-size: 16px; font-weight: 800; }
-.student-card__identity { flex: 1; min-width: 0; }
-.student-card__identity h2 { margin: 0 0 4px; font-size: 15px; }
-.student-card__identity p { margin: 0 0 4px; color: #5B6474; font-size: 12px; }
-.student-card__identity small { color: #7038b5; font-size: 12px; }
+.student-card__identity { flex: 1; min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+.student-card__identity h2 { margin: 0 0 4px; font-size: 15px; overflow-wrap: break-word; word-break: break-word; }
+.student-card__identity p { margin: 0 0 4px; color: #5B6474; font-size: 12px; overflow-wrap: break-word; }
+.student-card__identity small { color: #7038b5; font-size: 12px; overflow-wrap: break-word; }
+.student-card__contacts, .student-card__about { overflow-wrap: break-word; word-break: break-word; }
 .student-card__progress { width: 150px; }
 .student-card__progress-head { display: flex; justify-content: space-between; color: #5B6474; font-size: 12px; }
 .student-card__progress-head strong { color: #6e35b1; font-size: 12px; }
