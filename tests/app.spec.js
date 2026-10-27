@@ -548,3 +548,54 @@ test('phase 3 UI polish: university selector on mobile, target university badges
   await expect(page.locator('[data-feed-banner-title]')).toContainText('стажиров');
   await expect(page.locator('[data-feed-section-subtext]')).toContainText('Показаны');
 });
+
+test('partner interactive filters toggle feed jobs and reset cleanly', async ({ page }) => {
+  await page.goto('/index.html');
+
+  // 1. Проверяем доступность кнопок партнеров
+  const yandexBtn = page.locator('.partners__item--yandex');
+  const sberBtn = page.locator('.partners__item--sber');
+  const vkBtn = page.locator('.partners__item--vk');
+
+  await expect(yandexBtn).toHaveAttribute('role', 'button');
+  await expect(yandexBtn).toHaveAttribute('aria-pressed', 'false');
+
+  // 2. Клик по Yandex — фильтрация ленты
+  await yandexBtn.click();
+  await expect(yandexBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(yandexBtn).toHaveClass(/partners__item--active/);
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(1);
+  await expect(page.locator('.feed-jobs .job-card[data-job-id="yandex-analyst"]')).toBeVisible();
+  await expect(page.locator('.feed-jobs .job-card[data-job-id="sber-java"]')).toBeHidden();
+  await expect(page.locator('[data-feed-section-subtext]')).toContainText('Показаны 1 из 3');
+
+  // 3. Повторный клик по Yandex — снятие фильтра (toggle off)
+  await yandexBtn.click();
+  await expect(yandexBtn).toHaveAttribute('aria-pressed', 'false');
+  await expect(yandexBtn).not.toHaveClass(/partners__item--active/);
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(3);
+  await expect(page.locator('[data-feed-section-subtext]')).toContainText('Показаны 3 из 3');
+
+  // 4. Клик по Сбер, затем сброс через «Сбросить фильтры»
+  await sberBtn.click();
+  await expect(sberBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(1);
+  await expect(page.locator('.feed-jobs .job-card[data-job-id="sber-java"]')).toBeVisible();
+
+  await page.locator('[data-feed-reset]').first().click();
+  await expect(sberBtn).toHaveAttribute('aria-pressed', 'false');
+  await expect(sberBtn).not.toHaveClass(/partners__item--active/);
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(3);
+
+  // 5. Клавиатурная навигация (Enter / Space) и Empty State
+  await vkBtn.focus();
+  await page.keyboard.press('Enter');
+  await expect(vkBtn).toHaveAttribute('aria-pressed', 'true');
+  // Нет вакансий VK по умолчанию -> должен появиться feedEmpty
+  const feedEmpty = page.locator('[data-feed-empty]');
+  await expect(feedEmpty).toBeVisible();
+  await feedEmpty.locator('.empty-cta').click();
+  await expect(feedEmpty).toBeHidden();
+  await expect(vkBtn).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('.feed-jobs .job-card:not([hidden])')).toHaveCount(3);
+});

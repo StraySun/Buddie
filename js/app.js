@@ -446,12 +446,30 @@ function matchesHrFilters(row) {
   return matchesUniversity && matchesStatus;
 }
 
+let currentPartnerFilter = 'all';
+
+function matchesPartner(job) {
+  if (currentPartnerFilter === 'all') return true;
+  const companyEl = job.querySelector('.company-name');
+  const compText = (companyEl ? companyEl.textContent : job.textContent).toLocaleLowerCase('ru');
+  const filter = currentPartnerFilter.toLowerCase();
+
+  if (filter === 'yandex') return compText.includes('yandex') || compText.includes('яндекс');
+  if (filter === 'sber') return compText.includes('sber') || compText.includes('сбер');
+  if (filter === 'vk') return compText.includes('vk') || compText.includes('вк');
+  if (filter === 'ozon') return compText.includes('ozon') || compText.includes('озон');
+  if (filter === 'tbank') return compText.includes('т-банк') || compText.includes('t-bank') || compText.includes('tbank') || compText.includes('тинькофф') || compText.includes('tinkoff');
+
+  return compText.includes(filter);
+}
+
 function updateJobs(job) {
   const specialty = document.querySelector('[data-feed-specialty]')?.value ?? 'all';
   const format = document.querySelector('[data-feed-format]')?.value ?? 'all';
   const matches = (!searchTerm || job.textContent.toLocaleLowerCase('ru').includes(searchTerm)) &&
     (specialty === 'all' || job.dataset.specialty === specialty) &&
-    (format === 'all' || job.dataset.format === format);
+    (format === 'all' || job.dataset.format === format) &&
+    matchesPartner(job);
   setVisible(job, matches);
 }
 
@@ -553,6 +571,7 @@ function updateSearch(value) {
   const resetFilter = document.querySelector('[data-feed-reset]');
   if (resetFilter) {
     const isDefault = !searchTerm &&
+      currentPartnerFilter === 'all' &&
       (document.querySelector('[data-feed-specialty]')?.value ?? 'all') === 'all' &&
       (document.querySelector('[data-feed-format]')?.value ?? 'all') === 'all';
     resetFilter.classList.toggle('filter-pill--active', isDefault);
@@ -642,8 +661,43 @@ document.querySelectorAll('[data-feed-reset]').forEach(button => button.addEvent
   const format = document.querySelector('[data-feed-format]');
   if (specialty) specialty.value = 'all';
   if (format) format.value = 'all';
+  currentPartnerFilter = 'all';
+  document.querySelectorAll('.partners__item').forEach(item => {
+    item.classList.remove('partners__item--active');
+    item.setAttribute('aria-pressed', 'false');
+  });
   updateSearch('');
 }));
+
+function setPartnerFilter(partnerKey) {
+  if (currentPartnerFilter === partnerKey) {
+    currentPartnerFilter = 'all';
+  } else {
+    currentPartnerFilter = partnerKey;
+  }
+  document.querySelectorAll('.partners__item').forEach(item => {
+    const isActive = item.dataset.partnerFilter === currentPartnerFilter;
+    item.classList.toggle('partners__item--active', isActive);
+    item.setAttribute('aria-pressed', String(isActive));
+  });
+  updateSearch(searchTerm);
+  const activeLabel = currentPartnerFilter === 'all' ? 'все компании' : currentPartnerFilter;
+  announce(`Фильтр по компаниям: ${activeLabel}`);
+}
+
+document.querySelectorAll('.partners__item').forEach(item => {
+  const filterKey = item.dataset.partnerFilter;
+  if (!filterKey) return;
+  item.addEventListener('click', () => {
+    setPartnerFilter(filterKey);
+  });
+  item.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setPartnerFilter(filterKey);
+    }
+  });
+});
 
 document.querySelector('[data-application-status]')?.addEventListener('change', () => updateSearch(searchTerm));
 document.querySelector('[data-hr-university]')?.addEventListener('change', () => updateSearch(searchTerm));
