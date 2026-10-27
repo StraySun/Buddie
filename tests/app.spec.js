@@ -885,13 +885,15 @@ test('mascot peeking styling, events vector icons, and cancel application button
 test('applied search filters are prominently highlighted, synchronized with chips, and clearable', async ({ page }) => {
   await page.goto('/index.html');
 
-  const allJobsBtn = page.locator('.feed-filters button[data-feed-reset]').first();
-  const resetBtn = page.locator('.feed-filters button[data-feed-reset]').last();
+  const allJobsBtn = page.locator('.feed-filters button[data-feed-reset]');
   const formatSelect = page.locator('[data-feed-format]');
   const specialtySelect = page.locator('[data-feed-specialty]');
   const activeChips = page.locator('[data-active-chips]');
   const searchInput = page.locator('.header__search input');
   const searchWrapper = page.locator('.header__search');
+
+  // Проверяем, что в панели фильтров нет дубликата кнопки сброса (только «Все стажировки»)
+  await expect(page.locator('.feed-filters button')).toHaveCount(1);
 
   // 1. По умолчанию: активна кнопка «Все стажировки», селекты без подсветки, чипы скрыты
   await expect(allJobsBtn).toHaveClass(/filter-pill--active/);
@@ -900,18 +902,18 @@ test('applied search filters are prominently highlighted, synchronized with chip
   await expect(formatSelect).toHaveAttribute('data-active-filter', 'false');
   await expect(activeChips).toBeHidden();
 
-  // 2. Выбираем формат «Гибрид» -> проверяем появление подсветки выбранного фильтра
+  // 2. Выбираем формат «Гибрид» -> проверяем появление мягкой неброской подсветки
   await formatSelect.selectOption('hybrid');
   await expect(formatSelect).toHaveClass(/filter-pill--active/);
   await expect(formatSelect).toHaveAttribute('data-active-filter', 'true');
   await expect(allJobsBtn).not.toHaveClass(/filter-pill--active/);
-  await expect(resetBtn).toHaveClass(/filter-pill--reset-active/);
-  await expect(resetBtn).toContainText('Сбросить фильтры (1)');
 
-  // Проверяем вычисленные стили подсветки: фиолетовый фон и контрастный цвет текста с авто-ожиданием переходов
+  // Проверяем вычисленные стили подсветки: мягкий лавандовый фон, читаемый цвет текста и неброскую тень
   await expect(formatSelect).toHaveCSS('background-color', 'rgb(243, 232, 255)');
   await expect(formatSelect).toHaveCSS('color', 'rgb(88, 28, 135)');
   await expect(formatSelect).toHaveCSS('font-weight', '700');
+  const formatShadow = await formatSelect.evaluate(el => getComputedStyle(el).boxShadow);
+  expect(formatShadow).not.toContain('0px 0px 0px 2px'); // тяжелый неоновый ореол убран
 
   // Проверяем отображение плашки активных фильтров с чипом формата
   await expect(activeChips).toBeVisible();
@@ -919,12 +921,13 @@ test('applied search filters are prominently highlighted, synchronized with chip
   await expect(formatChip).toBeVisible();
   await expect(formatChip).toContainText('Формат:');
   await expect(formatChip).toContainText('Гибрид');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(1);
 
-  // 3. Выбираем также специальность «Разработка» -> оба фильтра подсвечены
+  // 3. Выбираем также специальность «Разработка» -> оба фильтра подсвечены, в плашке 2 чипа
   await specialtySelect.selectOption('development');
   await expect(specialtySelect).toHaveClass(/filter-pill--active/);
   await expect(specialtySelect).toHaveAttribute('data-active-filter', 'true');
-  await expect(resetBtn).toContainText('Сбросить фильтры (2)');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(2);
 
   const specialtyChip = activeChips.locator('[data-remove-filter="specialty"]');
   await expect(specialtyChip).toBeVisible();
@@ -938,7 +941,7 @@ test('applied search filters are prominently highlighted, synchronized with chip
   await expect(specialtySelect).toHaveClass(/filter-pill--active/);
   await expect(activeChips.locator('[data-remove-filter="format"]')).toHaveCount(0);
   await expect(activeChips.locator('[data-remove-filter="specialty"]')).toBeVisible();
-  await expect(resetBtn).toContainText('Сбросить фильтры (1)');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(1);
 
   // 5. Вводим поисковый запрос -> подсветка поисковой строки и появление чипа поиска
   await searchInput.fill('Java');
@@ -947,7 +950,7 @@ test('applied search filters are prominently highlighted, synchronized with chip
   await expect(searchChip).toBeVisible();
   await expect(searchChip).toContainText('Поиск:');
   await expect(searchChip).toContainText('«java»');
-  await expect(resetBtn).toContainText('Сбросить фильтры (2)');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(2);
 
   // 6. Выбираем фильтр компании Сбер -> появляется чип компании
   const sberPartner = page.locator('[data-partner-filter="sber"]');
@@ -957,6 +960,7 @@ test('applied search filters are prominently highlighted, synchronized with chip
   await expect(partnerChip).toBeVisible();
   await expect(partnerChip).toContainText('Компания:');
   await expect(partnerChip).toContainText('Сбер');
+  await expect(activeChips.locator('.filter-chip')).toHaveCount(3);
 
   // 7. Проверяем адаптивность и отсутствие горизонтального переполнения при активных чипах
   for (const width of [1440, 375, 320]) {
