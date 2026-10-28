@@ -1352,6 +1352,10 @@ function bindJobCard(card) {
           } else {
             apiRes = await ApiService.removeApplication(id);
           }
+          const currentApps = storage.read('buddie-applications-cache', null);
+          if (Array.isArray(currentApps)) {
+            updateApplicationsBadge(currentApps.length);
+          }
         }
 
         setJobButton(button, active,
@@ -1600,6 +1604,77 @@ function bindApplicationRow(row) {
   }
 }
 
+function getApplicationWord(n) {
+  const abs = Math.abs(Number(n) || 0);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod100 >= 11 && mod100 <= 19) return 'откликов';
+  if (mod10 === 1) return 'отклик';
+  if (mod10 >= 2 && mod10 <= 4) return 'отклика';
+  return 'откликов';
+}
+
+function updateApplicationsBadge(count) {
+  const currentCount = typeof count === 'number' ? count : (storage.read('buddie-applications-cache', null)?.length ?? 4);
+
+  // 1. Бейдж в навигации слева для "Личный кабинет"
+  const navProfile = document.querySelector('.sidebar__nav-item[href="profile.html"]');
+  const navBadge = navProfile?.querySelector('.sidebar__count');
+  if (navBadge) {
+    navBadge.textContent = String(currentCount);
+  }
+
+  // 2. Бейдж на вкладке "Мои отклики" в profile.html
+  const tabBadge = document.querySelector('.profile-tab-btn[data-tab="applications"] .profile-tab-count');
+  if (tabBadge) {
+    tabBadge.textContent = String(currentCount);
+  }
+
+  // 3. Рейтинг/счетчик в заголовке откликов в profile.html
+  const ratingBadge = document.querySelector('#pane-applications .company-rating');
+  if (ratingBadge) {
+    ratingBadge.textContent = currentCount + ' ' + getApplicationWord(currentCount);
+  }
+
+  // 4. Метрика "Всего откликов" в табе аналитики
+  const metricTotal = document.querySelector('#pane-analytics .metric__number');
+  if (metricTotal) {
+    metricTotal.textContent = String(currentCount);
+  }
+}
+
+function updateNotificationsBadge() {
+  const isAllRead = storage.readBoolean('buddie-notifications-read', false);
+  const dismissed = new Set(storage.readArray('buddie-dismissed-notifications'));
+
+  let count = 0;
+  if (!isAllRead) {
+    const totalCards = document.querySelectorAll('.timeline-card');
+    if (totalCards.length > 0) {
+      count = [...totalCards].filter(card => {
+        const title = card.querySelector('.timeline-card__title')?.textContent.trim() || '';
+        return !dismissed.has(title) && !card.classList.contains('is-read');
+      }).length;
+    } else {
+      const baseNotifications = 4;
+      count = Math.max(0, baseNotifications - dismissed.size);
+    }
+  }
+
+  // Обновляем бейдж уведомлений в сайдбаре
+  const navNotif = document.querySelector('.sidebar__nav-item[href="notifications.html"]');
+  const notifBadge = navNotif?.querySelector('.sidebar__count');
+  if (notifBadge) {
+    notifBadge.textContent = String(count);
+  }
+
+  // Обновляем счетчик в колокольчике шапки
+  const bellCount = document.querySelector('.header__bell span');
+  if (bellCount) {
+    bellCount.textContent = String(count);
+  }
+}
+
 function renderApplicationsTable(applications) {
   const tbody = document.querySelector('.data-table tbody');
   if (!tbody) return;
@@ -1611,6 +1686,7 @@ function renderApplicationsTable(applications) {
     updateTableEmptyMessage('.data-table', [], 'Отклики не найдены');
     const footSpan = document.querySelector('.profile-applications__foot span');
     if (footSpan) footSpan.textContent = 'Показаны 0 из 0 откликов';
+    updateApplicationsBadge(0);
     return;
   }
 
@@ -1621,6 +1697,8 @@ function renderApplicationsTable(applications) {
   if (footSpan) {
     footSpan.textContent = 'Показаны ' + appList.length + ' из ' + appList.length + ' откликов';
   }
+
+  updateApplicationsBadge(appList.length);
 
   updateSearch(searchTerm);
 }
@@ -1877,6 +1955,23 @@ function initHrAutoSync() {
 }
 
 async function loadInitialData() {
+  // 0. Синхронизация бейджей навигации (отклики и уведомления)
+  updateNotificationsBadge();
+
+  try {
+    const cachedApps = storage.read('buddie-applications-cache', null);
+    if (Array.isArray(cachedApps)) {
+      updateApplicationsBadge(cachedApps.length);
+    } else {
+      const apps = await ApiService.getApplications();
+      if (Array.isArray(apps)) {
+        updateApplicationsBadge(apps.length);
+      }
+    }
+  } catch (e) {
+    updateApplicationsBadge(4);
+  }
+
   // 1. Таблица откликов в profile.html
   const appTable = document.querySelector('.data-table');
   if (appTable) {
@@ -1943,12 +2038,14 @@ document.querySelector('[data-mark-all-read]')?.addEventListener('click', event 
   storage.write('buddie-notifications-read', true);
   event.currentTarget.textContent = '✓ Всё прочитано';
   document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
+  updateNotificationsBadge();
   announce('Уведомления отмечены прочитанными.');
 });
 
 if (storage.readBoolean('buddie-notifications-read', false)) {
   document.querySelector('[data-mark-all-read]')?.replaceChildren('✓ Всё прочитано');
   document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
+  updateNotificationsBadge();
 }
 
 
@@ -1993,6 +2090,7 @@ document.querySelectorAll('[data-dismiss-notification]').forEach(button => butto
   storage.write('buddie-dismissed-notifications', [...dismissedNotifications]);
   setVisible(card, false);
   updateEmptyStates();
+  updateNotificationsBadge();
   announce('Напоминание скрыто.');
 }));
 
