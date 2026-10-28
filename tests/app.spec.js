@@ -92,7 +92,7 @@ test('student navigation, university selectors, partner cards, and anchors are a
       'Профиль, отклики и резюме'
     ]);
     await expect(nav.locator('.sidebar__nav-item--active')).toHaveCount(1);
-    await expect(nav.locator('.sidebar__count')).toHaveText(['5', '4']);
+    await expect(nav.locator('.sidebar__count')).toHaveText(['4', '4']);
     expect(await nav.locator('.sidebar__nav-item').evaluateAll(items => items.map(item => item.getAttribute('href')))).toEqual([
       'index.html', 'companies.html', 'notifications.html', 'profile.html'
     ]);
@@ -1284,4 +1284,42 @@ test('stage 4 business logic: HR candidate job filter, student-recruiter chat pe
   // Проверяем, что новая вакансия появилась в фильтре вакансий [data-hr-job]
   const updatedJobOptions = await page.locator('[data-hr-job] option').allTextContents();
   expect(updatedJobOptions).toContain('DevOps Intern');
+});
+
+test('stage 5 badge synchronization: navigation counts reactively track applications and notification read state', async ({ page }) => {
+  // 1. Проверяем исходное состояние счетчиков (4 уведомления, 4 отклика)
+  await page.goto('/index.html');
+  const navCounts = page.locator('.sidebar__count');
+  await expect(navCounts).toHaveText(['4', '4']);
+  await expect(page.locator('.header__bell span')).toHaveText('4');
+
+  // 2. Откликаемся на вакансию и проверяем немедленное обновление бейджа откликов на 5
+  const applyBtn = page.locator('[data-job-id="yandex-analyst"] [data-job-action="apply"]');
+  await applyBtn.click();
+  await expect(applyBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(navCounts).toHaveText(['4', '5']);
+
+  // 3. Переходим в личный кабинет и проверяем синхронизацию всех счетчиков в профиле
+  await page.goto('/profile.html');
+  await expect(page.locator('.sidebar__count')).toHaveText(['4', '5']);
+  await expect(page.locator('.profile-tab-btn[data-tab="applications"] .profile-tab-count')).toHaveText('5');
+  await expect(page.locator('#pane-applications .company-rating')).toHaveText('5 откликов');
+
+  // 4. Отменяем отклик и проверяем откат счетчика обратно на 4
+  await page.goto('/index.html');
+  await page.locator('[data-job-id="yandex-analyst"] [data-job-action="apply"]').click();
+  await expect(applyBtn).toHaveText('Откликнуться');
+  await expect(navCounts).toHaveText(['4', '4']);
+
+  // 5. Переходим в уведомления и отмечаем всё прочитанным — счетчик уведомлений становится 0
+  await page.goto('/notifications.html');
+  await expect(page.locator('.sidebar__count')).toHaveText(['4', '4']);
+  await page.locator('[data-mark-all-read]').click();
+  await expect(page.locator('.sidebar__count')).toHaveText(['0', '4']);
+  await expect(page.locator('.header__bell span')).toHaveText('0');
+
+  // 6. Возвращаемся на главную и проверяем, что статус прочитанности уведомлений сохраняется в сайдбаре
+  await page.goto('/index.html');
+  await expect(page.locator('.sidebar__count')).toHaveText(['0', '4']);
+  await expect(page.locator('.header__bell span')).toHaveText('0');
 });

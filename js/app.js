@@ -55,6 +55,8 @@ const storage = {
   }
 };
 
+const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+
 const savedJobs = new Set(storage.readArray('buddie-saved-jobs'));
 const appliedJobs = new Set(storage.readArray('buddie-applied-jobs'));
 
@@ -165,8 +167,72 @@ const DEFAULT_JOBS = [
   }
 ];
 
+const DEFAULT_APPLICATIONS = [
+  {
+    id: "app-1",
+    jobId: "yandex-frontend",
+    title: "Младший фронтенд-разработчик",
+    company: "Yandex",
+    companyLetter: "Я",
+    companyLogoClass: "company-logo--yandex",
+    location: "Москва · Hybrid",
+    appliedDate: "05.10.2026",
+    status: "Приглашение",
+    statusClass: "status-badge--success",
+    actionText: "Выбрать время"
+  },
+  {
+    id: "app-2",
+    jobId: "sber-analyst",
+    title: "Аналитик данных",
+    company: "Sber",
+    companyLetter: "С",
+    companyLogoClass: "company-logo--sber",
+    location: "Казань · Удалённо",
+    appliedDate: "03.10.2026",
+    status: "На рассмотрении",
+    statusClass: "status-badge--warning",
+    actionText: "Чат с HR"
+  },
+  {
+    id: "app-3",
+    jobId: "vk-qa",
+    title: "Тестировщик",
+    company: "VK",
+    companyLetter: "VK",
+    companyLogoClass: "company-logo--vk",
+    location: "Москва · Офис",
+    appliedDate: "01.10.2026",
+    status: "Отказ",
+    statusClass: "status-badge--danger",
+    actionText: "Фидбек",
+    rowId: "feedback"
+  },
+  {
+    id: "app-4",
+    jobId: "tbank-python",
+    title: "Python-разработчик",
+    company: "Т-Банк",
+    companyLetter: "Т",
+    companyLogoClass: "company-logo--tbank",
+    location: "Москва · Удалённо",
+    appliedDate: "28.09.2026",
+    status: "Оффер",
+    statusClass: "status-badge--purple",
+    actionText: "Принять"
+  }
+];
+
 const ApiService = {
   async getDb() {
+    if (isFileProtocol) {
+      return storage.read('buddie-db-cache', {
+        jobs: storage.read('buddie-jobs-cache', DEFAULT_JOBS),
+        applications: getEffectiveApplications(),
+        savedJobs: storage.readArray('buddie-saved-jobs'),
+        profile: storage.read('buddie-profile-data', null)
+      });
+    }
     try {
       const res = await fetch('/api/db');
       if (res.ok) {
@@ -181,6 +247,11 @@ const ApiService = {
   },
 
   async getJobs() {
+    if (isFileProtocol) {
+      const cached = storage.read('buddie-jobs-cache', null);
+      if (Array.isArray(cached) && cached.length > 0) return cached;
+      return DEFAULT_JOBS;
+    }
     try {
       const res = await fetch('/api/jobs');
       if (res.ok) {
@@ -199,20 +270,22 @@ const ApiService = {
   },
 
   async createJob(jobData) {
-    try {
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(jobData)
-      });
-      if (res.ok) {
-        const created = await res.json();
-        const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
-        storage.write('buddie-jobs-cache', [created, ...cached.filter(j => j.id !== created.id)]);
-        return created;
+    if (!isFileProtocol) {
+      try {
+        const res = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(jobData)
+        });
+        if (res.ok) {
+          const created = await res.json();
+          const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
+          storage.write('buddie-jobs-cache', [created, ...cached.filter(j => j.id !== created.id)]);
+          return created;
+        }
+      } catch (e) {
+        console.warn('Network offline for createJob, falling back to localStorage:', e);
       }
-    } catch (e) {
-      console.warn('Network offline for createJob, falling back to localStorage:', e);
     }
     // Offline fallback for createJob: generate full contract
     const newJob = Object.assign({}, jobData);
@@ -240,22 +313,22 @@ const ApiService = {
   },
 
   async applyJob(jobId, title, company, location) {
-    try {
-      const res = await fetch('/api/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, title, company, location })
-      });
-      if (res.ok) {
-        const created = await res.json();
-        const cachedApps = storage.read('buddie-applications-cache', null);
-        if (Array.isArray(cachedApps)) {
-          storage.write('buddie-applications-cache', [created, ...cachedApps.filter(a => a.jobId !== jobId)]);
+    if (!isFileProtocol) {
+      try {
+        const res = await fetch('/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, title, company, location })
+        });
+        if (res.ok) {
+          const created = await res.json();
+          const cachedApps = getEffectiveApplications();
+          storage.write('buddie-applications-cache', [created, ...cachedApps.filter(a => a.jobId !== jobId && a.id !== created.id)]);
+          return created;
         }
-        return created;
+      } catch (e) {
+        console.warn('Network offline for applyJob, falling back to localStorage:', e);
       }
-    } catch (e) {
-      console.warn('Network offline for applyJob, falling back to localStorage:', e);
     }
     // Offline fallback for applyJob
     const comp = company || 'Компания';
@@ -279,7 +352,7 @@ const ApiService = {
       actionText: 'Чат с HR',
       isOffline: true
     };
-    const cachedApps = storage.read('buddie-applications-cache', []) || [];
+    const cachedApps = getEffectiveApplications();
     storage.write('buddie-applications-cache', [newApp, ...cachedApps.filter(a => a.jobId !== jobId)]);
 
     // Также обновляем локальный кэш кандидатов для HR
@@ -307,28 +380,26 @@ const ApiService = {
   },
 
   async removeApplication(id) {
-    try {
-      const res = await fetch('/api/applications/' + id, { method: 'DELETE' });
-      if (res.ok) {
-        const data = await res.json();
-        const cachedApps = storage.read('buddie-applications-cache', null);
-        if (Array.isArray(cachedApps)) {
+    if (!isFileProtocol) {
+      try {
+        const res = await fetch('/api/applications/' + id, { method: 'DELETE' });
+        if (res.ok) {
+          const data = await res.json();
+          const cachedApps = getEffectiveApplications();
           storage.write('buddie-applications-cache', cachedApps.filter(a => a.id !== id && a.jobId !== id));
+          const cachedCands = storage.read('buddie-candidates-cache', null);
+          if (Array.isArray(cachedCands)) {
+            storage.write('buddie-candidates-cache', cachedCands.filter(c => c.id !== id && c.jobId !== id));
+          }
+          return data;
         }
-        const cachedCands = storage.read('buddie-candidates-cache', null);
-        if (Array.isArray(cachedCands)) {
-          storage.write('buddie-candidates-cache', cachedCands.filter(c => c.id !== id && c.jobId !== id));
-        }
-        return data;
+      } catch (e) {
+        console.warn('Network offline for removeApplication, falling back to localStorage:', e);
       }
-    } catch (e) {
-      console.warn('Network offline for removeApplication, falling back to localStorage:', e);
     }
     // Offline fallback for removeApplication
-    const cachedApps = storage.read('buddie-applications-cache', null);
-    if (Array.isArray(cachedApps)) {
-      storage.write('buddie-applications-cache', cachedApps.filter(a => a.id !== id && a.jobId !== id));
-    }
+    const cachedApps = getEffectiveApplications();
+    storage.write('buddie-applications-cache', cachedApps.filter(a => a.id !== id && a.jobId !== id));
     const cachedCands = storage.read('buddie-candidates-cache', null);
     if (Array.isArray(cachedCands)) {
       storage.write('buddie-candidates-cache', cachedCands.filter(c => c.id !== id && c.jobId !== id));
@@ -337,6 +408,9 @@ const ApiService = {
   },
 
   async saveJob(jobId) {
+    if (isFileProtocol) {
+      return { ok: true, jobId, isOffline: true };
+    }
     try {
       const res = await fetch('/api/saved-jobs', {
         method: 'POST',
@@ -349,6 +423,9 @@ const ApiService = {
   },
 
   async removeSavedJob(jobId) {
+    if (isFileProtocol) {
+      return { ok: true, jobId, isOffline: true };
+    }
     try {
       const res = await fetch('/api/saved-jobs/' + jobId, { method: 'DELETE' });
       if (res.ok) return await res.json();
@@ -357,6 +434,9 @@ const ApiService = {
   },
 
   async updateState(state) {
+    if (isFileProtocol) {
+      return { ok: true, state, isOffline: true };
+    }
     try {
       const res = await fetch('/api/state', {
         method: 'PUT',
@@ -369,24 +449,38 @@ const ApiService = {
   },
 
   async getApplications() {
+    if (isFileProtocol) {
+      return getEffectiveApplications();
+    }
     try {
       const res = await fetch('/api/applications');
       if (res.ok) {
         const apps = await res.json();
         if (Array.isArray(apps)) {
-          storage.write('buddie-applications-cache', apps);
-          return apps;
+          const cached = storage.read('buddie-applications-cache', []);
+          const offlineApps = Array.isArray(cached) ? cached.filter(c => c && c.isOffline) : [];
+          const merged = [...apps];
+          offlineApps.forEach(off => {
+            if (!merged.some(m => m.id === off.id || m.jobId === off.jobId)) {
+              merged.unshift(off);
+            }
+          });
+          storage.write('buddie-applications-cache', merged);
+          return merged;
         }
       }
     } catch (e) {
       console.warn('Network offline for getApplications, falling back to localStorage:', e);
     }
-    const cached = storage.read('buddie-applications-cache', null);
-    if (Array.isArray(cached) && cached.length > 0) return cached;
-    return [];
+    return getEffectiveApplications();
   },
 
   async getCandidates() {
+    if (isFileProtocol) {
+      const cached = storage.read('buddie-candidates-cache', null);
+      if (Array.isArray(cached) && cached.length > 0) return cached;
+      return [];
+    }
     try {
       const res = await fetch('/api/candidates');
       if (res.ok) {
@@ -405,15 +499,17 @@ const ApiService = {
   },
 
   async updateCandidate(id, data) {
-    try {
-      const res = await fetch('/api/candidates/' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Network offline for updateCandidate:', e);
+    if (!isFileProtocol) {
+      try {
+        const res = await fetch('/api/candidates/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) return await res.json();
+      } catch (e) {
+        console.warn('Network offline for updateCandidate:', e);
+      }
     }
     const cached = storage.read('buddie-candidates-cache', null);
     if (Array.isArray(cached)) {
@@ -425,15 +521,17 @@ const ApiService = {
   },
 
   async updateApplication(id, data) {
-    try {
-      const res = await fetch('/api/applications/' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Network offline for updateApplication:', e);
+    if (!isFileProtocol) {
+      try {
+        const res = await fetch('/api/applications/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) return await res.json();
+      } catch (e) {
+        console.warn('Network offline for updateApplication:', e);
+      }
     }
     const cached = storage.read('buddie-applications-cache', null);
     if (Array.isArray(cached)) {
@@ -1352,6 +1450,13 @@ function bindJobCard(card) {
           } else {
             apiRes = await ApiService.removeApplication(id);
           }
+          const currentApps = storage.read('buddie-applications-cache', null);
+          if (Array.isArray(currentApps)) {
+            updateApplicationsBadge(currentApps.length);
+          }
+          if (document.querySelector('.data-table')) {
+            renderApplicationsTable(getEffectiveApplications());
+          }
         }
 
         setJobButton(button, active,
@@ -1600,6 +1705,126 @@ function bindApplicationRow(row) {
   }
 }
 
+function getApplicationWord(n) {
+  const abs = Math.abs(Number(n) || 0);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod100 >= 11 && mod100 <= 19) return 'откликов';
+  if (mod10 === 1) return 'отклик';
+  if (mod10 >= 2 && mod10 <= 4) return 'отклика';
+  return 'откликов';
+}
+
+function getEffectiveApplications() {
+  const cached = storage.read('buddie-applications-cache', null);
+  let apps = cached === null ? [...DEFAULT_APPLICATIONS] : (Array.isArray(cached) ? [...cached] : [...DEFAULT_APPLICATIONS]);
+
+  let mutated = false;
+  // Двусторонняя реконсиляция: если в ленте вакансия отмечена как откликнутая (buddie-applied-jobs),
+  // но отсутствует в массиве откликов, автоматически восстанавливаем её!
+  const appliedJobIds = storage.readArray('buddie-applied-jobs');
+  if (appliedJobIds.length > 0) {
+    const cachedJobs = storage.read('buddie-jobs-cache', []);
+    const allAvailableJobs = [...DEFAULT_JOBS, ...(Array.isArray(cachedJobs) ? cachedJobs : [])];
+
+    appliedJobIds.forEach(jId => {
+      if (!apps.some(a => a.jobId === jId || a.id === jId)) {
+        const job = allAvailableJobs.find(j => j && j.id === jId);
+        const title = job ? job.title : 'Стажёр';
+        const comp = job ? job.company : 'Компания';
+        const loc = job ? job.location : 'Москва · Hybrid';
+        const compLower = comp.toLowerCase();
+        const logoClass = job?.companyLogoClass || (compLower.includes('yandex') ? 'company-logo--yandex' : compLower.includes('sber') ? 'company-logo--sber' : compLower.includes('vk') ? 'company-logo--vk' : 'company-logo--tbank');
+        const logoLetter = job?.companyLetter || (compLower.includes('vk') ? 'VK' : comp[0].toUpperCase());
+
+        apps.unshift({
+          id: 'app-' + jId,
+          jobId: jId,
+          title: title,
+          company: comp,
+          companyLetter: logoLetter,
+          companyLogoClass: logoClass,
+          location: loc,
+          appliedDate: 'Сегодня, только что',
+          status: 'На рассмотрении',
+          statusClass: 'status-badge--warning',
+          actionText: 'Чат с HR'
+        });
+        mutated = true;
+      }
+    });
+  }
+
+  if (mutated || cached === null) {
+    storage.write('buddie-applications-cache', apps);
+  }
+
+  return apps;
+}
+
+function updateApplicationsBadge(count) {
+  const currentCount = typeof count === 'number' ? count : getEffectiveApplications().length;
+
+  // 1. Бейдж в навигации слева для "Личный кабинет"
+  const navProfile = document.querySelector('.sidebar__nav-item[href="profile.html"]');
+  const navBadge = navProfile?.querySelector('.sidebar__count');
+  if (navBadge) {
+    navBadge.textContent = String(currentCount);
+  }
+
+  // 2. Бейдж на вкладке "Мои отклики" в profile.html
+  const tabBadge = document.querySelector('.profile-tab-btn[data-tab="applications"] .profile-tab-count');
+  if (tabBadge) {
+    tabBadge.textContent = String(currentCount);
+  }
+
+  // 3. Рейтинг/счетчик в заголовке откликов в profile.html
+  const ratingBadge = document.querySelector('#pane-applications .company-rating');
+  if (ratingBadge) {
+    ratingBadge.textContent = currentCount + ' ' + getApplicationWord(currentCount);
+  }
+
+  // 4. Метрика "Всего откликов" в табе аналитики
+  const metricTotal = document.querySelector('#pane-analytics .metric__number');
+  if (metricTotal) {
+    metricTotal.textContent = String(currentCount);
+  }
+}
+
+function updateNotificationsBadge() {
+  const isAllRead = storage.readBoolean('buddie-notifications-read', false);
+  const dismissed = new Set(storage.readArray('buddie-dismissed-notifications'));
+  const readItems = new Set(storage.readArray('buddie-notifications-read-items'));
+
+  let count = 0;
+  if (!isAllRead) {
+    const totalCards = document.querySelectorAll('.timeline-card');
+    if (totalCards.length > 0) {
+      count = [...totalCards].filter(card => {
+        const title = card.querySelector('.timeline-card__title')?.textContent.trim() || '';
+        return !dismissed.has(title) && !readItems.has(title) && !card.classList.contains('is-read');
+      }).length;
+    } else {
+      const baseNotifications = 4;
+      const inactive = new Set([...dismissed, ...readItems]);
+      count = Math.max(0, baseNotifications - inactive.size);
+    }
+  }
+
+  // Обновляем бейдж уведомлений в сайдбаре
+  const navNotif = document.querySelector('.sidebar__nav-item[href="notifications.html"]');
+  const notifBadge = navNotif?.querySelector('.sidebar__count');
+  if (notifBadge) {
+    notifBadge.textContent = String(count);
+  }
+
+  // Обновляем счетчик в колокольчике шапки
+  const bellCount = document.querySelector('.header__bell span');
+  if (bellCount) {
+    bellCount.textContent = String(count);
+  }
+}
+
 function renderApplicationsTable(applications) {
   const tbody = document.querySelector('.data-table tbody');
   if (!tbody) return;
@@ -1611,6 +1836,7 @@ function renderApplicationsTable(applications) {
     updateTableEmptyMessage('.data-table', [], 'Отклики не найдены');
     const footSpan = document.querySelector('.profile-applications__foot span');
     if (footSpan) footSpan.textContent = 'Показаны 0 из 0 откликов';
+    updateApplicationsBadge(0);
     return;
   }
 
@@ -1621,6 +1847,8 @@ function renderApplicationsTable(applications) {
   if (footSpan) {
     footSpan.textContent = 'Показаны ' + appList.length + ' из ' + appList.length + ' откликов';
   }
+
+  updateApplicationsBadge(appList.length);
 
   updateSearch(searchTerm);
 }
@@ -1767,29 +1995,65 @@ function openJobDetailsModal(j) {
     const modalSave = document.querySelector('#modal-save-btn');
     const card = document.querySelector('[data-job-id="' + j.id + '"]');
 
-    if (modalApply && card) {
-      modalApply.addEventListener('click', () => {
-        const cardApplyBtn = card.querySelector('[data-job-action="apply"]');
-        if (cardApplyBtn) {
-          cardApplyBtn.click();
-          setTimeout(() => {
-            const active = appliedJobs.has(j.id);
-            modalApply.textContent = active ? '✓ Отклик отмечен' : 'Откликнуться на стажировку';
-            modalApply.classList.toggle('button--soft', active);
-          }, 50);
+    if (modalApply) {
+      modalApply.addEventListener('click', async () => {
+        if (card) {
+          const cardApplyBtn = card.querySelector('[data-job-action="apply"]');
+          if (cardApplyBtn) {
+            cardApplyBtn.click();
+            setTimeout(() => {
+              const active = appliedJobs.has(j.id);
+              modalApply.textContent = active ? '✓ Отклик отмечен' : 'Откликнуться на стажировку';
+              modalApply.classList.toggle('button--soft', active);
+            }, 50);
+            return;
+          }
+        }
+        const active = !appliedJobs.has(j.id);
+        if (active) appliedJobs.add(j.id); else appliedJobs.delete(j.id);
+        storage.write('buddie-applied-jobs', [...appliedJobs]);
+        modalApply.textContent = active ? '✓ Отклик отмечен' : 'Откликнуться на стажировку';
+        modalApply.classList.toggle('button--soft', active);
+        if (active) {
+          await ApiService.applyJob(j.id, j.title, j.company, j.location);
+          announce('Отклик успешно сохранён!');
+        } else {
+          await ApiService.removeApplication(j.id);
+          announce('Отметка об отклике отменена.');
+        }
+        updateApplicationsBadge(getEffectiveApplications().length);
+        if (document.querySelector('.data-table')) {
+          renderApplicationsTable(getEffectiveApplications());
         }
       });
     }
 
-    if (modalSave && card) {
-      modalSave.addEventListener('click', () => {
-        const cardSaveBtn = card.querySelector('[data-job-action="save"]');
-        if (cardSaveBtn) {
-          cardSaveBtn.click();
-          setTimeout(() => {
-            const active = savedJobs.has(j.id);
-            modalSave.textContent = active ? '✓ В сохранённых' : '⭐ Сохранить';
-          }, 50);
+    if (modalSave) {
+      modalSave.addEventListener('click', async () => {
+        if (card) {
+          const cardSaveBtn = card.querySelector('[data-job-action="save"]');
+          if (cardSaveBtn) {
+            cardSaveBtn.click();
+            setTimeout(() => {
+              const active = savedJobs.has(j.id);
+              modalSave.textContent = active ? '✓ В сохранённых' : '⭐ Сохранить';
+            }, 50);
+            return;
+          }
+        }
+        const active = !savedJobs.has(j.id);
+        if (active) savedJobs.add(j.id); else savedJobs.delete(j.id);
+        storage.write('buddie-saved-jobs', [...savedJobs]);
+        modalSave.textContent = active ? '✓ В сохранённых' : '⭐ Сохранить';
+        if (active) {
+          await ApiService.saveJob(j.id);
+          announce('Стажировка сохранена в этом браузере.');
+        } else {
+          await ApiService.removeSavedJob(j.id);
+          announce('Стажировка удалена из сохранённых.');
+        }
+        if (document.querySelector('.saved-jobs-container')) {
+          renderSavedJobsInProfile();
         }
       });
     }
@@ -1830,6 +2094,7 @@ function handleJobDeepLink() {
 function initHrAutoSync() {
   const candTable = document.querySelector('.candidate-table');
   if (!candTable) return;
+  if (isFileProtocol) return;
 
   let isSyncing = false;
   let lastDataHash = '';
@@ -1877,22 +2142,40 @@ function initHrAutoSync() {
 }
 
 async function loadInitialData() {
-  // 1. Таблица откликов в profile.html
+  // 0. Немедленная синхронизация бейджей навигации и откликов (Zero-Wait)
+  updateNotificationsBadge();
+  const initialApps = getEffectiveApplications();
+  updateApplicationsBadge(initialApps.length);
+
+  // 1. Немедленный первичный рендер таблицы откликов в profile.html (Zero-Wait)
   const appTable = document.querySelector('.data-table');
   if (appTable) {
-    appTable.querySelectorAll('tbody tr').forEach(row => bindApplicationRow(row));
-
-    try {
-      const apps = await ApiService.getApplications();
-      if (Array.isArray(apps)) {
-        renderApplicationsTable(apps);
-      }
-    } catch (e) {
-      console.warn('loadInitialData applications fetch error:', e);
-    }
+    renderApplicationsTable(initialApps);
   }
 
-  // 2. Таблица кандидатов в hr.html
+  // 2. Немедленный первичный рендер сохранённых вакансий в profile.html (Zero-Wait)
+  renderSavedJobsInProfileSync();
+
+  // Если страница открыта напрямую через file:// (двойной клик по HTML),
+  // данные полностью готовы из локального состояния, отменяем сетевые вызовы fetch к /api/*
+  if (isFileProtocol) {
+    return;
+  }
+
+  // Фоновая реконсиляция для работы через HTTP-сервер:
+  try {
+    const apps = await ApiService.getApplications();
+    if (Array.isArray(apps)) {
+      updateApplicationsBadge(apps.length);
+      if (appTable) {
+        renderApplicationsTable(apps);
+      }
+    }
+  } catch (e) {
+    console.warn('loadInitialData applications fetch error:', e);
+  }
+
+  // 3. Таблица кандидатов в hr.html
   const candTable = document.querySelector('.candidate-table');
   if (candTable) {
     candTable.querySelectorAll('tbody tr').forEach(row => bindCandidateRow(row));
@@ -1908,7 +2191,7 @@ async function loadInitialData() {
     }
   }
 
-  // 3. Лента вакансий в index.html
+  // 4. Лента вакансий в index.html
   const container = document.querySelector('.feed-jobs');
   if (container) {
     try {
@@ -1936,20 +2219,58 @@ document.querySelectorAll('[data-job-id]').forEach(card => bindJobCard(card));
 
 
 // ==========================================
-// 8. Уведомления: mark-all-read
+// 8. Уведомления: mark-all-read & individual read
 // ==========================================
+
+const readNotificationItems = new Set(storage.readArray('buddie-notifications-read-items'));
 
 document.querySelector('[data-mark-all-read]')?.addEventListener('click', event => {
   storage.write('buddie-notifications-read', true);
   event.currentTarget.textContent = '✓ Всё прочитано';
-  document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
-  announce('Уведомления отмечены прочитанными.');
+  document.querySelectorAll('.timeline-card').forEach(card => {
+    card.classList.add('is-read');
+    const title = card.querySelector('.timeline-card__title')?.textContent.trim();
+    if (title) readNotificationItems.add(title);
+  });
+  storage.write('buddie-notifications-read-items', [...readNotificationItems]);
+  updateNotificationsBadge();
+  announce('Все уведомления отмечены прочитанными.');
 });
 
 if (storage.readBoolean('buddie-notifications-read', false)) {
   document.querySelector('[data-mark-all-read]')?.replaceChildren('✓ Всё прочитано');
   document.querySelectorAll('.timeline-card').forEach(card => card.classList.add('is-read'));
+  updateNotificationsBadge();
+} else if (readNotificationItems.size > 0) {
+  document.querySelectorAll('.timeline-card').forEach(card => {
+    const title = card.querySelector('.timeline-card__title')?.textContent.trim() || '';
+    if (readNotificationItems.has(title)) {
+      card.classList.add('is-read');
+    }
+  });
+  if (document.querySelectorAll('.timeline-card:not(.is-read)').length === 0 && document.querySelectorAll('.timeline-card').length > 0) {
+    document.querySelector('[data-mark-all-read]')?.replaceChildren('✓ Всё прочитано');
+  }
+  updateNotificationsBadge();
 }
+
+// Клик по карточке или действиям внутри неё помечает отдельное уведомление как прочитанное
+document.querySelectorAll('.timeline-card').forEach(card => {
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('[data-dismiss-notification]')) return;
+    const title = card.querySelector('.timeline-card__title')?.textContent.trim();
+    if (!title) return;
+    readNotificationItems.add(title);
+    storage.write('buddie-notifications-read-items', [...readNotificationItems]);
+    card.classList.add('is-read');
+    const remainingUnread = document.querySelectorAll('.timeline-card:not(.is-read)').length;
+    if (remainingUnread === 0 && document.querySelectorAll('.timeline-card').length > 0) {
+      storage.write('buddie-notifications-read', true);
+      document.querySelector('[data-mark-all-read]')?.replaceChildren('✓ Всё прочитано');
+    }
+    updateNotificationsBadge();
+  });
+});
 
 
 // ==========================================
@@ -1993,6 +2314,7 @@ document.querySelectorAll('[data-dismiss-notification]').forEach(button => butto
   storage.write('buddie-dismissed-notifications', [...dismissedNotifications]);
   setVisible(card, false);
   updateEmptyStates();
+  updateNotificationsBadge();
   announce('Напоминание скрыто.');
 }));
 
@@ -2583,6 +2905,9 @@ function initProfileTabs() {
     if (activeTab === 'saved') {
       renderSavedJobsInProfile();
     }
+    if (activeTab === 'applications') {
+      renderApplicationsTable(getEffectiveApplications());
+    }
 
     if (updateHash) {
       const targetHash = '#' + activeTab;
@@ -2643,20 +2968,21 @@ function initProfileTabs() {
   renderSavedJobsInProfile();
 }
 
-async function renderSavedJobsInProfile() {
+function renderSavedJobsInProfileSync(db = null) {
   const container = document.querySelector('.saved-jobs-container');
   const emptyMsg = document.querySelector('.saved-empty');
   const countBadge = document.querySelector('[data-saved-count]');
   const badgeRating = document.querySelector('[data-saved-badge]');
-  if (!container) return;
 
-  const db = await api.getDb();
   const localSaved = storage.readArray('buddie-saved-jobs');
   const serverSaved = (db && Array.isArray(db.savedJobs)) ? db.savedJobs : [];
   const savedIds = [...new Set([...localSaved, ...serverSaved])];
+  savedIds.forEach(id => savedJobs.add(id));
 
-  if (countBadge) countBadge.textContent = savedIds.length;
+  if (countBadge) countBadge.textContent = String(savedIds.length);
   if (badgeRating) badgeRating.textContent = savedIds.length + ' вакансий';
+
+  if (!container) return;
 
   if (!savedIds.length) {
     container.innerHTML = '';
@@ -2666,11 +2992,29 @@ async function renderSavedJobsInProfile() {
 
   if (emptyMsg) emptyMsg.style.display = 'none';
 
-  const allJobs = (db && db.jobs && db.jobs.length > 0) ? db.jobs : DEFAULT_JOBS;
-  const savedItems = allJobs.filter(j => savedIds.includes(j.id));
+  const cachedJobs = storage.read('buddie-jobs-cache', []);
+  const allJobsMap = new Map();
+  [...DEFAULT_JOBS, ...(Array.isArray(cachedJobs) ? cachedJobs : []), ...((db && Array.isArray(db.jobs)) ? db.jobs : [])].forEach(j => {
+    if (j && j.id) allJobsMap.set(j.id, j);
+  });
+  const savedItems = [...allJobsMap.values()].filter(j => savedIds.includes(j.id));
 
   container.innerHTML = savedItems.map(j => createJobCardHtml(j)).join('');
   container.querySelectorAll('[data-job-id]').forEach(card => bindJobCard(card));
+}
+
+async function renderSavedJobsInProfile() {
+  renderSavedJobsInProfileSync();
+  if (isFileProtocol) return;
+
+  try {
+    const db = await api.getDb();
+    if (db) {
+      renderSavedJobsInProfileSync(db);
+    }
+  } catch (e) {
+    console.warn('Network unavailable for saved jobs sync:', e);
+  }
 }
 
 // Загрузка сохранённого профиля
@@ -2678,11 +3022,13 @@ const cachedProf = storage.read('buddie-profile-data', null);
 if (cachedProf) {
   updateProfileDom(cachedProf);
 }
-api.getDb().then(db => {
-  if (db && db.profile) {
-    updateProfileDom(db.profile);
-  }
-});
+if (!isFileProtocol) {
+  api.getDb().then(db => {
+    if (db && db.profile) {
+      updateProfileDom(db.profile);
+    }
+  }).catch(() => {});
+}
 initProfileEdit();
 
 initProfileTabs();

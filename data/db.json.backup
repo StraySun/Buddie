@@ -74,29 +74,6 @@
   ],
   "jobs": [
     {
-      "title": "DevOps Intern",
-      "format": "hybrid",
-      "salary": "110 000 ₽",
-      "company": "ООО Яндекс",
-      "description": "Новая стажировка, созданная HR-специалистом для студентов университета.",
-      "targetUniversity": "kfu",
-      "id": "job-1793215341356",
-      "postedTime": "◷ Только что",
-      "rating": "⭐ 5.0 · Новая аккредитация",
-      "matchScore": "✧ 95% совпадение",
-      "specialty": "analysis",
-      "tags": [
-        "Стажировка",
-        "Hybrid",
-        "Data"
-      ],
-      "companyLetter": "О",
-      "companyLogoClass": "company-logo--yandex",
-      "responseBadge": "● Новая стажировка",
-      "location": "⌖ Казань / Удалённо",
-      "workload": "▣ 20–30 ч/неделю"
-    },
-    {
       "id": "yandex-analyst",
       "company": "Yandex",
       "companyLogoClass": "company-logo--yandex",
