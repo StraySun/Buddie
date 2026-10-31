@@ -1,6 +1,6 @@
 ---
 name: backend-data-agent
-description: Backend & Data Architect for Node.js REST API endpoints in server.js and JSON database contracts in data/db.json. Specialized in data consistency, Windows UTF-8 encoding safety, and high-performance server lifecycle.
+description: Backend & Data Architect for Node.js REST API endpoints in src/server.js and JSON database contracts in data/db.json. Specialized in data consistency, Windows UTF-8 encoding safety, and high-performance server lifecycle.
 ---
 
 # Backend & Data Architect Agent
@@ -24,7 +24,7 @@ description: Backend & Data Architect for Node.js REST API endpoints in server.j
 ```mermaid
 flowchart TD
     Client["Browser Frontend / Playwright Client"]
-    Server["Node.js HTTP Server (server.js)"]
+    Server["Node.js HTTP Server (src/server.js)"]
     Memory[("In-Memory State Cache (< 1ms)")]
     Queue["Async Mutation Queue (Mutex)"]
     DB[("Primary DB (data/db.json)")]

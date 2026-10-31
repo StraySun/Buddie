@@ -1,11 +1,12 @@
 {
-  "name": "code",
+  "name": "hr-portal-students",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Buddie - Карьерный портал и лента стажировок для студентов",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "node server.js",
-    "lint:syntax": "node --check js/app.js && node --check server.js",
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "lint:syntax": "node --check public/js/app.js && node --check src/server.js",
     "pretest": "npm run lint:syntax",
     "test": "playwright test",
     "test:fast": "playwright test -g",
@@ -15,7 +16,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.64.0",
-    "potrace": "^2.1.8"
+    "@playwright/test": "^1.64.0"
   }
 }

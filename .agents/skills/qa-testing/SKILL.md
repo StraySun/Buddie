@@ -16,7 +16,7 @@ description: Autonomous Quality Assurance & Playwright Test Specialist. Validate
 ```mermaid
 flowchart TD
     Config["playwright.config.js\n(timeout: 30s, worker: 1, baseURL: :4173)"]
-    Server["webServer: node server.js\n(Reuse existing server enabled)"]
+    Server["webServer: node src/server.js\n(Reuse existing server enabled)"]
     DB[("data/db.json\n(Reset to INITIAL_DB in test.beforeEach)")]
     Suite["tests/app.spec.js\n(28 e2e scenarios)"]
 

@@ -1,4 +1,4 @@
-﻿const { defineConfig } = require('@playwright/test');
+const { defineConfig } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
@@ -11,7 +11,7 @@ module.exports = defineConfig({
     viewport: { width: 1440, height: 1000 }
   },
   webServer: {
-    command: 'node server.js',
+    command: 'node src/server.js',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 30000
