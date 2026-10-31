@@ -8,12 +8,12 @@
 
 | Агент / Навык | Название типа | Назначение | Ключевые файлы |
 | :--- | :--- | :--- | :--- |
-| **Backend & Data Architect** | `backend-data-agent` | REST API в `server.js`, схемы и валидация `data/db.json`, защита UTF-8 на Windows | `server.js`, `data/db.json` |
-| **Data Contract Validator** | `data-contract-validator` | Атомарная запись `temp -> rename`, ссылочная целостность (Application <-> Candidate), Zero Data Loss | `server.js`, `data/db.json` |
-| **UI/UX & Design Tokens** | `ui-frontend-specialist` | Семантическая вёрстка HTML5, токен-архитектура, WCAG AA доступность, SVG-спрайты | `css/variables.css`, `css/*.css`, `*.html` |
-| **Design System Guardian** | `design-system-guardian` | Контроль запрета хардкодных цветов, тач-таргеты 44×44px, фокус-ринги, Zero Horizontal Overflow | `css/`, `*.html` |
+| **Backend & Data Architect** | `backend-data-agent` | REST API в `src/server.js`, схемы и валидация `data/db.json`, защита UTF-8 на Windows | `src/server.js`, `data/db.json` |
+| **Data Contract Validator** | `data-contract-validator` | Атомарная запись `temp -> rename`, ссылочная целостность (Application <-> Candidate), Zero Data Loss | `src/server.js`, `data/db.json` |
+| **UI/UX & Design Tokens** | `ui-frontend-specialist` | Семантическая вёрстка HTML5, токен-архитектура, WCAG AA доступность, SVG-спрайты | `public/css/variables.css`, `public/css/*.css`, `public/*.html` |
+| **Design System Guardian** | `design-system-guardian` | Контроль запрета хардкодных цветов, тач-таргеты 44×44px, фокус-ринги, Zero Horizontal Overflow | `public/css/`, `public/*.html` |
 | **Fast QA & Regression Pilot** | `qa-testing` | Двухуровневый контур верификации, таргетированные спеки Playwright, 33 E2E сценария | `tests/app.spec.js`, `playwright.config.js` |
-| **Security & Data Sanitizer** | `security-sanitizer` | Защита от XSS, устранение Race Conditions (Double submit), валидация и trim строковых полей | `js/app.js`, `server.js` |
+| **Security & Data Sanitizer** | `security-sanitizer` | Защита от XSS, устранение Race Conditions (Double submit), валидация и trim строковых полей | `public/js/app.js`, `src/server.js` |
 | **Request Accelerator** | `request-accelerator` | Декомпозиция больших запросов на параллельные пакеты, экономия контекста, чекпоинты | `.agents/skills/request-accelerator/SKILL.md` |
 | **Bilingual Writing Assistant** | `bilingual-writer-agent` | Разгрузка написания текстов на RU/EN: документация, UI microcopy, PR, перевод, типографика | `.agents/skills/bilingual-writer-agent/SKILL.md` |
 
@@ -47,7 +47,7 @@
          │
          ▼
 [Tier 1: Pre-flight Syntax Check (< 100 мс)]
-npm run lint:syntax (node --check js/app.js && node --check server.js)
+npm run lint:syntax (node --check public/js/app.js && node --check src/server.js)
          │
          ▼
 [Tier 2: Targeted Playwright Spec (1-3 сек)]

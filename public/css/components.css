@@ -50,6 +50,8 @@
 .job-card__tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .job-card__description { margin: 12px 0; color: #5B6474; font-size: 12px; line-height: 1.6; overflow-wrap: break-word; }
 .job-card__meta { display: flex; flex-wrap: wrap; gap: 14px; color: #5B6474; font-size: 12px; }
+.job-card__meta span { display: inline-flex; align-items: center; gap: 6px; }
+.job-card__meta .ui-icon { width: 16px; height: 16px; min-width: 16px; flex-shrink: 0; }
 .job-card__footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0eef3; }
 .job-card__response { color: #29966a; font-size: 11px; }
 .job-card__response--warning { color: #b17b24; }

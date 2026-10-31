@@ -91,9 +91,9 @@
         "SQL"
       ],
       "description": "Анализируй продуктовые данные пользователей и создавай визуализации для продуктовых команд.",
-      "location": "⌖ Москва",
-      "workload": "▣ 3 дня/неделю",
-      "postedTime": "◷ Сегодня",
+      "location": "Москва",
+      "workload": "3 дня/неделю",
+      "postedTime": "Сегодня",
       "responseBadge": "● Быстрый отклик",
       "targetUniversity": "kfu"
     },
@@ -115,9 +115,9 @@
         "Spring"
       ],
       "description": "Разработка сервисов для корпоративных клиентов, написание интеграционных тестов и code review.",
-      "location": "⌖ Казань / Удалённо",
-      "workload": "▣ 40 ч/неделю",
-      "postedTime": "◷ Вчера",
+      "location": "Казань / Удалённо",
+      "workload": "40 ч/неделю",
+      "postedTime": "Вчера",
       "responseBadge": "● Оплата обучения",
       "targetUniversity": "kfu"
     },
@@ -139,9 +139,9 @@
         "Spark"
       ],
       "description": "Построение витрин данных, оптимизация пайплайнов обработки и поддержка аналитических баз.",
-      "location": "⌖ Казань, ул. Баумана",
-      "workload": "▣ 20–30 ч/неделю",
-      "postedTime": "◷ 2 дня назад",
+      "location": "Казань, ул. Баумана",
+      "workload": "20–30 ч/неделю",
+      "postedTime": "2 дня назад",
       "responseBadge": "● Менторство",
       "targetUniversity": "all"
     }

@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = 4173;
-const ROOT = __dirname;
+const ROOT = path.resolve(__dirname, '..');
+const PUBLIC_DIR = path.join(ROOT, 'public');
 const DB_PATH = path.join(ROOT, 'data', 'db.json');
 const BACKUP_PATH = path.join(ROOT, 'data', 'db.json.backup');
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MB payload protection
@@ -329,7 +330,7 @@ const server = http.createServer(async (req, res) => {
         const newJob = await parseBody(req);
         const createdJob = await runMutation(db => {
           newJob.id = newJob.id || 'job-' + Date.now();
-          newJob.postedTime = '◷ Только что';
+          newJob.postedTime = 'Только что';
           newJob.rating = newJob.rating || '⭐ 5.0 · Новая аккредитация';
           newJob.matchScore = newJob.matchScore || '✧ 95% совпадение';
           const formatTag = newJob.format === 'remote' ? 'Remote' : (newJob.format === 'office' ? 'Office' : 'Hybrid');
@@ -340,8 +341,8 @@ const server = http.createServer(async (req, res) => {
           newJob.companyLogoClass = newJob.companyLogoClass || 'company-logo--yandex';
           newJob.responseBadge = '● Новая стажировка';
           newJob.targetUniversity = newJob.targetUniversity || db.university || 'kfu';
-          newJob.location = newJob.location || '⌖ Казань / Удалённо';
-          newJob.workload = newJob.workload || '▣ 20–30 ч/неделю';
+          newJob.location = newJob.location || 'Казань / Удалённо';
+          newJob.workload = newJob.workload || '20–30 ч/неделю';
           newJob.description = newJob.description || 'Новая стажировка, созданная HR-специалистом для студентов университета.';
 
           db.jobs = db.jobs || [];
@@ -688,10 +689,10 @@ const server = http.createServer(async (req, res) => {
   // Static File Serving with Traversal Guard
   // ==========================================
   const sanitizedPath = reqPath === '/' ? 'index.html' : reqPath.replace(/^\/+/, '');
-  const filePath = path.normalize(path.join(ROOT, sanitizedPath));
+  const filePath = path.normalize(path.join(PUBLIC_DIR, sanitizedPath));
 
   // Directory traversal defense
-  if (!filePath.startsWith(ROOT)) {
+  if (!filePath.startsWith(PUBLIC_DIR)) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('403 Forbidden');
     return;

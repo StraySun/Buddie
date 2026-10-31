@@ -5,7 +5,7 @@ description: Data Contract & Relational Integrity Validator for data/db.json and
 
 # Data Contract Validator Agent
 
-Специалист по контролю целостности данных, контрактов сущностей в `data/db.json` и надежности серверных транзакций в `server.js`. Обеспечивает парадигму **Zero Data Loss** под моделью Gemini 3.8 Flash на Windows OS.
+Специалист по контролю целостности данных, контрактов сущностей в `data/db.json` и надежности серверных транзакций в `src/server.js`. Обеспечивает парадигму **Zero Data Loss** под моделью Gemini 3.8 Flash на Windows OS.
 
 ---
 

@@ -89,6 +89,21 @@ function setVisible(element, visible) {
 
 
 // ==========================================
+function cleanMetaText(str) {
+  if (!str) return '';
+  return String(str).replace(/^[⌖▣◷]\s*/, '').trim();
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // 2. REST API & Database Integration Layer
 // ==========================================
 const DEFAULT_JOBS = [
@@ -110,9 +125,9 @@ const DEFAULT_JOBS = [
       "SQL"
     ],
     description: "Анализируй продуктовые данные пользователей и создавай визуализации для продуктовых команд.",
-    location: "⌖ Москва",
-    workload: "▣ 3 дня/неделю",
-    postedTime: "◷ Сегодня",
+    location: "Москва",
+    workload: "3 дня/неделю",
+    postedTime: "Сегодня",
     responseBadge: "● Быстрый отклик",
     targetUniversity: "kfu"
   },
@@ -134,9 +149,9 @@ const DEFAULT_JOBS = [
       "Spring Boot"
     ],
     description: "Разрабатывай высоконагруженные банковские сервисы вместе с опытной командой.",
-    location: "⌖ Москва / Удалённо",
-    workload: "▣ Удалённо",
-    postedTime: "◷ Вчера",
+    location: "Москва / Удалённо",
+    workload: "Удалённо",
+    postedTime: "Вчера",
     responseBadge: "● Быстрый отклик",
     targetUniversity: "kfu"
   },
@@ -158,9 +173,9 @@ const DEFAULT_JOBS = [
       "SQL"
     ],
     description: "Развивай свои навыки анализа данных и работай с продуктовыми задачами Т-Банка.",
-    location: "⌖ Москва",
-    workload: "▣ 2 дня/неделю",
-    postedTime: "◷ 2 часа назад",
+    location: "Москва",
+    workload: "2 дня/неделю",
+    postedTime: "2 часа назад",
     responseBadge: "● Дедлайн через 3 дня",
     responseBadgeClass: "job-card__response--warning",
     targetUniversity: "all"
@@ -290,7 +305,7 @@ const ApiService = {
     // Offline fallback for createJob: generate full contract
     const newJob = Object.assign({}, jobData);
     newJob.id = newJob.id || 'job-' + Date.now();
-    newJob.postedTime = '◷ Только что';
+    newJob.postedTime = 'Только что';
     newJob.rating = newJob.rating || '⭐ 5.0 · Новая аккредитация';
     newJob.matchScore = newJob.matchScore || '✧ 95% совпадение';
     const formatTag = newJob.format === 'remote' ? 'Remote' : (newJob.format === 'office' ? 'Office' : 'Hybrid');
@@ -301,8 +316,8 @@ const ApiService = {
     newJob.companyLogoClass = newJob.companyLogoClass || 'company-logo--yandex';
     newJob.responseBadge = '● Новая стажировка';
     newJob.targetUniversity = newJob.targetUniversity || 'kfu';
-    newJob.location = newJob.location || '⌖ Казань / Удалённо';
-    newJob.workload = newJob.workload || '▣ 20–30 ч/неделю';
+    newJob.location = newJob.location || 'Казань / Удалённо';
+    newJob.workload = newJob.workload || '20–30 ч/неделю';
     newJob.description = newJob.description || 'Новая стажировка, созданная HR-специалистом для студентов университета.';
     newJob.isOffline = true;
 
@@ -1369,9 +1384,9 @@ function createJobCardHtml(j) {
     '<div class="job-card__tags">' + tagsHtml + '</div>' +
     '<p class="job-card__description">' + (j.description || '') + '</p>' +
     '<div class="job-card__meta">' +
-      '<span>' + (j.location || '⌖ Москва') + '</span>' +
-      '<span>' + (j.workload || '▣ 3 дня/неделю') + '</span>' +
-      '<span>' + (j.postedTime || '◷ Сегодня') + '</span>' +
+      '<span><svg class="ui-icon" aria-hidden="true"><use href="#icon-pin"></use></svg> ' + escapeHtml(cleanMetaText(j.location || 'Москва')) + '</span>' +
+      '<span><svg class="ui-icon" aria-hidden="true"><use href="#icon-laptop"></use></svg> ' + escapeHtml(cleanMetaText(j.workload || '3 дня/неделю')) + '</span>' +
+      '<span><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ' + escapeHtml(cleanMetaText(j.postedTime || 'Сегодня')) + '</span>' +
     '</div>' +
     '<div class="job-card__footer">' +
       '<span class="job-card__response' + respClass + '">' + (j.responseBadge || '● Быстрый отклик') + '</span>' +
@@ -1969,10 +1984,10 @@ function openJobDetailsModal(j) {
         '<p style="margin:0;">' + (j.description || 'Приглашаем студентов присоединиться к нашей команде и получить реальный опыт работы над масштабными задачами.') + '</p>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;font-size:12px;color:#5B6474;margin-bottom:16px;background:#f7fafc;padding:10px 12px;border-radius:8px;">' +
-        '<div><strong style="display:block;color:#4a5568;">Локация:</strong>' + (j.location || '⌖ Москва') + '</div>' +
-        '<div><strong style="display:block;color:#4a5568;">Занятость:</strong>' + (j.workload || '▣ Гибкий график') + '</div>' +
+        '<div><strong style="display:block;color:#4a5568;">Локация:</strong><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#icon-pin"></use></svg> ' + escapeHtml(cleanMetaText(j.location || 'Москва')) + '</span></div>' +
+        '<div><strong style="display:block;color:#4a5568;">Занятость:</strong><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#icon-laptop"></use></svg> ' + escapeHtml(cleanMetaText(j.workload || 'Гибкий график')) + '</span></div>' +
         '<div><strong style="display:block;color:#4a5568;">Формат:</strong>' + (j.format === 'remote' ? 'Удалённо' : (j.format === 'office' ? 'В офисе' : 'Гибридный')) + '</div>' +
-        '<div><strong style="display:block;color:#4a5568;">Публикация:</strong>' + (j.postedTime || '◷ Недавно') + '</div>' +
+        '<div><strong style="display:block;color:#4a5568;">Публикация:</strong><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#icon-clock"></use></svg> ' + escapeHtml(cleanMetaText(j.postedTime || 'Недавно')) + '</span></div>' +
       '</div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">' +
         '<button class="button button--outline" type="button" id="modal-save-btn">' + (isSaveActive ? '✓ В сохранённых' : '⭐ Сохранить') + '</button>' +
