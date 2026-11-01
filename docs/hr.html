@@ -71,7 +71,7 @@
                     class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span><strong>Buddie <span class="hr-brand__accent">for
                             HR</span></strong><small>Рабочее пространство работодателя</small></span></a>
             <a class="hr-topbar__return" href="./index.html">← Вернуться в Buddie</a>
-            <label class="hr-topbar__company">Компания<select aria-label="Выберите компанию"><option selected>ООО Яндекс</option><option>ООО Сбер</option><option>ООО Т-Банк</option></select></label>
+            <label class="hr-topbar__company">Компания<select aria-label="Выберите компанию" id="hr-company-select"><option selected>ООО Яндекс</option><option>ООО Сбер</option><option>ООО Т-Банк</option><option>ООО ВК</option><option>ООО Озон</option><option>ООО МТС</option><option>Все компании</option></select></label>
             <div class="hr-topbar__profile"><span class="avatar">АК</span><span>Анна К.<small class="hr-brand__role">HR-партнёр</small></span>
             </div>
         </header>
@@ -83,29 +83,29 @@
             <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-briefcase"></use></svg></span>
                 <div>
                     <div class="hr-metric__label">Активные вакансии</div>
-                    <div class="hr-metric__number">5</div>
+                    <div class="hr-metric__number">3</div>
                 </div>
             </article>
             <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-application"></use></svg></span>
                 <div>
                     <div class="hr-metric__label">Отклики студентов</div>
-                    <div class="hr-metric__number">48</div>
+                    <div class="hr-metric__number">5</div>
                 </div>
             </article>
             <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg></span>
                 <div>
                     <div class="hr-metric__label">Запланировано интервью</div>
-                    <div class="hr-metric__number">6</div>
+                    <div class="hr-metric__number">1</div>
                 </div>
             </article>
             <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-sparkles"></use></svg></span>
                 <div>
                     <div class="hr-metric__label">Средний Match Rate</div>
-                    <div class="hr-metric__number">84%</div>
+                    <div class="hr-metric__number">89%</div>
                 </div>
             </article>
         </section>
-        <div class="hr-actions" id="post"><a class="button" href="#post">＋ Разместить стажировку</a>
+        <div class="hr-actions" id="post"><div class="hr-actions__btns"><a class="button" href="#post">＋ Разместить стажировку</a><button class="button button--outline" id="btn-manage-jobs" type="button">Управление вакансиями</button></div>
             <div class="hr-actions__filters"><input class="hr-candidate-search" type="search" placeholder="Поиск кандидата..." aria-label="Поиск кандидата" data-search-input><select class="filter-pill" aria-label="Целевой университет" data-hr-university>
                     <option value="kfu">Целевой ВУЗ: КФУ</option>
                     <option value="all">Все университеты</option>

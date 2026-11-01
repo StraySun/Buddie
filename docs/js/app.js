@@ -327,6 +327,27 @@ const ApiService = {
     return newJob;
   },
 
+  async deleteJob(jobId) {
+    if (!isFileProtocol) {
+      try {
+        const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          const resJson = await res.json().catch(() => ({ success: true }));
+          const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
+          storage.write('buddie-jobs-cache', cached.filter(j => j.id !== jobId));
+          return resJson;
+        }
+      } catch (e) {
+        console.warn('Network offline for deleteJob, falling back to localStorage:', e);
+      }
+    }
+    const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
+    storage.write('buddie-jobs-cache', cached.filter(j => j.id !== jobId));
+    return { success: true, isOffline: true };
+  },
+
   async applyJob(jobId, title, company, location) {
     if (!isFileProtocol) {
       try {
@@ -689,6 +710,7 @@ function matchesHrFilters(row) {
   const university = document.querySelector('[data-hr-university]')?.value ?? 'all';
   const status = document.querySelector('[data-hr-status]')?.value ?? 'all';
   const jobFilter = document.querySelector('[data-hr-job]')?.value ?? 'all';
+
   const text = row.textContent.toLocaleLowerCase('ru');
   const statusText = row.querySelector('.status-badge')?.textContent.toLocaleLowerCase('ru') ?? '';
   const rowUni = row.dataset.university || (text.includes('кфу') ? 'kfu' : (text.includes('итмо') ? 'itmo' : (text.includes('вшэ') ? 'hse' : '')));
@@ -706,6 +728,62 @@ function matchesHrFilters(row) {
   }
 
   return matchesUniversity && matchesStatus && matchesJob;
+}
+
+
+function calculateHrMetrics(passedJobs, passedCands) {
+  const metricNumbers = document.querySelectorAll('.hr-metric__number');
+  if (metricNumbers.length < 4) return;
+
+  const companySelect = document.querySelector('.hr-topbar__company select');
+  const selectedComp = companySelect ? companySelect.value : 'all';
+
+  let jobs = Array.isArray(passedJobs) ? passedJobs : storage.read('buddie-jobs-cache', DEFAULT_JOBS);
+  if (!Array.isArray(jobs)) jobs = DEFAULT_JOBS;
+
+  let cands = Array.isArray(passedCands) ? passedCands : storage.read('buddie-candidates-cache', []);
+  if (!Array.isArray(cands)) cands = [];
+
+  let filteredJobs = jobs;
+  let filteredCands = cands;
+
+  if (selectedComp && selectedComp !== 'Все компании' && selectedComp !== 'all') {
+    const compLower = selectedComp.toLowerCase();
+    filteredJobs = jobs.filter(j => {
+      const jComp = (j.company || '').toLowerCase();
+      return jComp.includes(compLower) || compLower.includes(jComp);
+    });
+    filteredCands = cands.filter(c => {
+      const cComp = (c.company || '').toLowerCase();
+      const cJob = (c.jobTitle || '').toLowerCase();
+      if (cComp) return cComp.includes(compLower) || compLower.includes(cComp);
+      if (compLower.includes('яндекс') || compLower.includes('yandex')) return cJob.includes('аналитик') || cJob.includes('frontend');
+      if (compLower.includes('сбер') || compLower.includes('sber')) return cJob.includes('java');
+      if (compLower.includes('т-банк') || compLower.includes('tbank')) return cJob.includes('data');
+      if (compLower.includes('вк') || compLower.includes('vk')) return cJob.includes('ml');
+      if (compLower.includes('озон') || compLower.includes('ozon')) return cJob.includes('product');
+      if (compLower.includes('мтс') || compLower.includes('mts')) return cJob.includes('cloud') || cJob.includes('telecom');
+      return true;
+    });
+  }
+
+  metricNumbers[0].textContent = filteredJobs.length;
+  metricNumbers[1].textContent = filteredCands.length;
+
+  const interviewsCount = filteredCands.filter(c => 
+    c.status === 'interview' || (c.statusLabel && c.statusLabel.toLowerCase().includes('интервью'))
+  ).length;
+  metricNumbers[2].textContent = interviewsCount;
+
+  if (filteredCands.length > 0) {
+    const totalMatch = filteredCands.reduce((sum, c) => {
+      const num = parseInt(c.matchScore || '85', 10);
+      return sum + (isNaN(num) ? 85 : num);
+    }, 0);
+    metricNumbers[3].textContent = Math.round(totalMatch / filteredCands.length) + '%';
+  } else {
+    metricNumbers[3].textContent = '—';
+  }
 }
 
 function syncHrJobFilterOptions() {
@@ -743,6 +821,7 @@ function matchesPartner(job) {
   if (filter === 'vk') return compText.includes('vk') || compText.includes('вк');
   if (filter === 'ozon') return compText.includes('ozon') || compText.includes('озон');
   if (filter === 'tbank') return compText.includes('т-банк') || compText.includes('t-bank') || compText.includes('tbank') || compText.includes('тинькофф') || compText.includes('tinkoff');
+  if (filter === 'mts') return compText.includes('мтс') || compText.includes('mts');
 
   return compText.includes(filter);
 }
@@ -892,7 +971,8 @@ function updateActiveFilterChips() {
     sber: 'Сбер',
     vk: 'VK',
     ozon: 'OZON',
-    tbank: 'Т-Банк'
+    tbank: 'Т-Банк',
+    mts: 'МТС'
   };
 
   const chips = [];
@@ -1349,6 +1429,14 @@ const hrJobSelectEl = document.querySelector('[data-hr-job]');
 if (hrJobSelectEl) {
   syncHrJobFilterOptions();
   hrJobSelectEl.addEventListener('change', () => updateSearch(searchTerm));
+}
+const hrTopCompanySelect = document.querySelector('.hr-topbar__company select');
+if (hrTopCompanySelect) {
+  hrTopCompanySelect.addEventListener('change', () => {
+    updateSearch(searchTerm);
+    calculateHrMetrics();
+    announce(`Выбран работодатель: ${hrTopCompanySelect.value}`);
+  });
 }
 
 document.querySelectorAll('[data-notification-filter]').forEach(button => button.addEventListener('click', () => {
@@ -2032,6 +2120,60 @@ function createCandidateRowHtml(cand) {
   '</tr>';
 }
 
+async function applyCandidateStatus(row, candId, candName, status) {
+  let statusLabel = 'Новый';
+  let statusClass = 'status-badge--success';
+
+  if (status === 'interview') {
+    statusLabel = 'Интервью';
+    statusClass = 'status-badge--success';
+  } else if (status === 'offer') {
+    statusLabel = 'Оффер';
+    statusClass = 'status-badge--purple';
+  } else if (status === 'rejected') {
+    statusLabel = 'Отказ';
+    statusClass = 'status-badge--danger';
+  }
+
+  row.dataset.status = status;
+  const badge = row.querySelector('.status-badge');
+  if (badge) {
+    badge.className = 'status-badge ' + statusClass;
+    badge.textContent = statusLabel;
+  }
+  const openBtn = row.querySelector('.button');
+  if (openBtn) {
+    openBtn.className = 'button button--outline button--small';
+    openBtn.textContent = 'Профиль';
+  }
+
+  if (candId) {
+    try {
+      await ApiService.updateCandidate(candId, {
+        status,
+        statusLabel,
+        statusClass
+      });
+    } catch (e) {
+      console.warn('Network offline for updateCandidate:', e);
+    }
+  }
+
+  const cached = storage.read('buddie-candidates-cache', []);
+  if (Array.isArray(cached) && candId) {
+    const item = cached.find(c => c.id === candId);
+    if (item) {
+      item.status = status;
+      item.statusLabel = statusLabel;
+      item.statusClass = statusClass;
+      storage.write('buddie-candidates-cache', cached);
+    }
+  }
+
+  calculateHrMetrics();
+  announce('Кандидату ' + candName + ' назначен статус: ' + statusLabel);
+}
+
 function bindCandidateRow(row) {
   const openBtn = row.querySelector('.button');
   if (!openBtn || openBtn._hasCandAction) return;
@@ -2041,22 +2183,57 @@ function bindCandidateRow(row) {
   const role = row.querySelector('.candidate small')?.textContent.trim() || '';
   const score = row.querySelector('.match-score')?.textContent.trim() || '';
   const skills = [...row.querySelectorAll('.hr-skills span')].map(s => s.textContent).join(', ');
+  const candId = row.dataset.candidateId || '';
+  const currentStatus = row.dataset.status || 'new';
 
   openBtn.addEventListener('click', () => {
     openModal(
       'Профиль кандидата: ' + escapeHtml(name),
       '<p><strong>Специализация:</strong> ' + escapeHtml(role) + '</p>' +
-      '<p><strong>AI Match Score:</strong> ' + escapeHtml(score) + '</p>' +
+      '<p><strong>AI Match Score:</strong> <span class="match-score">' + escapeHtml(score) + '</span></p>' +
       '<p><strong>Ключевые навыки:</strong> ' + escapeHtml(skills) + '</p>' +
       '<div class="form-group" style="margin-top:16px;">' +
-        '<label>Сообщение или приглашение на интервью:</label>' +
-        '<textarea placeholder="Добрый день! Приглашаем вас пройти техническое интервью..."></textarea>' +
+        '<label for="cand-status-select"><strong>Текущий статус пайплайна:</strong></label>' +
+        '<select id="cand-status-select" style="width:100%; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-card); color:var(--text-main); margin-top:4px;">' +
+          '<option value="new"' + (currentStatus === 'new' ? ' selected' : '') + '>Новый (На рассмотрении)</option>' +
+          '<option value="interview"' + (currentStatus === 'interview' ? ' selected' : '') + '>Интервью</option>' +
+          '<option value="offer"' + (currentStatus === 'offer' ? ' selected' : '') + '>Оффер</option>' +
+          '<option value="rejected"' + (currentStatus === 'rejected' ? ' selected' : '') + '>Отказ</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="form-group" style="margin-top:12px;">' +
+        '<label><strong>Быстрый переход статуса:</strong></label>' +
+        '<div class="candidate-quick-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">' +
+          '<button type="button" class="button button--small button--outline btn-quick-status" data-status="interview">📅 На интервью</button>' +
+          '<button type="button" class="button button--small button--outline btn-quick-status" data-status="offer">🎉 Сделать оффер</button>' +
+          '<button type="button" class="button button--small button--outline btn-quick-status" data-status="rejected" style="color:#dc2626; border-color:#fca5a5;">❌ Отказать</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-group" style="margin-top:16px;">' +
+        '<label for="cand-message-text">Сообщение или заметка рекрутера:</label>' +
+        '<textarea id="cand-message-text" placeholder="Добрый день! Приглашаем вас пройти техническое интервью..." style="width:100%; min-height:75px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); font-family:inherit;"></textarea>' +
       '</div>',
-      () => {
-        announce('Приглашение успешно отправлено кандидату ' + name + '!');
+      async (modal) => {
+        const select = modal.querySelector('#cand-status-select');
+        const nextStatus = select ? select.value : 'interview';
+        await applyCandidateStatus(row, candId, name, nextStatus);
       },
-      'Пригласить на интервью'
+      'Сохранить статус'
     );
+
+    setTimeout(() => {
+      const modal = document.querySelector('.modal-dialog');
+      if (!modal) return;
+      const statusSelect = modal.querySelector('#cand-status-select');
+      modal.querySelectorAll('.btn-quick-status').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const st = btn.dataset.status;
+          if (statusSelect) statusSelect.value = st;
+          await applyCandidateStatus(row, candId, name, st);
+          closeModal();
+        });
+      });
+    }, 10);
   });
 }
 
@@ -2079,7 +2256,7 @@ function renderCandidatesTable(candidates) {
 
   const footSpan = document.querySelector('.hr-table-foot span');
   if (footSpan) {
-    footSpan.textContent = 'Показаны ' + candList.length + ' из 48 кандидатов';
+    footSpan.textContent = 'Показаны ' + candList.length + ' из ' + candList.length + ' кандидатов';
   }
 
   syncHrJobFilterOptions();
@@ -2268,15 +2445,7 @@ function initHrAutoSync() {
       }
 
       // Обновляем числовые метрики в hr.html
-      const metricNumbers = document.querySelectorAll('.hr-metric__number');
-      if (metricNumbers.length >= 4) {
-        if (Array.isArray(jobs) && jobs.length > 0) metricNumbers[0].textContent = jobs.length;
-        if (Array.isArray(cands)) {
-          metricNumbers[1].textContent = cands.length;
-          const interviews = cands.filter(c => c.status === 'interview' || (c.statusLabel && c.statusLabel.toLowerCase().includes('интервью'))).length;
-          metricNumbers[2].textContent = interviews;
-        }
-      }
+      calculateHrMetrics(jobs, cands);
     } catch (e) {
       console.warn('HR auto-sync error:', e);
     } finally {
@@ -2329,6 +2498,7 @@ async function loadInitialData() {
   // 3. Таблица кандидатов в hr.html
   const candTable = document.querySelector('.candidate-table');
   if (candTable) {
+    calculateHrMetrics();
     candTable.querySelectorAll('tbody tr').forEach(row => bindCandidateRow(row));
     syncHrJobFilterOptions();
 
@@ -2634,32 +2804,64 @@ const postJobBtn = document.querySelector('a[href="#post"]');
 if (postJobBtn) {
   postJobBtn.addEventListener('click', (e) => {
     e.preventDefault();
+    const activeCompSelect = document.querySelector('.hr-topbar__company select');
+    const activeComp = (activeCompSelect && activeCompSelect.value && activeCompSelect.value !== 'all' && activeCompSelect.value !== 'Все компании') 
+      ? activeCompSelect.value 
+      : 'ООО Яндекс';
+
     openModal(
       'Размещение новой стажировки',
       `<div class="form-group">
-          <label>Название вакансии / роли:</label>
-          <input type="text" id="new-job-title" placeholder="например, ML Intern или Frontend Developer" required style="padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);">
+          <label for="new-job-company">Компания-работодатель:</label>
+          <select id="new-job-company" style="width:100%; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-card); color:var(--text-main);">
+            <option value="ООО Яндекс"${activeComp.includes('Яндекс') ? ' selected' : ''}>ООО Яндекс</option>
+            <option value="АО Т-Банк"${activeComp.includes('Т-Банк') ? ' selected' : ''}>АО Т-Банк</option>
+            <option value="ООО Сбер"${activeComp.includes('Сбер') ? ' selected' : ''}>ООО Сбер</option>
+            <option value="VK (ООО «В Контакте»)"${activeComp.includes('VK') || activeComp.includes('Контакт') ? ' selected' : ''}>VK (ООО «В Контакте»)</option>
+            <option value="ООО Озон Холдинг"${activeComp.includes('Озон') ? ' selected' : ''}>ООО Озон Холдинг</option>
+            <option value="ПАО МТС"${activeComp.includes('МТС') ? ' selected' : ''}>ПАО МТС</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Формат работы:</label>
-          <select id="new-job-format">
+          <label for="new-job-title">Название вакансии / роли:</label>
+          <input type="text" id="new-job-title" placeholder="например, ML Intern или Frontend Developer" required style="width:100%; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);">
+        </div>
+        <div class="form-group">
+          <label for="new-job-format">Формат работы:</label>
+          <select id="new-job-format" style="width:100%; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-card); color:var(--text-main);">
             <option value="hybrid">Гибридный (Hybrid)</option>
             <option value="remote">Удалённый (Remote)</option>
             <option value="office">Офис (Казань)</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Зарплатная вилка / стипендия:</label>
-          <input type="text" id="new-job-salary" placeholder="например, 80 000–120 000 ₽" style="padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);">
+          <label for="new-job-salary">Зарплатная вилка / стипендия:</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="new-job-salary" placeholder="например, 80 000–120 000 ₽" style="flex:1; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);" autocomplete="off">
+            <select id="new-job-salary-period" aria-label="Период оплаты" style="width:110px; min-height:40px; padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-card); color:var(--text-main);">
+              <option value="month">₽/мес</option>
+              <option value="hour">₽/час</option>
+            </select>
+          </div>
+          <div class="salary-presets" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="50 000–80 000 ₽" data-period="month">50–80 тыс. ₽/мес</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="80 000–120 000 ₽" data-period="month">80–120 тыс. ₽/мес</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="120 000–160 000 ₽" data-period="month">120–160 тыс. ₽/мес</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="500–800 ₽/час" data-period="hour">500–800 ₽/час</button>
+          </div>
         </div>`,
       async (modal) => {
         const titleInput = modal.querySelector('#new-job-title');
         const salaryInput = modal.querySelector('#new-job-salary');
+        const periodSelect = modal.querySelector('#new-job-salary-period');
+        const companyInput = modal.querySelector('#new-job-company');
+        const formatSelect = modal.querySelector('#new-job-format');
+
         const title = titleInput ? titleInput.value.trim() : '';
-        const salary = salaryInput ? salaryInput.value.trim() : '';
-        const format = modal.querySelector('#new-job-format')?.value || 'hybrid';
-        const companySelect = document.querySelector('.hr-topbar__company select');
-        const company = (companySelect && companySelect.value) ? companySelect.value : 'ООО Партнёр КФУ';
+        let salary = salaryInput ? salaryInput.value.trim() : '';
+        const format = formatSelect?.value || 'hybrid';
+        const company = companyInput?.value || activeComp;
+        const period = periodSelect?.value || 'month';
 
         modal.querySelectorAll('.field-error').forEach(el => el.remove());
 
@@ -2687,7 +2889,7 @@ if (postJobBtn) {
           err.style.fontSize = '12px';
           err.style.marginTop = '4px';
           err.textContent = 'Укажите диапазон стипендии / зарплаты';
-          salaryInput.parentElement.append(err);
+          salaryInput.closest('.form-group').append(err);
         }
 
         if (hasError) {
@@ -2695,7 +2897,11 @@ if (postJobBtn) {
           return false;
         }
 
-        const createdJob = await api.createJob({
+        if (!salary.includes('₽') && !salary.includes('/')) {
+          salary = period === 'hour' ? (salary + ' ₽/час') : (salary + ' ₽/мес');
+        }
+
+        const createdJob = await ApiService.createJob({
           title,
           format,
           salary,
@@ -2704,14 +2910,136 @@ if (postJobBtn) {
           targetUniversity: 'kfu'
         });
         syncHrJobFilterOptions();
+        calculateHrMetrics();
         if (createdJob && createdJob.isOffline) {
-          announce(`Работаем в автономном режиме: стажировка «${title}» сохранена локально`);
+          announce('Работаем в автономном режиме: стажировка «' + title + '» сохранена локально');
         } else {
-          announce(`Стажировка «${title}» успешно размещена в базе данных!`);
+          announce('Стажировка «' + title + '» успешно размещена в базе данных!');
         }
       },
       'Опубликовать стажировку'
     );
+
+    setTimeout(() => {
+      const modal = document.querySelector('.modal-dialog');
+      if (!modal) return;
+      const salaryInput = modal.querySelector('#new-job-salary');
+      const periodSelect = modal.querySelector('#new-job-salary-period');
+      if (salaryInput) {
+        salaryInput.addEventListener('input', () => {
+          const filtered = salaryInput.value.replace(/[^\d\s–—\-₽\.,\/]/g, '');
+          if (filtered !== salaryInput.value) {
+            salaryInput.value = filtered;
+          }
+        });
+      }
+      modal.querySelectorAll('.salary-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (salaryInput) salaryInput.value = btn.dataset.val;
+          if (periodSelect && btn.dataset.period) periodSelect.value = btn.dataset.period;
+          salaryInput?.focus();
+        });
+      });
+    }, 10);
+  });
+}
+
+// Кнопка «Управление вакансиями» в hr.html
+const manageJobsBtn = document.getElementById('btn-manage-jobs');
+if (manageJobsBtn) {
+  manageJobsBtn.addEventListener('click', async () => {
+    let jobs = storage.read('buddie-jobs-cache', null);
+    if (!jobs || jobs.length === 0) {
+      try {
+        jobs = await ApiService.getJobs();
+      } catch (e) {
+        jobs = DEFAULT_JOBS;
+      }
+    }
+
+    const renderJobsList = (jobsList) => {
+      if (!jobsList || jobsList.length === 0) {
+        return `
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <svg class="ui-icon" style="width:36px;height:36px;" aria-hidden="true"><use href="#icon-briefcase"></use></svg>
+            </div>
+            <div class="empty-state__title">Нет активных стажировок</div>
+            <div class="empty-state__desc">Вы можете разместить новую вакансию через кнопку «＋ Разместить стажировку».</div>
+          </div>
+        `;
+      }
+      return `
+        <div class="manage-jobs-list" role="list" aria-label="Список ваших вакансий">
+          ${jobsList.map(j => `
+            <div class="manage-job-item" role="listitem" data-job-id="${escapeHtml(j.id)}">
+              <div class="manage-job-item__info">
+                <div class="manage-job-item__title">${escapeHtml(j.title)}</div>
+                <div class="manage-job-item__meta">
+                  <span>🏢 ${escapeHtml(j.company || 'Партнёр')}</span>
+                  <span>💰 ${escapeHtml(j.salary || 'По договоренности')}</span>
+                  <span>📍 ${escapeHtml(j.format === 'remote' ? 'Удалённо' : (j.format === 'office' ? 'Офис' : 'Гибрид'))}</span>
+                </div>
+              </div>
+              <button type="button" class="manage-job-item__delete" data-delete-job-id="${escapeHtml(j.id)}" aria-label="Удалить вакансию «${escapeHtml(j.title)}»">
+                Удалить
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    };
+
+    openModal(
+      'Управление размещенными вакансиями',
+      renderJobsList(jobs),
+      null,
+      'Закрыть'
+    );
+
+    setTimeout(() => {
+      const modal = document.querySelector('.modal-dialog');
+      if (!modal) return;
+
+      modal.querySelectorAll('[data-delete-job-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const jId = btn.dataset.deleteJobId;
+          const itemRow = btn.closest('.manage-job-item');
+          const jobTitle = itemRow?.querySelector('.manage-job-item__title')?.textContent || 'Вакансия';
+
+          if (!confirm('Вы действительно хотите удалить вакансию «' + jobTitle + '»?\nВсе связанные отклики и кандидаты также будут удалены.')) {
+            return;
+          }
+
+          btn.disabled = true;
+          btn.textContent = 'Удаление...';
+
+          await ApiService.deleteJob(jId);
+
+          itemRow.remove();
+
+          const remaining = modal.querySelectorAll('.manage-job-item');
+          if (remaining.length === 0) {
+            const listContainer = modal.querySelector('.manage-jobs-list');
+            if (listContainer) {
+              listContainer.outerHTML = `
+                <div class="empty-state">
+                  <div class="empty-state__icon">
+                    <svg class="ui-icon" style="width:36px;height:36px;" aria-hidden="true"><use href="#icon-briefcase"></use></svg>
+                  </div>
+                  <div class="empty-state__title">Все вакансии удалены</div>
+                  <div class="empty-state__desc">Вы можете разместить новую вакансию в любое время.</div>
+                </div>
+              `;
+            }
+          }
+
+          syncHrJobFilterOptions();
+          calculateHrMetrics();
+          announce('Вакансия «' + jobTitle + '» успешно удалена');
+        });
+      });
+    }, 10);
   });
 }
 
