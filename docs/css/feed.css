@@ -130,12 +130,11 @@
 }
 .feed-tip__mascot img {
   position: absolute;
-  width: 55px;
-  height: 55px;
+  width: 50px;
+  height: 50px;
   max-width: none;
-  left: 55%;
-  top: -2px;
-  transform: translateX(-50%);
+  left: 1px;
+  top: 0;
   object-fit: contain;
   pointer-events: none;
 }
