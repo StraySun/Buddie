@@ -118,7 +118,7 @@ test('student navigation, university selectors, partner cards, and anchors are a
     if (file === 'index.html') {
       await expect(page.locator('.partners__head h2')).toHaveText('Наши партнёры');
       await expect(page.locator('.partners__head p')).toHaveText('Твой старт в лучших командах');
-      await expect(page.locator('.partners__item')).toHaveText(['Yandex', 'СБЕР', 'VK', 'OZON', 'Т-Банк']);
+      await expect(page.locator('.partners__item')).toHaveText(['Yandex', 'СБЕР', 'VK', 'OZON', 'Т-Банк', 'МТС']);
     }
     if (file === 'profile.html') {
       expect(await page.locator('.data-table th').evaluateAll(headers => headers.every(header => header.scope === 'col'))).toBe(true);

@@ -207,7 +207,7 @@
 }
 .partners__list {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
 }
@@ -311,6 +311,11 @@
   background-color: rgba(250, 204, 21, 0.14);
   border-color: #EAB308;
   color: #A16207;
+}
+.partners__item--mts.partners__item--active {
+  background-color: rgba(239, 68, 68, 0.09);
+  border-color: #EF4444;
+  color: #DC2626;
 }
 
 @media (max-width: 680px) {
