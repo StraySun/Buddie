@@ -1,3 +1,15 @@
+
+function getCompanyMeta(compName) {
+  const comp = (compName || '').toLowerCase();
+  if (comp.includes('яндекс') || comp.includes('yandex')) return { logoClass: 'company-logo--yandex', letter: 'Я' };
+  if (comp.includes('сбер') || comp.includes('sber')) return { logoClass: 'company-logo--sber', letter: 'С' };
+  if (comp.includes('тинькофф') || comp.includes('т-банк') || comp.includes('tbank') || comp.includes('t-bank')) return { logoClass: 'company-logo--tbank', letter: 'Т' };
+  if (comp.includes('vk') || comp.includes('контакт') || comp.includes('вк')) return { logoClass: 'company-logo--vk', letter: 'VK' };
+  if (comp.includes('озон') || comp.includes('ozon')) return { logoClass: 'company-logo--ozon', letter: 'O' };
+  if (comp.includes('мтс') || comp.includes('mts')) return { logoClass: 'company-logo--mts', letter: 'М' };
+  return { logoClass: 'company-logo--yandex', letter: (compName || 'П')[0].toUpperCase() };
+}
+
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -452,8 +464,9 @@ const server = http.createServer(async (req, res) => {
           newJob.specialty = newJob.specialty || (/ml|frontend|python|java|backend|developer|разработ/i.test(newJob.title || '') ? 'development' : 'analysis');
           newJob.tags = newJob.tags || ['Стажировка', formatTag, newJob.specialty === 'development' ? 'Dev' : 'Data'];
           newJob.company = newJob.company || 'ООО Партнёр КФУ';
-          newJob.companyLetter = newJob.companyLetter || (newJob.company || 'П')[0].toUpperCase();
-          newJob.companyLogoClass = newJob.companyLogoClass || 'company-logo--yandex';
+          const sMeta = getCompanyMeta(newJob.company);
+          newJob.companyLetter = newJob.companyLetter || sMeta.letter;
+          newJob.companyLogoClass = newJob.companyLogoClass || sMeta.logoClass;
           newJob.responseBadge = '● Новая стажировка';
           newJob.targetUniversity = newJob.targetUniversity || db.university || 'kfu';
           newJob.location = newJob.location || 'Казань / Удалённо';

@@ -118,7 +118,7 @@ test('student navigation, university selectors, partner cards, and anchors are a
     if (file === 'index.html') {
       await expect(page.locator('.partners__head h2')).toHaveText('Наши партнёры');
       await expect(page.locator('.partners__head p')).toHaveText('Твой старт в лучших командах');
-      await expect(page.locator('.partners__item')).toHaveText(['Yandex', 'СБЕР', 'VK', 'OZON', 'Т-Банк']);
+      await expect(page.locator('.partners__item')).toHaveText(['Yandex', 'СБЕР', 'VK', 'OZON', 'Т-Банк', 'МТС']);
     }
     if (file === 'profile.html') {
       expect(await page.locator('.data-table th').evaluateAll(headers => headers.every(header => header.scope === 'col'))).toBe(true);
@@ -1528,4 +1528,58 @@ test('Phase 1 & Phase 3 Security & UI Interactivity: XSS neutralization, intervi
   expect(await skipLink.getAttribute('href')).toBe('#main-content');
   const mainContent = page.locator('#main-content');
   await expect(mainContent).toBeAttached();
+});
+
+
+test('Phase 4 HR portal enhancements: candidate pipeline, vacancy management, and salary presets', async ({ page }) => {
+  // 1. HR candidate status management pipeline
+  await page.goto('/hr.html');
+  const candidateRow = page.locator('.candidate-table tbody tr').first();
+  await expect(candidateRow).toBeVisible();
+
+  // Open profile modal
+  await candidateRow.locator('.button').click();
+  const profileModal = page.locator('.modal-dialog');
+  await expect(profileModal).toBeVisible();
+  await expect(profileModal.locator('.modal-title')).toContainText('Профиль кандидата');
+
+  // Change status to offer via quick button
+  const offerBtn = profileModal.locator('[data-status="offer"]');
+  await expect(offerBtn).toBeVisible();
+  await offerBtn.click();
+  await expect(profileModal).toBeHidden();
+
+  // Verify badge updated in row
+  await expect(candidateRow.locator('.status-badge')).toContainText('Оффер');
+
+  // 2. Manage vacancies modal
+  const manageBtn = page.locator('#btn-manage-jobs');
+  await expect(manageBtn).toBeVisible();
+  await manageBtn.click();
+  const manageModal = page.locator('.modal-dialog');
+  await expect(manageModal).toBeVisible();
+  await expect(manageModal.locator('.modal-title')).toContainText('Управление');
+  const itemsCount = await manageModal.locator('.manage-job-item').count();
+  expect(itemsCount).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await expect(manageModal).toBeHidden();
+
+  // 3. Internship creation modal with salary presets and validation
+  await page.locator('a[href="#post"]').click();
+  const postModal = page.locator('.modal-dialog');
+  await expect(postModal).toBeVisible();
+
+  // Preset button fills salary
+  const presetBtn = postModal.locator('.salary-preset-btn').first();
+  await expect(presetBtn).toBeVisible();
+  await presetBtn.click();
+  const salaryVal = await postModal.locator('#new-job-salary').inputValue();
+  expect(salaryVal).toBe('50 000–80 000');
+  expect(salaryVal).not.toContain('₽');
+
+  // Check company select is present
+  await expect(postModal.locator('#new-job-company')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(postModal).toBeHidden();
 });

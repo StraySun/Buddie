@@ -26,13 +26,29 @@
 .chip--neutral { color: #5B6474; background: #f2f1f5; }
 .chip--counter { color: #6b21a8; background: #eedbff; font-weight: 700; cursor: help; border: 1px dashed #d8b4fe; }
 .match-badge { display: inline-flex; align-items: center; gap: 4px; padding: 7px 11px; border-radius: var(--radius-pill); color: #7540bc; background: #f2e7ff; font-size: 11px; font-weight: 700; white-space: nowrap; }
-.company-logo { width: 31px; height: 31px; display: grid; place-items: center; flex: 0 0 31px; border-radius: 10px; font-size: 16px; font-weight: 800; }
-.company-logo--yandex { color: #171717; background: #ffdf35; }
-.company-logo--sber { color: #fff; background: #21a456; }
-.company-logo--tbank { color: #171717; background: #ffdf24; }
-.company-logo--vk { color: #fff; background: #1687e8; }
-.company-logo--ozon { color: #fff; background: #1267df; }
-.company-logo--mts { color: #fff; background: #ed1c24; }
+.company-logo {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 31px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: transparent;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.company-logo--yandex { color: transparent; background-color: #fc3f1d; background-image: url('../images/companies/yandex.jpg'); }
+.company-logo--sber { color: transparent; background-color: #21a456; background-image: url('../images/companies/sber.jpg'); }
+.company-logo--tbank { color: transparent; background-color: #ffdd2d; background-image: url('../images/companies/tbank.jpg'); }
+.company-logo--vk { color: transparent; background-color: #0077ff; background-image: url('../images/companies/vk.jpg'); }
+.company-logo--ozon { color: transparent; background-color: #005bff; background-image: url('../images/companies/ozon.jpg'); }
+.company-logo--mts { color: transparent; background-color: #e30611; background-image: url('../images/companies/mts.jpg'); }
 .company-name { font-size: 13px; font-weight: 700; }
 .company-rating { margin-top: 4px; color: #5B6474; font-size: 12px; }
 .job-card { padding: 20px; }
