@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "lint:syntax": "node --check public/js/app.js && node --check src/server.js",
+    "lint:syntax": "node --check docs/js/app.js && node --check src/server.js",
     "pretest": "npm run lint:syntax",
     "test": "playwright test",
     "test:fast": "playwright test -g",

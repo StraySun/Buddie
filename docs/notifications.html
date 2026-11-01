@@ -1,18 +1,19 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buddie for HR — Рабочее пространство</title>
+    <title>Buddie — Уведомления</title>
     <link rel="icon" type="image/png" href="./images/mascot-logo.png">
     <link rel="stylesheet" href="./css/variables.css">
     <link rel="stylesheet" href="./css/global.css">
     <link rel="stylesheet" href="./css/components.css">
-    <link rel="stylesheet" href="./css/hr.css">
+    <link rel="stylesheet" href="./css/notifications.css">
 </head>
 
-<body class="hr-page">
+<body>
+    <a href="#main-content" class="skip-link">Перейти к основному контенту</a>
 <!-- Vector Icons Sprite (Phase 3) -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="icon-user" viewBox="0 0 24 24">
@@ -65,153 +66,165 @@
     <polyline points="12 7 12 12 15 15" />
   </symbol>
 </svg>
-    <main class="hr-shell">
-        <header class="hr-topbar"><a class="hr-brand" href="index.html"><span
-                    class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span><strong>Buddie <span class="hr-brand__accent">for
-                            HR</span></strong><small>Рабочее пространство работодателя</small></span></a>
-            <a class="hr-topbar__return" href="./index.html">← Вернуться в Buddie</a>
-            <label class="hr-topbar__company">Компания<select aria-label="Выберите компанию"><option selected>ООО Яндекс</option><option>ООО Сбер</option><option>ООО Т-Банк</option></select></label>
-            <div class="hr-topbar__profile"><span class="avatar">АК</span><span>Анна К.<small class="hr-brand__role">HR-партнёр</small></span>
+    <div class="page-shell">
+        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span class="brand__identity"><span
+                        class="brand__word">Buddie</span><span class="brand__caption">Buddie · Карьерная лента</span></span></a>
+            <div class="sidebar__label">Навигация</div>
+            <nav class="sidebar__nav">
+  <a class="sidebar__nav-item" href="index.html">
+    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-feed"></use></svg></span>
+    <span class="sidebar__nav-copy">Лента<small>Вакансии и стажировки</small></span>
+  </a>
+  <a class="sidebar__nav-item" href="companies.html">
+    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-briefcase"></use></svg></span>
+    <span class="sidebar__nav-copy">Стажировки<small>Каталог компаний</small></span>
+  </a>
+  <a class="sidebar__nav-item sidebar__nav-item--active" href="notifications.html">
+    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bell"></use></svg></span>
+    <span class="sidebar__nav-copy">Уведомления<small>Сигналы и дедлайны</small></span>
+    <span class="sidebar__count">4</span>
+  </a>
+  <a class="sidebar__nav-item" href="profile.html">
+    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-user"></use></svg></span>
+    <span class="sidebar__nav-copy">Личный кабинет<small>Профиль, отклики и резюме</small></span>
+    <span class="sidebar__count">4</span>
+  </a>
+</nav>
+            <a class="sidebar__hr-link" href="hr.html">Режим HR-партнёра →</a>
+            <div class="sidebar__progress">
+                <div class="sidebar__progress-title">Профиль заполнен <strong>85%</strong></div>
+                <div class="sidebar__track"><span></span></div>
+                <p>Добавь портфолио — работодатели заметят тебя быстрее.</p><a class="sidebar__link"
+                    href="profile.html">Дополнить профиль →</a>
             </div>
-        </header>
-        <div class="hr-heading">
-            <h1>Кандидаты и отклики</h1>
-            <p>Подбирайте студентов КФУ по навыкам и AI-совпадению.</p>
-        </div>
-        <section class="hr-metrics">
-            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-briefcase"></use></svg></span>
+            <div class="sidebar__footer"><span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>Центр карьеры на связи</div>
+            <div class="sidebar__user">
+                <div class="avatar">НМ</div>
                 <div>
-                    <div class="hr-metric__label">Активные вакансии</div>
-                    <div class="hr-metric__number">5</div>
+                    <div class="sidebar__user-name">Нур М.</div>
+                    <div class="sidebar__user-meta">КФУ · 3-й курс</div>
                 </div>
-            </article>
-            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-application"></use></svg></span>
-                <div>
-                    <div class="hr-metric__label">Отклики студентов</div>
-                    <div class="hr-metric__number">48</div>
-                </div>
-            </article>
-            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg></span>
-                <div>
-                    <div class="hr-metric__label">Запланировано интервью</div>
-                    <div class="hr-metric__number">6</div>
-                </div>
-            </article>
-            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-sparkles"></use></svg></span>
-                <div>
-                    <div class="hr-metric__label">Средний Match Rate</div>
-                    <div class="hr-metric__number">84%</div>
-                </div>
-            </article>
-        </section>
-        <div class="hr-actions" id="post"><a class="button" href="#post">＋ Разместить стажировку</a>
-            <div class="hr-actions__filters"><input class="hr-candidate-search" type="search" placeholder="Поиск кандидата..." aria-label="Поиск кандидата" data-search-input><select class="filter-pill" aria-label="Целевой университет" data-hr-university>
-                    <option value="kfu">Целевой ВУЗ: КФУ</option>
-                    <option value="all">Все университеты</option>
-                </select><select class="filter-pill" aria-label="Фильтр по вакансии" data-hr-job>
-                    <option value="all">Все вакансии</option>
-                </select><select class="filter-pill" aria-label="Фильтр статуса" data-hr-status>
-                    <option value="all">Все статусы</option>
-                    <option value="new">Новые</option>
-                    <option value="interview">Интервью</option>
-                    <option value="review">На рассмотрении</option>
-                </select></div>
-        </div>
-        <section class="card candidate-panel">
-            <div class="candidate-panel__head">
-                <h2>Подходящие кандидаты</h2><span>48 откликов · Обновлено 10 минут назад</span>
             </div>
-            <div class="table-scroll" tabindex="0" aria-label="Таблица кандидатов. Прокручивайте по горизонтали.">
-                <table class="candidate-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Студент</th>
-                            <th scope="col">ВУЗ / Курс</th>
-                            <th scope="col">Вакансия</th>
-                            <th scope="col">AI Match Score</th>
-                            <th scope="col">Стек</th>
-                            <th scope="col">Статус</th>
-                            <th scope="col">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hr-candidates-tbody">
-                        <tr>
-                            <td>
-                                <div class="candidate"><span class="candidate__avatar">НМ</span><span><strong>Нур
-                                            М.</strong><small>Аналитика данных</small></span></div>
-                            </td>
-                            <td>КФУ · 3-й курс</td>
-                            <td>Стажёр-аналитик данных</td>
-                            <td><span class="match-score">96%</span></td>
-                            <td>
-                                <div class="hr-skills"><span>Python</span><span>SQL</span><span>Pandas</span></div>
-                            </td>
-                            <td><span class="status-badge status-badge--success">Новый</span></td>
-                            <td><button class="button button--small">Открыть</button></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="candidate"><span class="candidate__avatar candidate__avatar--green">АИ</span><span><strong>Алина
-                                            И.</strong><small>Frontend-разработка</small></span></div>
-                            </td>
-                            <td>КФУ · 4-й курс</td>
-                            <td>Frontend-разработчик</td>
-                            <td><span class="match-score">92%</span></td>
-                            <td>
-                                <div class="hr-skills"><span>React</span><span>TypeScript</span><span>Git</span></div>
-                            </td>
-                            <td><span class="status-badge status-badge--purple">Интервью</span></td>
-                            <td><button class="button button--outline button--small">Профиль</button></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="candidate"><span class="candidate__avatar candidate__avatar--blue">ДК</span><span><strong>Дамир
-                                            К.</strong><small>Java-разработка</small></span></div>
-                            </td>
-                            <td>КФУ · 3-й курс</td>
-                            <td>Младший Java-разработчик</td>
-                            <td><span class="match-score">89%</span></td>
-                            <td>
-                                <div class="hr-skills"><span>Java</span><span>Spring</span><span>SQL</span></div>
-                            </td>
-                            <td><span class="status-badge status-badge--warning">На рассмотрении</span></td>
-                            <td><button class="button button--outline button--small">Профиль</button></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="candidate"><span class="candidate__avatar candidate__avatar--orange">ЕМ</span><span><strong>Елена
-                                            М.</strong><small>Продуктовая аналитика</small></span></div>
-                            </td>
-                            <td>КФУ · 2-й курс</td>
-                            <td>Стажёр-аналитик данных</td>
-                            <td><span class="match-score">86%</span></td>
-                            <td>
-                                <div class="hr-skills"><span>SQL</span><span>Tableau</span><span>Python</span></div>
-                            </td>
-                            <td><span class="status-badge status-badge--success">Новый</span></td>
-                            <td><button class="button button--small">Открыть</button></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="candidate"><span class="candidate__avatar candidate__avatar--purple">РС</span><span><strong>Роман
-                                            С.</strong><small>Машинное обучение</small></span></div>
-                            </td>
-                            <td>КФУ · 4-й курс</td>
-                            <td>ML Engineer Intern</td>
-                            <td><span class="match-score">83%</span></td>
-                            <td>
-                                <div class="hr-skills"><span>Python</span><span>ML</span><span>PyTorch</span></div>
-                            </td>
-                            <td><span class="status-badge status-badge--warning">На рассмотрении</span></td>
-                            <td><button class="button button--outline button--small">Профиль</button></td>
-                        </tr>
-                    </tbody>
-                </table>
+        </aside>
+        <main class="app-main" id="main-content" tabindex="-1">
+            <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
+                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
+                <label class="header__select"><small>УНИВЕРСИТЕТ</small><select aria-label="Выберите университет"><option value="kfu" selected>Казанский федеральный университет</option><option value="itmo">Университет ИТМО</option><option value="hse">НИУ ВШЭ</option></select></label>
+                <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления"><svg class="header__bell-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bell"></use></svg><span>4</span></a><a
+                        class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
+                                курс</small></span></a></div>
+            </header>
+            <div class="content">
+                <div class="page-heading">
+                    <div>
+                        <h1>Центр умных уведомлений</h1>
+                        <p>Персональные сигналы, дедлайн-трекер и статусы откликов.</p>
+                    </div><button class="button button--outline button--small" type="button" data-mark-all-read>Отметить всё прочитанным</button>
+                </div>
+                <div class="notifications-layout">
+                    <section class="notifications-main">
+                        <nav class="notification-tabs" aria-label="Фильтр уведомлений"><button class="filter-pill filter-pill--active" type="button" data-notification-filter="all" aria-pressed="true">Все</button><button class="filter-pill" type="button" data-notification-filter="application" aria-pressed="false">Отклики и статусы</button><button class="filter-pill" type="button" data-notification-filter="deadline" aria-pressed="false">Дедлайны</button><button class="filter-pill" type="button" data-notification-filter="recommendation" aria-pressed="false">Рекомендации AI</button></nav>
+                        <section>
+                            <h2 class="timeline-group__title">Сегодня</h2>
+                            <div class="timeline-list">
+                                <article class="card timeline-card timeline-card--urgent">
+                                    <div class="timeline-card__icon timeline-card__icon--warning" aria-hidden="true">◷</div>
+                                    <div>
+                                        <div class="timeline-card__meta">
+                                            <span>ДЕДЛАЙН</span><span>·</span><span>10:42</span></div>
+                                        <h3 class="timeline-card__title">Осталось 2 дня до конца приёма заявок в Yandex!
+                                        </h3>
+                                        <p class="timeline-card__description">Стажировка закрывается 11 октября.
+                                            Совпадение с твоим профилем — 96%.</p>
+                                        <div class="timeline-card__actions"><a class="button button--small"
+                                                href="index.html#job-yandex-analyst">Откликнуться в 1 клик</a><button
+                                                class="button button--outline button--small" type="button" data-dismiss-notification>Напомнить позже</button>
+                                        </div>
+                                    </div>
+                                </article>
+                                <article class="card timeline-card">
+                                    <div class="timeline-card__icon timeline-card__icon--success" aria-hidden="true">✓</div>
+                                    <div>
+                                        <div class="timeline-card__meta"><span>СТАТУС
+                                                ОТКЛИКА</span><span>·</span><span>09:18</span></div>
+                                        <h3 class="timeline-card__title">Приглашение на интервью от Sber!</h3>
+                                        <p class="timeline-card__description">Рекрутер одобрил твой профиль. Выбери
+                                            удобное время для встречи.</p>
+                                        <div class="timeline-card__actions"><a class="button button--small"
+                                                href="profile.html">Выбрать время интервью</a></div>
+                                    </div>
+                                </article>
+                            </div>
+                        </section>
+                        <section>
+                            <h2 class="timeline-group__title">Вчера</h2>
+                            <div class="timeline-list">
+                                <article class="card timeline-card">
+                                    <div class="timeline-card__icon" aria-hidden="true">✦</div>
+                                    <div>
+                                        <div class="timeline-card__meta"><span>РЕКОМЕНДАЦИЯ
+                                                AI</span><span>·</span><span>Вчера, 16:34</span></div>
+                                        <h3 class="timeline-card__title">Появилась новая вакансия по специальности КФУ
+                                        </h3>
+                                        <p class="timeline-card__description">Т-Банк открыл набор на стажировку по
+                                            анализу данных. Совпадение — 88%.</p>
+                                        <div class="timeline-card__actions"><a
+                                                class="button button--outline button--small"
+                                                href="index.html#job-tbank-data">Посмотреть вакансию</a></div>
+                                    </div>
+                                </article>
+                            </div>
+                        </section>
+                        <section>
+                            <h2 class="timeline-group__title">Ранее</h2>
+                            <div class="timeline-list">
+                                <article class="card timeline-card">
+                                    <div class="timeline-card__icon" aria-hidden="true">✦</div>
+                                    <div>
+                                        <div class="timeline-card__meta"><span>СОВЕТ BUDDIE</span><span>·</span><span>6
+                                                октября</span></div>
+                                        <h3 class="timeline-card__title">Добавь проект по SQL в своё резюме</h3>
+                                        <p class="timeline-card__description">Так твой профиль станет заметнее для
+                                            аналитических команд.</p>
+                                        <div class="timeline-card__actions"><a
+                                                class="button button--outline button--small"
+                                                href="profile.html">Улучшить резюме</a></div>
+                                    </div>
+                                </article>
+                            </div>
+                        </section>
+                    </section>
+                    <aside class="notifications-side">
+                        <section class="card widget settings-card">
+                            <h2>⚙ Настройки уведомлений</h2>
+                            <div class="settings-list">
+                                <div class="setting-row"><span>Новые подходящие вакансии (AI match)</span><button
+                                        class="toggle toggle--on" type="button" data-notification-setting aria-label="Новые подходящие вакансии (AI match)" aria-pressed="true"></button></div>
+                                <div class="setting-row"><span>Изменение статуса отклика</span><button
+                                        class="toggle toggle--on" type="button" data-notification-setting aria-label="Изменение статуса отклика" aria-pressed="true"></button></div>
+                                <div class="setting-row"><span>Напоминания о дедлайнах</span><button
+                                        class="toggle toggle--on" type="button" data-notification-setting aria-label="Напоминания о дедлайнах" aria-pressed="true"></button></div>
+                                <div class="setting-row"><span>Сообщения от HR</span><button class="toggle" type="button" data-notification-setting
+                                        aria-label="Сообщения от HR" aria-pressed="false"></button></div>
+                                <div class="setting-row"><span>Дайджест КФУ</span><button class="toggle toggle--on" type="button" data-notification-setting
+                                        aria-label="Дайджест КФУ" aria-pressed="true"></button></div>
+                            </div>
+                            <h3 class="settings-card__subhead">Каналы доставки</h3><label class="channel-row"><input
+                                    type="checkbox" data-notification-channel checked> Внутренние уведомления</label><label
+                                class="channel-row"><input type="checkbox" data-notification-channel checked> Telegram ·
+                                @BuddieKFU_bot</label><label class="channel-row"><input type="checkbox" data-notification-channel> Email</label>
+                            <div class="settings-saved">Настройки хранятся в этом браузере</div>
+                        </section>
+                        <section class="card widget">
+                            <h2 class="widget__title">Твой карьерный радар</h2>
+                            <p class="widget__muted">Buddie следит за откликами, подходящими стажировками и сроками
+                                подачи заявок, чтобы ты ничего не пропустил.</p>
+                        </section>
+                    </aside>
+                </div>
             </div>
-            <div class="hr-table-foot"><span>Показаны 5 из 48 кандидатов</span><span class="hr-table-foot__note">AI Match учитывает навыки,
-                    направление и интересы студента.</span></div>
-        </section>
-    </main>
+        </main>
+    </div>
     <script src="./js/app.js?v=2.1" defer></script>
 </body>
 
