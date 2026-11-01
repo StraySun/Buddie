@@ -245,6 +245,25 @@
 .partners__item:active {
   transform: translateY(0);
 }
+.partners__item::before {
+  content: '';
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.partners__item--yandex::before { background-image: url('../images/companies/yandex.jpg'); }
+.partners__item--sber::before { background-image: url('../images/companies/sber.jpg'); }
+.partners__item--vk::before { background-image: url('../images/companies/vk.jpg'); }
+.partners__item--ozon::before { background-image: url('../images/companies/ozon.jpg'); }
+.partners__item--tbank::before { background-image: url('../images/companies/tbank.jpg'); }
+.partners__item--mts::before { background-image: url('../images/companies/mts.jpg'); }
+
 .partners__item::after {
   content: '';
   display: inline-block;
@@ -259,6 +278,7 @@
 .partners__item--vk::after { background-color: #0077FF; }
 .partners__item--ozon::after { background-color: #C026D3; }
 .partners__item--tbank::after { background-color: #FACC15; }
+.partners__item--mts::after { background-color: #EF4444; }
 
 .partners__item--active {
   font-weight: 800;

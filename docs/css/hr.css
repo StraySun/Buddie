@@ -118,3 +118,15 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .empty-state__icon { width: 44px; height: 44px; margin: 0 auto 10px; color: #8b5cf6; display: flex; align-items: center; justify-content: center; }
 .empty-state__title { font-size: 15px; font-weight: 700; color: #1e1a29; margin-bottom: 5px; }
 .empty-state__desc { font-size: 12px; max-width: 320px; margin: 0 auto 14px; line-height: 1.5; }
+
+.hr-topbar__company-logo {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.hr-topbar__company-logo--hidden {
+  display: none !important;
+}

@@ -1,3 +1,15 @@
+
+function getCompanyMeta(compName) {
+  const comp = (compName || '').toLowerCase();
+  if (comp.includes('яндекс') || comp.includes('yandex')) return { logoClass: 'company-logo--yandex', letter: 'Я' };
+  if (comp.includes('сбер') || comp.includes('sber')) return { logoClass: 'company-logo--sber', letter: 'С' };
+  if (comp.includes('тинькофф') || comp.includes('т-банк') || comp.includes('tbank') || comp.includes('t-bank')) return { logoClass: 'company-logo--tbank', letter: 'Т' };
+  if (comp.includes('vk') || comp.includes('контакт') || comp.includes('вк')) return { logoClass: 'company-logo--vk', letter: 'VK' };
+  if (comp.includes('озон') || comp.includes('ozon')) return { logoClass: 'company-logo--ozon', letter: 'O' };
+  if (comp.includes('мтс') || comp.includes('mts')) return { logoClass: 'company-logo--mts', letter: 'М' };
+  return { logoClass: 'company-logo--yandex', letter: (compName || 'П')[0].toUpperCase() };
+}
+
 // ==========================================
 // 1. Утилиты: storage, toast, debounce
 // ==========================================
@@ -1432,7 +1444,22 @@ if (hrJobSelectEl) {
 }
 const hrTopCompanySelect = document.querySelector('.hr-topbar__company select');
 if (hrTopCompanySelect) {
+  const syncCompanyBadge = () => {
+    const badge = document.getElementById('hr-company-badge');
+    if (!badge) return;
+    const val = hrTopCompanySelect.value || '';
+    if (val.includes('Все компании') || val === 'all') {
+      badge.classList.add('hr-topbar__company-logo--hidden');
+    } else {
+      badge.classList.remove('hr-topbar__company-logo--hidden');
+      const m = getCompanyMeta(val);
+      badge.className = 'company-logo hr-topbar__company-logo ' + m.logoClass;
+      badge.textContent = m.letter;
+    }
+  };
+  syncCompanyBadge();
   hrTopCompanySelect.addEventListener('change', () => {
+    syncCompanyBadge();
     updateSearch(searchTerm);
     calculateHrMetrics();
     announce(`Выбран работодатель: ${hrTopCompanySelect.value}`);
@@ -2901,11 +2928,14 @@ if (postJobBtn) {
           salary = period === 'hour' ? (salary + ' ₽/час') : (salary + ' ₽/мес');
         }
 
+        const cMeta = getCompanyMeta(company);
         const createdJob = await ApiService.createJob({
           title,
           format,
           salary,
           company,
+          companyLetter: cMeta.letter,
+          companyLogoClass: cMeta.logoClass,
           description: 'Новая стажировка, созданная HR-специалистом для студентов университета.',
           targetUniversity: 'kfu'
         });
