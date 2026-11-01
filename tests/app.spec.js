@@ -1574,7 +1574,8 @@ test('Phase 4 HR portal enhancements: candidate pipeline, vacancy management, an
   await expect(presetBtn).toBeVisible();
   await presetBtn.click();
   const salaryVal = await postModal.locator('#new-job-salary').inputValue();
-  expect(salaryVal).toContain('50 000–80 000');
+  expect(salaryVal).toBe('50 000–80 000');
+  expect(salaryVal).not.toContain('₽');
 
   // Check company select is present
   await expect(postModal.locator('#new-job-company')).toBeVisible();

@@ -2837,17 +2837,17 @@ if (postJobBtn) {
         <div class="form-group">
           <label for="new-job-salary">Зарплатная вилка / стипендия:</label>
           <div style="display:flex; gap:8px; align-items:center;">
-            <input type="text" id="new-job-salary" placeholder="например, 80 000–120 000 ₽" style="flex:1; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);" autocomplete="off">
+            <input type="text" id="new-job-salary" placeholder="например, 80 000–120 000" style="flex:1; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md);" autocomplete="off">
             <select id="new-job-salary-period" aria-label="Период оплаты" style="width:110px; min-height:40px; padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-card); color:var(--text-main);">
               <option value="month">₽/мес</option>
               <option value="hour">₽/час</option>
             </select>
           </div>
           <div class="salary-presets" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
-            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="50 000–80 000 ₽" data-period="month">50–80 тыс. ₽/мес</button>
-            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="80 000–120 000 ₽" data-period="month">80–120 тыс. ₽/мес</button>
-            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="120 000–160 000 ₽" data-period="month">120–160 тыс. ₽/мес</button>
-            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="500–800 ₽/час" data-period="hour">500–800 ₽/час</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="50 000–80 000" data-period="month">50–80 тыс. ₽/мес</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="80 000–120 000" data-period="month">80–120 тыс. ₽/мес</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="120 000–160 000" data-period="month">120–160 тыс. ₽/мес</button>
+            <button type="button" class="button button--outline button--small salary-preset-btn" data-val="500–800" data-period="hour">500–800 ₽/час</button>
           </div>
         </div>`,
       async (modal) => {
