@@ -1077,10 +1077,119 @@ function updateActiveFilterUI() {
   updateActiveFilterChips();
 }
 
+function syncFiltersToUrl() {
+  if (typeof window === 'undefined' || !window.history || !window.location || isFileProtocol) return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const searchVal = searchInputs[0]?.value.trim() || '';
+    if (searchVal) params.set('search', searchVal);
+    else params.delete('search');
+
+    const specialty = document.querySelector('[data-feed-specialty]')?.value;
+    if (specialty && specialty !== 'all') params.set('specialty', specialty);
+    else params.delete('specialty');
+
+    const format = document.querySelector('[data-feed-format]')?.value;
+    if (format && format !== 'all') params.set('format', format);
+    else params.delete('format');
+
+    if (currentPartnerFilter && currentPartnerFilter !== 'all') params.set('partner', currentPartnerFilter);
+    else params.delete('partner');
+
+    if (currentCompanyCategory && currentCompanyCategory !== 'all') params.set('category', currentCompanyCategory);
+    else params.delete('category');
+
+    const appStatus = document.querySelector('[data-application-status]')?.value;
+    if (appStatus && appStatus !== 'all') params.set('appStatus', appStatus);
+    else params.delete('appStatus');
+
+    const hrStatus = document.querySelector('[data-hr-status]')?.value;
+    if (hrStatus && hrStatus !== 'all') params.set('hrStatus', hrStatus);
+    else params.delete('hrStatus');
+
+    const hrUni = document.querySelector('[data-hr-university]')?.value;
+    if (hrUni && hrUni !== 'all' && hrUni !== 'kfu') params.set('hrUni', hrUni);
+    else params.delete('hrUni');
+
+    const uni = document.querySelector('.header__select select')?.value;
+    if (uni && uni !== 'kfu') params.set('uni', uni);
+    else params.delete('uni');
+
+    const queryStr = params.toString();
+    const currentQuery = window.location.search.replace(/^\?/, '');
+    if (currentQuery !== queryStr) {
+      const newRelativePathQuery = window.location.pathname + (queryStr ? '?' + queryStr : '') + window.location.hash;
+      window.history.replaceState(null, '', newRelativePathQuery);
+    }
+  } catch (_) {}
+}
+
+function restoreFiltersFromUrl() {
+  if (typeof window === 'undefined' || !window.location || isFileProtocol) return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const searchVal = params.get('search');
+    if (searchVal) {
+      searchTerm = searchVal.trim().toLocaleLowerCase('ru');
+      searchInputs.forEach(input => { input.value = searchVal; });
+    }
+
+    const specialtyVal = params.get('specialty');
+    const specialtySelect = document.querySelector('[data-feed-specialty]');
+    if (specialtyVal && specialtySelect) specialtySelect.value = specialtyVal;
+
+    const formatVal = params.get('format');
+    const formatSelect = document.querySelector('[data-feed-format]');
+    if (formatVal && formatSelect) formatSelect.value = formatVal;
+
+    const partnerVal = params.get('partner');
+    if (partnerVal) {
+      currentPartnerFilter = partnerVal;
+      document.querySelectorAll('[data-partner-filter]').forEach(item => {
+        const active = item.dataset.partnerFilter === partnerVal;
+        item.classList.toggle('partners__item--active', active);
+        item.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    const catVal = params.get('category');
+    if (catVal) {
+      currentCompanyCategory = catVal;
+      document.querySelectorAll('[data-company-filter]').forEach(btn => {
+        const active = btn.dataset.companyFilter === catVal;
+        btn.classList.toggle('filter-pill--active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    const appStatusVal = params.get('appStatus');
+    const appStatusSelect = document.querySelector('[data-application-status]');
+    if (appStatusVal && appStatusSelect) appStatusSelect.value = appStatusVal;
+
+    const hrStatusVal = params.get('hrStatus');
+    const hrStatusSelect = document.querySelector('[data-hr-status]');
+    if (hrStatusVal && hrStatusSelect) hrStatusSelect.value = hrStatusVal;
+
+    const hrUniVal = params.get('hrUni');
+    const hrUniSelect = document.querySelector('[data-hr-university]');
+    if (hrUniVal && hrUniSelect) hrUniSelect.value = hrUniVal;
+
+    const uniVal = params.get('uni');
+    if (uniVal) {
+      document.querySelectorAll('.header__select select').forEach(s => { s.value = uniVal; });
+      updateTargetUniversityBadges(uniVal);
+    }
+  } catch (_) {}
+}
+
 function updateSearch(value) {
-  searchTerm = value.trim().toLocaleLowerCase('ru');
+  const currentVal = searchInputs[0]?.value || '';
+  const query = (value !== undefined && value !== searchTerm) ? String(value) : (currentVal || String(value || ''));
+  searchTerm = query.trim().toLocaleLowerCase('ru');
   searchInputs.forEach(input => {
-    if (input.value !== value) input.value = value;
+    if (input.value !== query && input.value.trim().toLocaleLowerCase('ru') !== searchTerm) {
+      input.value = query;
+    }
   });
   const visibleText = element => !searchTerm || element.textContent.toLocaleLowerCase('ru').includes(searchTerm);
 
@@ -1122,6 +1231,7 @@ function updateSearch(value) {
   });
 
   updateEmptyStates();
+  syncFiltersToUrl();
 }
 
 
@@ -1180,14 +1290,13 @@ document.querySelectorAll('.header__select').forEach(wrapper => {
 });
 
 document.querySelectorAll('[data-companies-reset]').forEach(button => button.addEventListener('click', () => {
-  const searchInput = document.querySelector('.header__search input');
-  if (searchInput) {
-    searchInput.value = '';
-    searchTerm = '';
-  }
-  const allCategoryBtn = document.querySelector('[data-company-category="all"]');
+  document.querySelectorAll('[data-search-input]').forEach(inp => {
+    inp.value = '';
+  });
+  searchTerm = '';
+  const allCategoryBtn = document.querySelector('[data-company-filter="all"], [data-company-category="all"]');
   if (allCategoryBtn) allCategoryBtn.click();
-  else updateSearch('');
+  updateSearch('');
 }));
 
 document.querySelectorAll('[data-feed-reset]').forEach(button => button.addEventListener('click', () => {
@@ -1361,35 +1470,35 @@ function createJobCardHtml(j) {
   const applyClass = isApplyActive ? 'button button--small button--soft' : 'button button--small';
   const cardTags = j.tags || ['Стажировка', j.format === 'remote' ? 'Remote' : 'Hybrid'];
   const tagsHtml = cardTags.length > 4
-    ? cardTags.slice(0, 4).map(t => '<span class="chip">' + t + '</span>').join('') +
-      '<span class="chip chip--counter" title="' + cardTags.slice(4).join(', ') + '">+' + (cardTags.length - 4) + '</span>'
-    : cardTags.map(t => '<span class="chip">' + t + '</span>').join('');
-  const respClass = j.responseBadgeClass ? ' ' + j.responseBadgeClass : (j.responseBadge && j.responseBadge.includes('Дедлайн') ? ' job-card__response--warning' : '');
+    ? cardTags.slice(0, 4).map(t => '<span class="chip">' + escapeHtml(t) + '</span>').join('') +
+      '<span class="chip chip--counter" title="' + escapeHtml(cardTags.slice(4).join(', ')) + '">+' + (cardTags.length - 4) + '</span>'
+    : cardTags.map(t => '<span class="chip">' + escapeHtml(t) + '</span>').join('');
+  const respClass = j.responseBadgeClass ? ' ' + escapeHtml(j.responseBadgeClass) : (j.responseBadge && j.responseBadge.includes('Дедлайн') ? ' job-card__response--warning' : '');
 
-  return '<article class="card job-card" data-job-id="' + j.id + '" data-specialty="' + (j.specialty || 'development') + '" data-format="' + (j.format || 'hybrid') + '">' +
+  return '<article class="card job-card" data-job-id="' + escapeHtml(j.id) + '" data-specialty="' + escapeHtml(j.specialty || 'development') + '" data-format="' + escapeHtml(j.format || 'hybrid') + '">' +
     '<div class="job-card__top">' +
       '<div class="job-card__company">' +
-        '<div class="company-logo ' + (j.companyLogoClass || 'company-logo--yandex') + '">' + (j.companyLetter || 'Я') + '</div>' +
+        '<div class="company-logo ' + escapeHtml(j.companyLogoClass || 'company-logo--yandex') + '">' + escapeHtml(j.companyLetter || (j.company || 'Я')[0].toUpperCase()) + '</div>' +
         '<div>' +
-          '<div class="company-name">' + (j.company || 'Компания') + '</div>' +
-          '<div class="company-rating">' + (j.rating || '⭐ 5.0 · Новая аккредитация') + '</div>' +
+          '<div class="company-name">' + escapeHtml(j.company || 'Компания') + '</div>' +
+          '<div class="company-rating">' + escapeHtml(j.rating || '⭐ 5.0 · Новая аккредитация') + '</div>' +
         '</div>' +
       '</div>' +
-      '<span class="match-badge">' + (j.matchScore || '✧ 95% совпадение') + '</span>' +
+      '<span class="match-badge">' + escapeHtml(j.matchScore || '✧ 95% совпадение') + '</span>' +
     '</div>' +
     '<div class="job-card__title-row">' +
-      '<h3 class="job-card__title" role="button" tabindex="0" title="Подробнее о вакансии ' + j.title + '">' + j.title + '</h3>' +
-      '<div class="job-card__salary">' + (j.salary || '') + '</div>' +
+      '<h3 class="job-card__title" role="button" tabindex="0" title="Подробнее о вакансии ' + escapeHtml(j.title || '') + '">' + escapeHtml(j.title || '') + '</h3>' +
+      '<div class="job-card__salary">' + escapeHtml(j.salary || '') + '</div>' +
     '</div>' +
     '<div class="job-card__tags">' + tagsHtml + '</div>' +
-    '<p class="job-card__description">' + (j.description || '') + '</p>' +
+    '<p class="job-card__description">' + escapeHtml(j.description || '') + '</p>' +
     '<div class="job-card__meta">' +
       '<span><svg class="ui-icon" aria-hidden="true"><use href="#icon-pin"></use></svg> ' + escapeHtml(cleanMetaText(j.location || 'Москва')) + '</span>' +
       '<span><svg class="ui-icon" aria-hidden="true"><use href="#icon-laptop"></use></svg> ' + escapeHtml(cleanMetaText(j.workload || '3 дня/неделю')) + '</span>' +
       '<span><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg> ' + escapeHtml(cleanMetaText(j.postedTime || 'Сегодня')) + '</span>' +
     '</div>' +
     '<div class="job-card__footer">' +
-      '<span class="job-card__response' + respClass + '">' + (j.responseBadge || '● Быстрый отклик') + '</span>' +
+      '<span class="job-card__response' + respClass + '">' + escapeHtml(j.responseBadge || '● Быстрый отклик') + '</span>' +
       '<div class="job-card__actions">' +
         '<button class="' + saveClass + '" type="button" data-job-action="save" aria-pressed="' + isSaveActive + '" aria-label="Сохранить вакансию">' +
           saveIcon + '<span>' + saveLabel + '</span>' +
@@ -1558,18 +1667,18 @@ function createApplicationRowHtml(app) {
   const logoClass = app.companyLogoClass || (compLower.includes('yandex') ? 'company-logo--yandex' : compLower.includes('sber') ? 'company-logo--sber' : compLower.includes('vk') ? 'company-logo--vk' : 'company-logo--tbank');
   const logoLetter = app.companyLetter || (compLower.includes('vk') ? 'VK' : comp[0].toUpperCase());
 
-  return '<tr data-application-id="' + (app.id || '') + '" data-job-id="' + (app.jobId || '') + '"' + rowIdAttr + '>' +
+  return '<tr data-application-id="' + escapeHtml(app.id || '') + '" data-job-id="' + escapeHtml(app.jobId || '') + '"' + rowIdAttr + '>' +
     '<td>' +
       '<div class="application-company">' +
-        '<span class="company-logo ' + logoClass + '">' + logoLetter + '</span>' +
+        '<span class="company-logo ' + escapeHtml(logoClass) + '">' + escapeHtml(logoLetter) + '</span>' +
         '<span>' +
-          '<strong>' + app.title + '</strong>' +
-          '<small>' + comp + ' · ' + (app.location || 'Москва · Hybrid') + '</small>' +
+          '<strong>' + escapeHtml(app.title || '') + '</strong>' +
+          '<small>' + escapeHtml(comp) + ' · ' + escapeHtml(app.location || 'Москва · Hybrid') + '</small>' +
         '</span>' +
       '</div>' +
     '</td>' +
-    '<td>' + (app.appliedDate || 'Сегодня') + '</td>' +
-    '<td><span class="status-badge ' + (currentStatusClass || 'status-badge--warning') + '">' + badgeLabel + '</span></td>' +
+    '<td>' + escapeHtml(app.appliedDate || 'Сегодня') + '</td>' +
+    '<td><span class="status-badge ' + escapeHtml(currentStatusClass || 'status-badge--warning') + '">' + escapeHtml(badgeLabel || '') + '</span></td>' +
     '<td>' + actionHtml + '</td>' +
   '</tr>';
 }
@@ -1651,7 +1760,7 @@ function bindApplicationRow(row) {
         const align = isUser ? 'margin-left:auto; text-align:right;' : 'margin-right:auto; text-align:left;';
         const authorColor = isUser ? '#6b21a8' : '#475569';
         return `<div style="max-width:85%; margin-bottom:10px; ${align}">
-          <div style="font-size:11px; font-weight:700; color:${authorColor}; margin-bottom:3px;">${escapeFilterHtml(m.author)} <span style="font-weight:400; color:#888;">· ${m.time}</span></div>
+          <div style="font-size:11px; font-weight:700; color:${authorColor}; margin-bottom:3px;">${escapeFilterHtml(m.author)} <span style="font-weight:400; color:#888;">· ${escapeFilterHtml(m.time || '')}</span></div>
           <div style="background:${bg}; border:1px solid ${border}; padding:8px 12px; border-radius:10px; font-size:13px; color:#1e293b; display:inline-block; text-align:left; line-height:1.45;">${escapeFilterHtml(m.text)}</div>
         </div>`;
       }).join('');
@@ -1715,6 +1824,33 @@ function bindApplicationRow(row) {
           announce('Интервью успешно назначено: ' + slot + '!');
         },
         'Подтвердить встречу'
+      );
+    });
+  } else if (btn.textContent.includes('Фидбек') || btn.classList.contains('application-feedback')) {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const company = row.querySelector('strong')?.textContent.trim() || 'Команда работодателя';
+      openModal(
+        'Обратная связь от ' + company,
+        '<div class="feedback-modal-content">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px;background:#fef2f2;border:1px solid #fee2e2;border-radius:10px;">' +
+            '<span style="font-size:22px;" aria-hidden="true">📋</span>' +
+            '<div>' +
+              '<div style="font-weight:700;font-size:14px;color:#991b1b;">Статус: Отбор завершён</div>' +
+              '<div style="font-size:12px;color:#7f1d1d;">Конкурс на данную позицию был очень высоким, но ваше резюме сохранено в кадровом резерве компании.</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-bottom:14px;">' +
+            '<h4 style="margin:0 0 6px;font-size:13px;color:#1e293b;">Рекомендации ментора Buddie:</h4>' +
+            '<ul style="margin:0;padding-left:18px;font-size:12px;color:#475569;line-height:1.6;">' +
+              '<li>Углубите практический опыт работы со сложными сценариями и архитектурой тестов.</li>' +
+              '<li>Добавьте в портфолио ссылки на завершённые курсовые или open-source проекты.</li>' +
+              '<li>Обратите внимание на открытые стажировки других аккредитованных компаний в ленте.</li>' +
+            '</ul>' +
+          '</div>' +
+        '</div>',
+        null,
+        'Понятно'
       );
     });
   }
@@ -1869,29 +2005,29 @@ function renderApplicationsTable(applications) {
 }
 
 function createCandidateRowHtml(cand) {
-  const skillsHtml = (cand.skills || ['Python', 'SQL']).map(s => '<span>' + s + '</span>').join('');
-  const uni = cand.university || 'КФУ · 3-й курс';
+  const skillsHtml = (cand.skills || ['Python', 'SQL']).map(s => '<span>' + escapeHtml(s) + '</span>').join('');
+  const uni = escapeHtml(cand.university || 'КФУ · 3-й курс');
   const uniData = uni.includes('КФУ') ? 'kfu' : (uni.includes('ИТМО') ? 'itmo' : (uni.includes('ВШЭ') ? 'hse' : 'all'));
   const isNew = (cand.status === 'new' || (cand.statusLabel && cand.statusLabel.toLowerCase().includes('нов')));
   const btnClass = isNew ? 'button button--small' : 'button button--outline button--small';
   const btnText = isNew ? 'Открыть' : 'Профиль';
-  const avatarClass = cand.avatarClass ? ' ' + cand.avatarClass : '';
+  const avatarClass = cand.avatarClass ? ' ' + escapeHtml(cand.avatarClass) : '';
 
-  return '<tr data-candidate-id="' + (cand.id || '') + '" data-university="' + uniData + '" data-status="' + (cand.status || 'new') + '">' +
+  return '<tr data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(cand.status || 'new') + '">' +
     '<td>' +
       '<div class="candidate">' +
-        '<span class="candidate__avatar' + avatarClass + '">' + (cand.initials || 'К') + '</span>' +
+        '<span class="candidate__avatar' + avatarClass + '">' + escapeHtml(cand.initials || 'К') + '</span>' +
         '<span>' +
-          '<strong>' + cand.name + '</strong>' +
-          '<small>' + (cand.role || 'Соискатель') + '</small>' +
+          '<strong>' + escapeHtml(cand.name || 'Кандидат') + '</strong>' +
+          '<small>' + escapeHtml(cand.role || 'Соискатель') + '</small>' +
         '</span>' +
       '</div>' +
     '</td>' +
     '<td>' + uni + '</td>' +
-    '<td>' + (cand.jobTitle || 'Стажёр') + '</td>' +
-    '<td><span class="match-score">' + (cand.matchScore || '90%') + '</span></td>' +
+    '<td>' + escapeHtml(cand.jobTitle || 'Стажёр') + '</td>' +
+    '<td><span class="match-score">' + escapeHtml(cand.matchScore || '90%') + '</span></td>' +
     '<td><div class="hr-skills">' + skillsHtml + '</div></td>' +
-    '<td><span class="status-badge ' + (cand.statusClass || 'status-badge--success') + '">' + (cand.statusLabel || 'Новый') + '</span></td>' +
+    '<td><span class="status-badge ' + escapeHtml(cand.statusClass || 'status-badge--success') + '">' + escapeHtml(cand.statusLabel || 'Новый') + '</span></td>' +
     '<td><button class="' + btnClass + '">' + btnText + '</button></td>' +
   '</tr>';
 }
@@ -1908,10 +2044,10 @@ function bindCandidateRow(row) {
 
   openBtn.addEventListener('click', () => {
     openModal(
-      'Профиль кандидата: ' + name,
-      '<p><strong>Специализация:</strong> ' + role + '</p>' +
-      '<p><strong>AI Match Score:</strong> ' + score + '</p>' +
-      '<p><strong>Ключевые навыки:</strong> ' + skills + '</p>' +
+      'Профиль кандидата: ' + escapeHtml(name),
+      '<p><strong>Специализация:</strong> ' + escapeHtml(role) + '</p>' +
+      '<p><strong>AI Match Score:</strong> ' + escapeHtml(score) + '</p>' +
+      '<p><strong>Ключевые навыки:</strong> ' + escapeHtml(skills) + '</p>' +
       '<div class="form-group" style="margin-top:16px;">' +
         '<label>Сообщение или приглашение на интервью:</label>' +
         '<textarea placeholder="Добрый день! Приглашаем вас пройти техническое интервью..."></textarea>' +
@@ -1959,29 +2095,29 @@ function openJobDetailsModal(j) {
   const isSaveActive = savedJobs.has(j.id);
   const isApplyActive = appliedJobs.has(j.id);
   const modalTags = j.tags || ['Стажировка', j.format === 'remote' ? 'Remote' : 'Hybrid'];
-  const tagsHtml = modalTags.map(t => '<span class="chip">' + t + '</span>').join('');
+  const tagsHtml = modalTags.map(t => '<span class="chip">' + escapeHtml(t) + '</span>').join('');
 
   openModal(
-    'Обложка вакансии · ' + j.company,
+    'Обложка вакансии · ' + escapeHtml(j.company || 'Компания'),
     '<div class="job-cover-modal">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<div class="company-logo ' + (j.companyLogoClass || 'company-logo--yandex') + '">' + (j.companyLetter || j.company?.[0] || 'Я') + '</div>' +
+          '<div class="company-logo ' + escapeHtml(j.companyLogoClass || 'company-logo--yandex') + '">' + escapeHtml(j.companyLetter || j.company?.[0] || 'Я') + '</div>' +
           '<div>' +
-            '<div style="font-weight:700;font-size:15px;color:var(--color-text-main,#2d3748);">' + j.company + '</div>' +
-            '<div style="font-size:12px;color:#5B6474;">' + (j.rating || '⭐ 5.0 · Аккредитованная компания') + '</div>' +
+            '<div style="font-weight:700;font-size:15px;color:var(--color-text-main,#2d3748);">' + escapeHtml(j.company || 'Компания') + '</div>' +
+            '<div style="font-size:12px;color:#5B6474;">' + escapeHtml(j.rating || '⭐ 5.0 · Аккредитованная компания') + '</div>' +
           '</div>' +
         '</div>' +
-        '<span class="match-badge">' + (j.matchScore || '✧ 95% совпадение') + '</span>' +
+        '<span class="match-badge">' + escapeHtml(j.matchScore || '✧ 95% совпадение') + '</span>' +
       '</div>' +
       '<div style="margin-bottom:12px;">' +
-        '<h3 style="font-size:18px;font-weight:800;color:#1a202c;margin:0 0 4px;">' + j.title + '</h3>' +
-        '<div style="font-size:16px;font-weight:700;color:#8b50dc;">' + (j.salary || 'По договорённости') + '</div>' +
+        '<h3 style="font-size:18px;font-weight:800;color:#1a202c;margin:0 0 4px;">' + escapeHtml(j.title || '') + '</h3>' +
+        '<div style="font-size:16px;font-weight:700;color:#8b50dc;">' + escapeHtml(j.salary || 'По договорённости') + '</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">' + tagsHtml + '</div>' +
       '</div>' +
       '<div style="background:#faf8fd;border:1px solid #f0eaf8;padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;line-height:1.6;color:#2d3748;">' +
         '<div style="font-weight:700;margin-bottom:6px;color:#4a5568;">О стажировке и задачах:</div>' +
-        '<p style="margin:0;">' + (j.description || 'Приглашаем студентов присоединиться к нашей команде и получить реальный опыт работы над масштабными задачами.') + '</p>' +
+        '<p style="margin:0;">' + escapeHtml(j.description || 'Приглашаем студентов присоединиться к нашей команде и получить реальный опыт работы над масштабными задачами.') + '</p>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;font-size:12px;color:#5B6474;margin-bottom:16px;background:#f7fafc;padding:10px 12px;border-radius:8px;">' +
         '<div><strong style="display:block;color:#4a5568;">Локация:</strong><span style="display:inline-flex;align-items:center;gap:4px;"><svg class="ui-icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#icon-pin"></use></svg> ' + escapeHtml(cleanMetaText(j.location || 'Москва')) + '</span></div>' +
@@ -2398,9 +2534,9 @@ function openModal(title, contentHtml, onConfirm, confirmText = 'Подтвер�
     modal = document.createElement('div');
     modal.className = 'modal-backdrop';
     modal.innerHTML = `
-      <div class="modal-dialog" role="dialog" aria-modal="true">
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-dialog-title">
         <div class="modal-header">
-          <h3 class="modal-title"></h3>
+          <h3 class="modal-title" id="modal-dialog-title"></h3>
           <button class="modal-close" aria-label="Закрыть">&times;</button>
         </div>
         <div class="modal-body"></div>
@@ -2492,32 +2628,6 @@ function closeModal() {
   }
 }
 
-// Кнопки кандидатов в hr.html
-document.querySelectorAll('.candidate-table tr').forEach(row => {
-  const openBtn = row.querySelector('.button');
-  if (!openBtn) return;
-  const name = row.querySelector('strong')?.textContent.trim() || 'Кандидат';
-  const role = row.querySelector('.candidate small')?.textContent.trim() || '';
-  const score = row.querySelector('.match-score')?.textContent.trim() || '';
-  const skills = [...row.querySelectorAll('.hr-skills span')].map(s => s.textContent).join(', ');
-
-  openBtn.addEventListener('click', () => {
-    openModal(
-      `Профиль кандидата: ${name}`,
-      `<p><strong>Специализация:</strong> ${role}</p>
-        <p><strong>AI Match Score:</strong> ${score}</p>
-        <p><strong>Ключевые навыки:</strong> ${skills}</p>
-        <div class="form-group" style="margin-top:16px;">
-          <label>Сообщение или приглашение на интервью:</label>
-          <textarea placeholder="Добрый день! Приглашаем вас пройти техническое интервью..."></textarea>
-        </div>`,
-      () => {
-        announce(`Приглашение успешно отправлено кандидату ${name}!`);
-      },
-      'Пригласить на интервью'
-    );
-  });
-});
 
 // Кнопка «+ Разместить стажировку» в hr.html
 const postJobBtn = document.querySelector('a[href="#post"]');
@@ -2558,6 +2668,8 @@ if (postJobBtn) {
           hasError = true;
           const err = document.createElement('div');
           err.className = 'field-error';
+          err.setAttribute('role', 'alert');
+          err.setAttribute('aria-live', 'polite');
           err.style.color = '#ef4444';
           err.style.fontSize = '12px';
           err.style.marginTop = '4px';
@@ -2569,6 +2681,8 @@ if (postJobBtn) {
           hasError = true;
           const err = document.createElement('div');
           err.className = 'field-error';
+          err.setAttribute('role', 'alert');
+          err.setAttribute('aria-live', 'polite');
           err.style.color = '#ef4444';
           err.style.fontSize = '12px';
           err.style.marginTop = '4px';
@@ -2693,7 +2807,7 @@ function updateProfileDom(prof) {
     const headerProf = document.querySelector('.header__profile');
     if (headerProf) {
       const course = prof.course || '3-й курс';
-      headerProf.innerHTML = `<span class="avatar">${initials}</span><span>${shortName}<small>${course}</small></span>`;
+      headerProf.innerHTML = `<span class="avatar">${escapeHtml(initials)}</span><span>${escapeHtml(shortName)}<small>${escapeHtml(course)}</small></span>`;
     }
 
     document.querySelectorAll('.student-card__avatar, .sidebar__user .avatar').forEach(avatarEl => {
@@ -2741,9 +2855,9 @@ function updateProfileDom(prof) {
       let barsHtml = '';
       for (let i = 1; i <= 4; i++) {
         const isFilled = i <= level ? ' is-filled' : '';
-        barsHtml += `<i class="${isFilled}" data-bar-level="${i}" role="button" tabindex="0" aria-label="${skill}: уровень ${i} из 4 (${levelLabels[i-1]})" title="${skill}: ${levelLabels[i-1]} (${i}/4)"></i>`;
+        barsHtml += `<i class="${isFilled}" data-bar-level="${i}" role="button" tabindex="0" aria-label="${escapeHtml(skill)}: уровень ${i} из 4 (${levelLabels[i-1]})" title="${escapeHtml(skill)}: ${levelLabels[i-1]} (${i}/4)"></i>`;
       }
-      return `<div class="skill" data-skill-name="${skill}"><span>${skill}</span><span class="skill__bars" role="group" aria-label="Уровень владения ${skill}: ${level} из 4">${barsHtml}</span></div>`;
+      return `<div class="skill" data-skill-name="${escapeHtml(skill)}"><span>${escapeHtml(skill)}</span><span class="skill__bars" role="group" aria-label="Уровень владения ${escapeHtml(skill)}: ${level} из 4">${barsHtml}</span></div>`;
     }).join('');
 
     bindSkillBars(skillList);
@@ -2767,21 +2881,21 @@ async function openProfileEditModal() {
     'Редактирование профиля студента',
     '<div class="form-group" style="margin-bottom:12px;">' +
       '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>' +
-      '<input type="text" id="edit-profile-name" value="' + (currentProf.name || 'Нур М.') + '" placeholder="Например: Иван Иванов" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+      '<input type="text" id="edit-profile-name" value="' + escapeHtml(currentProf.name || 'Нур М.') + '" placeholder="Например: Иван Иванов" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
       '<small style="display:block;margin-top:3px;font-size:11px;color:#4A5568;">В меню и шапке будет автоматически сокращаться до формата «Имя Ф.»</small>' +
     '</div>' +
     '<div class="form-group" style="margin-bottom:12px;">' +
       '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>' +
-      '<input type="text" id="edit-profile-role" value="' + (currentProf.role || 'Frontend-разработчик') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+      '<input type="text" id="edit-profile-role" value="' + escapeHtml(currentProf.role || 'Frontend-разработчик') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
     '</div>' +
     '<div class="form-group" style="margin-bottom:12px;">' +
       '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>' +
-      '<input type="text" id="edit-profile-skills" value="' + skillsStr + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
+      '<input type="text" id="edit-profile-skills" value="' + escapeHtml(skillsStr) + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
       '<small style="display:block;margin-top:3px;font-size:11px;color:#4A5568;">Уровни владения технологиями можно интерактивно кликать в блоке стека профиля</small>' +
     '</div>' +
     '<div class="form-group">' +
       '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">О себе / Контакты:</label>' +
-      '<textarea id="edit-profile-about" style="width:100%;min-height:60px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' + (currentProf.about || 'Студент КФУ, открыт к стажировкам.') + '</textarea>' +
+      '<textarea id="edit-profile-about" style="width:100%;min-height:60px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' + escapeHtml(currentProf.about || 'Студент КФУ, открыт к стажировкам.') + '</textarea>' +
     '</div>',
     async (modal) => {
       const name = modal.querySelector('#edit-profile-name')?.value.trim() || currentProf.name;
@@ -2810,6 +2924,40 @@ function initProfileEdit() {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       openProfileEditModal();
+    });
+  });
+
+  // F1: Интерактивная запись на собеседование в виджете профиля
+  document.querySelectorAll('#btn-interview-reminder, .profile-tip .button--full').forEach(btn => {
+    if (btn._hasReminderAction) return;
+    btn._hasReminderAction = true;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const slots = [
+        'Завтра, 14:00 (МСК) · Онлайн-интервью',
+        'Завтра, 16:30 (МСК) · Онлайн-интервью',
+        'Послезавтра, 11:00 (МСК) · Онлайн-интервью'
+      ];
+      openModal(
+        'Выбор слота интервью в Yandex',
+        '<div class="slot-picker">' +
+          '<p style="font-size:13px;color:#475569;margin-bottom:12px;">Выберите удобное время для технического скрининга с тимлидом:</p>' +
+          slots.map((s, idx) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">
+              <input type="radio" name="interview-slot-reminder" value="${s}" ${idx === 0 ? 'checked' : ''}>
+              <span style="font-size:13px;font-weight:600;color:#1e293b;">${s}</span>
+            </label>
+          `).join('') +
+        '</div>',
+        async (modal) => {
+          const selected = modal.querySelector('input[name="interview-slot-reminder"]:checked')?.value || slots[0];
+          btn.textContent = '✓ ' + selected.split('·')[0].trim();
+          btn.classList.add('button--soft');
+          btn.disabled = true;
+          announce('Интервью в Yandex успешно назначено: ' + selected);
+        },
+        'Подтвердить встречу'
+      );
     });
   });
 
@@ -3055,6 +3203,7 @@ document.querySelectorAll('.header__select select').forEach(s => { s.value = cur
 updateTargetUniversityBadges(currentUni);
 updateFeedCounters();
 
+restoreFiltersFromUrl();
 loadInitialData();
 updateSearch(searchTerm);
 

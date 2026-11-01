@@ -6,14 +6,27 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
 const BACKUP_PATH = path.join(__dirname, '..', 'data', 'db.json.backup');
 const INITIAL_DB = fs.readFileSync(DB_PATH, 'utf8');
 
+function safeWrite(filePath, data) {
+  for (let i = 0; i < 5; i++) {
+    try {
+      fs.writeFileSync(filePath, data, 'utf8');
+      return;
+    } catch (err) {
+      if (i === 4) throw err;
+      const s = Date.now();
+      while (Date.now() - s < 50 * Math.pow(2, i)) {}
+    }
+  }
+}
+
 test.beforeEach(async () => {
-  fs.writeFileSync(DB_PATH, INITIAL_DB, 'utf8');
-  fs.writeFileSync(BACKUP_PATH, INITIAL_DB, 'utf8');
+  safeWrite(DB_PATH, INITIAL_DB, 'utf8');
+  safeWrite(BACKUP_PATH, INITIAL_DB, 'utf8');
 });
 
 test.afterAll(async () => {
-  fs.writeFileSync(DB_PATH, INITIAL_DB, 'utf8');
-  fs.writeFileSync(BACKUP_PATH, INITIAL_DB, 'utf8');
+  safeWrite(DB_PATH, INITIAL_DB, 'utf8');
+  safeWrite(BACKUP_PATH, INITIAL_DB, 'utf8');
 });
 
 test.describe('Backend & Data Optimization Suite', () => {

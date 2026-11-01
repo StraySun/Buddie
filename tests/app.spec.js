@@ -18,12 +18,25 @@ const test = base.extend({
   }
 });
 
+function safeWriteDb(content) {
+  for (let i = 0; i < 5; i++) {
+    try {
+      fs.writeFileSync(DB_PATH, content, 'utf8');
+      return;
+    } catch (err) {
+      if (i === 4) throw err;
+      const start = Date.now();
+      while (Date.now() - start < 50 * Math.pow(2, i)) {}
+    }
+  }
+}
+
 test.beforeEach(async () => {
-  fs.writeFileSync(DB_PATH, INITIAL_DB, 'utf8');
+  safeWriteDb(INITIAL_DB);
 });
 
 test.afterAll(async () => {
-  fs.writeFileSync(DB_PATH, INITIAL_DB, 'utf8');
+  safeWriteDb(INITIAL_DB);
 });
 
 const pages = ['index.html', 'companies.html', 'profile.html', 'hr.html', 'notifications.html'];
@@ -1322,4 +1335,197 @@ test('stage 5 badge synchronization: navigation counts reactively track applicat
   await page.goto('/index.html');
   await expect(page.locator('.sidebar__count')).toHaveText(['0', '4']);
   await expect(page.locator('.header__bell span')).toHaveText('0');
+});
+
+
+test('Sprint 1 security: XSS injection payloads are neutralized and safely escaped across jobs, modals, and candidate rows', async ({ page }) => {
+  await page.goto('/hr.html');
+  await page.locator('a[href="#post"]').click();
+  const postModal = page.locator('.modal-dialog');
+  await expect(postModal).toBeVisible();
+
+  const xssTitle = '<img src="invalid-xss" onerror="window.__xssRun=1"><b id="xss-probe">Security Test</b>';
+  await postModal.locator('#new-job-title').fill(xssTitle);
+  await postModal.locator('#new-job-salary').fill('150 000 ₽');
+  await postModal.locator('.modal-confirm-btn').click();
+  await expect(postModal).toBeHidden();
+
+  // Student feed on index.html
+  await page.goto('/index.html');
+  // Probe element with id="xss-probe" should NOT exist in the DOM as an HTML element
+  await expect(page.locator('#xss-probe')).toHaveCount(0);
+  const xssRun = await page.evaluate(() => window.__xssRun);
+  expect(xssRun).toBeUndefined();
+
+  // Card title should literally contain the escaped string
+  const cardTitle = page.locator('.job-card__title').filter({ hasText: 'Security Test' });
+  await expect(cardTitle).toBeVisible();
+  expect(await cardTitle.innerText()).toContain('<img src="invalid-xss"');
+
+  // Clicking the title opens the job details modal
+  await cardTitle.click();
+  const detailsModal = page.locator('.modal-dialog');
+  await expect(detailsModal).toBeVisible();
+  await expect(detailsModal.locator('#xss-probe')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(detailsModal).toBeHidden();
+});
+
+test('Sprint 2 state: URL query parameters synchronize with feed filters and persist across reload (F5)', async ({ page }) => {
+  // Open index.html with initial query params
+  await page.goto('/index.html?search=Java&specialty=development&format=remote&uni=kfu');
+  await expect(page.locator('.header__search input')).toHaveValue('Java');
+  await expect(page.locator('[data-feed-specialty]')).toHaveValue('development');
+  await expect(page.locator('[data-feed-format]')).toHaveValue('remote');
+  await expect(page.locator('.header__select select')).toHaveValue('kfu');
+
+  // Change search in UI and verify URL query parameter updates
+  await page.locator('.header__search input').fill('Python');
+  await expect.poll(() => page.url()).toContain('search=Python');
+
+  // Reload page (F5) and verify state restoration from URL
+  await page.reload();
+  await expect(page.locator('.header__search input')).toHaveValue('Python');
+  await expect(page.locator('[data-feed-specialty]')).toHaveValue('development');
+  await expect(page.locator('[data-feed-format]')).toHaveValue('remote');
+  await expect(page.locator('.header__select select')).toHaveValue('kfu');
+
+  // Reset filters using reset button
+  const resetBtn = page.locator('[data-feed-reset]').first();
+  await resetBtn.click();
+  await expect(page.locator('.header__search input')).toHaveValue('');
+  await expect.poll(() => page.url()).not.toContain('search=Python');
+});
+
+test('Sprint 2 UX: rejection status feedback button opens structured feedback modal dialog', async ({ page }) => {
+  await page.goto('/profile.html');
+  await page.locator('.profile-tab-btn[data-tab="applications"]').click();
+  await expect(page.locator('#pane-applications')).toBeVisible();
+
+  // Rejection row exists (VK application with status Отказ)
+  const rejectionRow = page.locator('.data-table tbody tr').filter({ hasText: 'Отказ' });
+  await expect(rejectionRow).toBeVisible();
+
+  // Find feedback button
+  const feedbackBtn = rejectionRow.locator('a.application-feedback, button.application-feedback');
+  await expect(feedbackBtn).toBeVisible();
+  await expect(feedbackBtn).toHaveText('Фидбек');
+
+  // Click feedback button
+  await feedbackBtn.click();
+  const feedbackModal = page.locator('.modal-dialog');
+  await expect(feedbackModal).toBeVisible();
+  await expect(feedbackModal.locator('.modal-title')).toContainText('Обратная связь');
+  await expect(feedbackModal.locator('.feedback-modal-content')).toContainText('Рекомендации ментора Buddie');
+  await expect(feedbackModal.locator('.feedback-modal-content')).toContainText('кадровом резерве');
+
+  // Close modal using Escape
+  await page.keyboard.press('Escape');
+  await expect(feedbackModal).toBeHidden();
+});
+
+test('Sprint 3 UX & a11y: print media hides navigation and analytics panes, mobile inputs meet 16px font size', async ({ page }) => {
+  await page.goto('/profile.html');
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('#pane-analytics')).toBeHidden();
+  await expect(page.locator('.sidebar')).toBeHidden();
+  await page.emulateMedia({ media: 'screen' });
+
+  // Check mobile input font-size >= 16px to prevent iOS auto-zoom
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto('/index.html');
+  const inputFontSize = await page.locator('.header__search input').evaluate(el => window.getComputedStyle(el).fontSize);
+  expect(parseFloat(inputFontSize)).toBeGreaterThanOrEqual(16);
+
+  const selectFontSize = await page.locator('.header__select select').evaluate(el => window.getComputedStyle(el).fontSize);
+  expect(parseFloat(selectFontSize)).toBeGreaterThanOrEqual(16);
+
+  // Check WCAG AA contrast on .job-card__response
+  const responseBadge = page.locator('.job-card__response').first();
+  await expect(responseBadge).toBeVisible();
+  const responseColor = await responseBadge.evaluate(el => window.getComputedStyle(el).color);
+  expect(responseColor).toBe('rgb(21, 128, 61)');
+});
+
+test('Phase 1 & Phase 2 Security & Backend Consistency: safe URI decoding, state guard, and relational synchronization', async ({ page, request }) => {
+  // S4: PUT /api/state rejects attempts to overwrite protected collections
+  const stateRes = await request.put('/api/state', {
+    data: {
+      jobs: [{ id: 'hacked-job', title: 'Hacked' }]
+    }
+  });
+  expect(stateRes.status()).toBe(403);
+  const stateBody = await stateRes.json();
+  expect(stateBody.error).toContain('forbidden');
+
+  // B1: Malformed URI encoding returns 400 Bad Request instead of 500
+  const malformedJobRes = await request.get('/api/jobs/invalid%percent');
+  expect(malformedJobRes.status()).toBe(400);
+  const malformedJobBody = await malformedJobRes.json();
+  expect(malformedJobBody.error).toBe('Invalid URL encoding');
+
+  const malformedCandRes = await request.get('/api/candidates/invalid%FF');
+  expect(malformedCandRes.status()).toBe(400);
+
+  // B3: DELETE /api/jobs/:id cascade cleanup & 404 for non-existent
+  const delete404 = await request.delete('/api/jobs/non-existent-job-xyz');
+  expect(delete404.status()).toBe(404);
+
+  // B4: Bi-directional candidate status synchronization
+  const updateCandRes = await request.put('/api/candidates/cand-1', {
+    data: { status: 'offer' }
+  });
+  expect(updateCandRes.status()).toBe(200);
+  const getAppRes = await request.get('/api/applications/app-1');
+  expect(getAppRes.status()).toBe(200);
+  const appData = await getAppRes.json();
+  expect(appData.status).toBe('Оффер');
+});
+
+test('Phase 1 & Phase 3 Security & UI Interactivity: XSS neutralization, interview reminder widget, and skip links', async ({ page, request }) => {
+  // S1: Profile edit modal escapes stored XSS in profile data
+  await request.put('/api/profile', {
+    data: {
+      name: '<script>alert("xss-name")</script>Иван',
+      role: 'Product Lead',
+      skills: ['Python', 'SQL'],
+      about: 'Test About'
+    }
+  });
+
+  await page.goto('/profile.html');
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const editModal = page.locator('.modal-dialog');
+  await expect(editModal).toBeVisible();
+  const nameInputVal = await page.locator('#edit-profile-name').inputValue();
+  expect(nameInputVal).toBe('<script>alert("xss-name")</script>Иван');
+  await page.keyboard.press('Escape');
+  await expect(editModal).toBeHidden();
+
+  // F1: Interview reminder widget button opens interview modal
+  const reminderBtn = page.locator('#btn-interview-reminder');
+  await expect(reminderBtn).toBeVisible();
+  await reminderBtn.click();
+  const slotModal = page.locator('.modal-dialog');
+  await expect(slotModal).toBeVisible();
+  await expect(slotModal.locator('.modal-title')).toContainText('интервью');
+  await page.keyboard.press('Escape');
+  await expect(slotModal).toBeHidden();
+
+  // F2: Company category filter reset on companies.html
+  await page.goto('/companies.html');
+  const itChip = page.locator('[data-company-filter="it"]');
+  await itChip.click();
+  await expect(page.locator('.company-card:visible')).toHaveCount(2);
+  const resetBtn = page.locator('[data-company-filter="all"]');
+  await resetBtn.click();
+  await expect(page.locator('.company-card:visible')).toHaveCount(6);
+
+  // F3: Skip link accessibility
+  await page.goto('/index.html');
+  const skipLink = page.locator('.skip-link');
+  await expect(skipLink).toBeAttached();
+  expect(await skipLink.getAttribute('href')).toBe('#main-content');
+  const mainContent = page.locator('#main-content');
+  await expect(mainContent).toBeAttached();
 });

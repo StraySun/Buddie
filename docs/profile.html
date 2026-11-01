@@ -1,18 +1,19 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buddie — Лента стажировок</title>
-  <link rel="icon" type="image/png" href="./images/mascot-logo.png">
-  <link rel="stylesheet" href="./css/variables.css">
-  <link rel="stylesheet" href="./css/global.css">
-  <link rel="stylesheet" href="./css/components.css">
-  <link rel="stylesheet" href="./css/feed.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buddie — Личный кабинет</title>
+    <link rel="icon" type="image/png" href="./images/mascot-logo.png">
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/profile.css">
 </head>
 
 <body>
+    <a href="#main-content" class="skip-link">Перейти к основному контенту</a>
 <!-- Vector Icons Sprite (Phase 3) -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="icon-user" viewBox="0 0 24 24">
@@ -65,12 +66,12 @@
     <polyline points="12 7 12 12 15 15" />
   </symbol>
 </svg>
-  <div class="page-shell">
-    <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span class="brand__identity"><span
-            class="brand__word">Buddie</span><span class="brand__caption">Buddie · Карьерная лента</span></span></a>
-      <div class="sidebar__label">Навигация</div>
-      <nav class="sidebar__nav">
-  <a class="sidebar__nav-item sidebar__nav-item--active" href="index.html">
+    <div class="page-shell">
+        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span class="brand__identity"><span
+                        class="brand__word">Buddie</span><span class="brand__caption">Buddie · Карьерная лента</span></span></a>
+            <div class="sidebar__label">Навигация</div>
+            <nav class="sidebar__nav">
+  <a class="sidebar__nav-item" href="index.html">
     <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-feed"></use></svg></span>
     <span class="sidebar__nav-copy">Лента<small>Вакансии и стажировки</small></span>
   </a>
@@ -83,217 +84,239 @@
     <span class="sidebar__nav-copy">Уведомления<small>Сигналы и дедлайны</small></span>
     <span class="sidebar__count">4</span>
   </a>
-  <a class="sidebar__nav-item" href="profile.html">
+  <a class="sidebar__nav-item sidebar__nav-item--active" href="profile.html">
     <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-user"></use></svg></span>
     <span class="sidebar__nav-copy">Личный кабинет<small>Профиль, отклики и резюме</small></span>
     <span class="sidebar__count">4</span>
   </a>
 </nav>
-      <a class="sidebar__hr-link" href="hr.html">Режим HR-партнёра →</a>
-      <div class="sidebar__progress">
-        <div class="sidebar__progress-title">Профиль заполнен <strong>85%</strong></div>
-        <div class="sidebar__track"><span></span></div>
-        <p>Добавь портфолио — работодатели заметят тебя быстрее.</p><a class="sidebar__link"
-          href="profile.html">Дополнить профиль →</a>
-      </div>
-      <div class="sidebar__footer"><span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>Центр карьеры на связи</div>
-      <div class="sidebar__user">
-        <div class="avatar">НМ</div>
-        <div>
-          <div class="sidebar__user-name">Нур М.</div>
-          <div class="sidebar__user-meta">КФУ · 3-й курс</div>
-        </div>
-      </div>
-    </aside>
-    <main class="app-main">
-      <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
-            placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
-        <label class="header__select"><small>УНИВЕРСИТЕТ</small><select aria-label="Выберите университет"><option value="kfu" selected>Казанский федеральный университет</option><option value="itmo">Университет ИТМО</option><option value="hse">НИУ ВШЭ</option></select></label>
-        <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления"><svg class="header__bell-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bell"></use></svg><span>4</span></a><a
-            class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
-                курс</small></span></a></div>
-      </header>
-      <div class="content">
-        <div class="page-heading">
-          <div>
-            <h1>Твой следующий шаг — ближе, чем кажется</h1>
-            <p>Стажировки, которые подходят тебе. И Buddie, который всегда рядом.</p>
-          </div>
-          <div class="page-heading__date" data-live-date>Четверг, 8 октября</div>
-        </div>
-        <div class="feed-layout">
-          <section class="feed-main">
-            <section class="feed-banner">
-              <div class="feed-banner__content"><span class="feed-banner__eyebrow">✦ Buddie · персональная
-                  подборка</span>
-                <h2 data-feed-banner-title>Buddie подобрал 3 стажировки специально для тебя</h2>
-                <p>Твои навыки, интересы и специальность — в основе каждого совпадения.</p><a
-                  class="button button--small" href="#recommendations">Смотреть подборку →</a>
-              </div>
-              <div class="feed-banner__mascot"><img src="./images/mascot-hero.png"
-                  alt="Маскот Buddie в академической шапочке" width="800" height="533"></div>
-            </section>
-            <div class="feed-section-heading" id="recommendations">
-              <div>
-                <h2>Рекомендации для вас</h2>
-                <p data-feed-section-subtext role="status" aria-live="polite">Показаны 3 из 3 персональных подборок · Buddie</p>
-              </div><a href="companies.html">Смотреть все 42 →</a>
+            <a class="sidebar__hr-link" href="hr.html">Режим HR-партнёра →</a>
+            <div class="sidebar__progress">
+                <div class="sidebar__progress-title">Профиль заполнен <strong>85%</strong></div>
+                <div class="sidebar__track"><span></span></div>
+                <p>Добавь портфолио — работодатели заметят тебя быстрее.</p><a class="sidebar__link"
+                    href="#profile">Дополнить профиль →</a>
             </div>
-            <div class="feed-filters"><button class="filter-pill filter-pill--active" type="button" data-feed-reset aria-pressed="true">Все стажировки</button><select class="filter-pill" aria-label="Специальность" data-feed-specialty><option value="all">Любая специальность</option><option value="analysis">Аналитика и данные</option><option value="development">Разработка</option></select><select class="filter-pill" aria-label="Формат работы" data-feed-format><option value="all">Любой формат</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select></div>
-            <div class="feed-active-chips" data-active-chips hidden aria-live="polite"></div>
-            <div class="feed-jobs">
-              <article class="card job-card" id="job-yandex-analyst" data-job-id="yandex-analyst" data-specialty="analysis" data-format="hybrid">
-                <div class="job-card__top">
-                  <div class="job-card__company">
-                    <div class="company-logo company-logo--yandex">Я</div>
-                    <div>
-                      <div class="company-name">Yandex</div>
-                      <div class="company-rating">⭐ 4.7 · Отзывы студентов</div>
-                    </div>
-                  </div><span class="match-badge"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg> 96% совпадение</span>
-                </div>
-                <div class="job-card__title-row">
-                  <h3 class="job-card__title">Стажёр-аналитик данных</h3>
-                  <div class="job-card__salary">150 000–200 000 ₽</div>
-                </div>
-                <div class="job-card__tags"><span class="chip">Стажировка</span><span class="chip">Hybrid</span><span
-                    class="chip">Python</span><span class="chip">SQL</span></div>
-                <p class="job-card__description">Анализируй продуктовые данные пользователей и создавай визуализации для
-                  продуктовых команд.</p>
-                <div class="job-card__meta"><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-pin"></use></svg> Москва</span><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-laptop"></use></svg> 3 дня/неделю</span><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Сегодня</span></div>
-                <div class="job-card__footer"><span class="job-card__response">● Быстрый отклик</span>
-                  <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false" aria-label="Сохранить вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Сохранить</span></button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false" aria-label="Откликнуться на вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Откликнуться</span></button></div>
-                </div>
-              </article>
-              <article class="card job-card" id="job-sber-java" data-job-id="sber-java" data-specialty="development" data-format="remote">
-                <div class="job-card__top">
-                  <div class="job-card__company">
-                    <div class="company-logo company-logo--sber">С</div>
-                    <div>
-                      <div class="company-name">Sber</div>
-                      <div class="company-rating">⭐ 4.6 · Отзывы студентов</div>
-                    </div>
-                  </div><span class="match-badge"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg> 91% совпадение</span>
-                </div>
-                <div class="job-card__title-row">
-                  <h3 class="job-card__title">Младший Java-разработчик</h3>
-                  <div class="job-card__salary">220–280 ₽/час</div>
-                </div>
-                <div class="job-card__tags"><span class="chip">Full-time</span><span class="chip">Удалёнка</span><span
-                    class="chip">Java</span><span class="chip">Spring Boot</span></div>
-                <p class="job-card__description">Разрабатывай высоконагруженные банковские сервисы вместе с опытной
-                  командой.</p>
-                <div class="job-card__meta"><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-pin"></use></svg> Москва / Удалённо</span><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-laptop"></use></svg> Удалённо</span><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg> Вчера</span>
-                </div>
-                <div class="job-card__footer"><span class="job-card__response">● Быстрый отклик</span>
-                  <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false" aria-label="Сохранить вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Сохранить</span></button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false" aria-label="Откликнуться на вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Откликнуться</span></button></div>
-                </div>
-              </article>
-              <article class="card job-card" id="job-tbank-data" data-job-id="tbank-data" data-specialty="analysis" data-format="hybrid">
-                <div class="job-card__top">
-                  <div class="job-card__company">
-                    <div class="company-logo company-logo--tbank">Т</div>
-                    <div>
-                      <div class="company-name">Т-Банк</div>
-                      <div class="company-rating">⭐ 4.8 · Отзывы студентов</div>
-                    </div>
-                  </div><span class="match-badge"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg> 88% совпадение</span>
-                </div>
-                <div class="job-card__title-row">
-                  <h3 class="job-card__title">Стажёр по анализу данных</h3>
-                  <div class="job-card__salary">80 000–120 000 ₽</div>
-                </div>
-                <div class="job-card__tags"><span class="chip">Стажировка</span><span class="chip">Hybrid</span><span
-                    class="chip">ML</span><span class="chip">SQL</span></div>
-                <p class="job-card__description">Развивай свои навыки анализа данных и работай с продуктовыми задачами
-                  Т-Банка.</p>
-                <div class="job-card__meta"><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-pin"></use></svg> Москва</span><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-laptop"></use></svg> 2 дня/неделю</span><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg> 2 часа назад</span>
-                </div>
-                <div class="job-card__footer"><span class="job-card__response job-card__response--warning">● Дедлайн
-                    через 3 дня</span>
-                  <div class="job-card__actions"><button class="button button--outline button--small" type="button" data-job-action="save" aria-pressed="false" aria-label="Сохранить вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Сохранить</span></button><button class="button button--small" type="button" data-job-action="apply" aria-pressed="false" aria-label="Откликнуться на вакансию"><svg class="button__icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Откликнуться</span></button></div>
-                </div>
-              </article>
-            </div>
-            <div class="interaction-empty" data-feed-empty hidden role="status">
-              <div class="empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-briefcase"></use></svg></div>
-              <h3>По этим условиям стажировок не найдено</h3>
-              <p>Попробуйте сбросить параметры специальности или формата работы</p>
-              <button class="button button--small empty-cta" type="button" data-feed-reset>Сбросить фильтры</button>
-            </div>
-            <section class="card partners" aria-labelledby="partners-title">
-              <div class="partners__head">
-                <h2 id="partners-title">Наши партнёры</h2><p>Твой старт в лучших командах</p>
-              </div>
-              <div class="partners__list" role="group" aria-label="Фильтр по компаниям-партнёрам">
-                <div class="partners__item partners__item--yandex" role="button" tabindex="0" aria-pressed="false" data-partner-filter="yandex">Yandex</div>
-                <div class="partners__item partners__item--sber" role="button" tabindex="0" aria-pressed="false" data-partner-filter="sber">СБЕР</div>
-                <div class="partners__item partners__item--vk" role="button" tabindex="0" aria-pressed="false" data-partner-filter="vk">VK</div>
-                <div class="partners__item partners__item--ozon" role="button" tabindex="0" aria-pressed="false" data-partner-filter="ozon">OZON</div>
-                <div class="partners__item partners__item--tbank" role="button" tabindex="0" aria-pressed="false" data-partner-filter="tbank">Т-Банк</div>
-              </div>
-            </section>
-          </section>
-          <aside class="feed-side">
-            <section class="card widget feed-tip">
-              <div class="feed-tip__top"><span class="feed-tip__mascot"><img src="./images/mascot-logo.png"
-                    alt="" width="800" height="800"></span>
+            <div class="sidebar__footer"><span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>Центр карьеры на связи</div>
+            <div class="sidebar__user">
+                <div class="avatar">НМ</div>
                 <div>
-                  <div class="feed-tip__title">Советы Buddie</div>
-                  <div class="feed-tip__tag">Рядом на каждом шаге</div>
+                    <div class="sidebar__user-name">Нур М.</div>
+                    <div class="sidebar__user-meta">КФУ · 3-й курс</div>
                 </div>
-              </div>
-              <h3>Не пропусти стажировку в Yandex!</h3>
-              <p>Твой профиль совпадает на 96%. Добавь в резюме проекты на Python и SQL — и шансы на интервью вырастут.
-              </p><a class="button button--small button--full" href="profile.html">Смотреть подборку</a>
-            </section>
-            <section class="card widget">
-              <h2 class="widget__title">События и дедлайны</h2>
-              <div class="feed-notices">
-                <div class="feed-notice">
-                  <span class="feed-notice__icon feed-notice__icon--warning" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  </span>
-                  <div class="feed-notice__content">
-                    <strong>Дедлайн через 5 дней</strong>
-                    <span>Sber · Младший Java-разработчик</span>
-                  </div>
+            </div>
+        </aside>
+        <main class="app-main" id="main-content" tabindex="-1">
+            <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
+                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
+                <label class="header__select"><small>УНИВЕРСИТЕТ</small><select aria-label="Выберите университет"><option value="kfu" selected>Казанский федеральный университет</option><option value="itmo">Университет ИТМО</option><option value="hse">НИУ ВШЭ</option></select></label>
+                <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления"><svg class="header__bell-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bell"></use></svg><span>4</span></a><a
+                        class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
+                                курс</small></span></a></div>
+            </header>
+            <div class="content">
+                <div class="page-heading">
+                    <div>
+                        <h1>Личный кабинет</h1>
+                        <p>Твой профиль, отклики и следующий шаг в карьере.</p>
+                    </div>
+                    <div class="page-heading__date" data-live-date>7 октября 2026</div>
                 </div>
-                <div class="feed-notice">
-                  <span class="feed-notice__icon feed-notice__icon--purple" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                  </span>
-                  <div class="feed-notice__content">
-                    <strong>7 новых вакансий</strong>
-                    <span>Совпадают с твоими навыками SQL и Python</span>
-                  </div>
+                <section class="card student-card" id="profile">
+                    <div class="student-card__avatar">НМ</div>
+                    <div class="student-card__identity">
+                        <h2>Нур М.</h2>
+                        <p>Казанский федеральный университет · 3-й курс</p><small>ИТ и аналитика · Открыт к стажировкам</small>
+                        <div class="student-card__contacts">
+                            <span>Email: nur.m@stud.kfu.ru</span> · <span>Telegram: @nur_m</span> · <span>Казань</span>
+                        </div>
+                        <p class="student-card__about">Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.</p>
+                    </div>
+                    <div class="student-card__progress">
+                        <div class="student-card__progress-head"><span>Профиль заполнен</span><strong>85%</strong></div>
+                        <div class="progress-track"><span></span></div>
+                    </div><div style="display: flex; gap: 8px; align-items: center;"><button class="button button--outline" type="button" data-edit-profile-btn>Редактировать профиль</button><button class="button" type="button">Скачать резюме PDF</button></div>
+                </section>
+                <div class="profile-layout">
+                    <section class="profile-main">
+                        <nav class="profile-tabs" aria-label="Вкладки профиля">
+                            <button class="profile-tab-btn is-active" type="button" data-tab="applications">Мои отклики <span class="profile-tab-count">4</span></button>
+                            <button class="profile-tab-btn" type="button" data-tab="saved">Сохранённые <span class="profile-tab-count" data-saved-count>0</span></button>
+                            <button class="profile-tab-btn" type="button" data-tab="stack">Мой профиль и стек</button>
+                            <button class="profile-tab-btn" type="button" data-tab="analytics">Аналитика</button>
+                        </nav>
+                        <div class="profile-metrics tab-pane" id="pane-analytics" style="display: none;">
+                            <article class="card metric">
+                                <div class="metric__label">Всего откликов<span class="metric__trend metric__trend--purple" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-send"></use></svg></span></div>
+                                <div class="metric__number">4</div>
+                                <div class="metric__hint">За последние 30 дней</div>
+                            </article>
+                            <article class="card metric">
+                                <div class="metric__label">На рассмотрении<span class="metric__trend metric__trend--warning" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg></span></div>
+                                <div class="metric__number">1</div>
+                                <div class="metric__hint">Ждём ответ компании</div>
+                            </article>
+                            <article class="card metric">
+                                <div class="metric__label">Интервью<span class="metric__trend metric__trend--success" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg></span></div>
+                                <div class="metric__number">1</div>
+                                <div class="metric__hint">Нужно выбрать время</div>
+                            </article>
+                            <article class="card metric">
+                                <div class="metric__label">Офферы<span class="metric__trend metric__trend--purple" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-sparkles"></use></svg></span></div>
+                                <div class="metric__number">1</div>
+                                <div class="metric__hint">Твой следующий шаг</div>
+                            </article>
+                        </div>
+                        <section class="card tab-pane" id="pane-saved" style="display: none;">
+                            <div class="profile-applications__head">
+                                <div>
+                                    <h2>Сохранённые стажировки</h2>
+                                    <p>Вакансии, добавленные в закладки для быстрого отклика.</p>
+                                </div>
+                                <span class="company-rating" data-saved-badge>0 вакансий</span>
+                            </div>
+                            <div class="saved-jobs-container" style="display: grid; gap: 12px; padding: 14px;"></div>
+                            <div class="saved-empty" role="status">
+                                <div class="empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-bookmark"></use></svg></div>
+                                <h3>Нет сохранённых стажировок</h3>
+                                <p>Сохраняйте интересные предложения звёздочкой в карьерной ленте</p>
+                                <a class="button button--small empty-cta" href="index.html">Перейти к вакансиям</a>
+                            </div>
+                        </section>
+                        <section class="card widget stack-card tab-pane" id="pane-stack" style="display: none;">
+                            <h2>Мой профиль и стек</h2>
+                            <div class="stack-focus">
+                                <small>КАРЬЕРНЫЙ ФОКУС</small>
+                                <strong class="stack-focus-title">Разработка и аналитика</strong>
+                                <div class="stack-focus__chips">
+                                    <span class="chip">Стажировка</span>
+                                    <span class="chip chip--neutral">Начальная позиция</span>
+                                </div>
+                            </div>
+                            <div class="skill-list">
+                                <div class="skill"><span>Python</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i></span></div>
+                                <div class="skill"><span>SQL</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i></span></div>
+                                <div class="skill"><span>Figma</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i></i><i></i></span></div>
+                                <div class="skill"><span>Git</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i></i></span></div>
+                            </div>
+                            <button class="button button--outline button--full" type="button" data-edit-profile-btn>Редактировать профиль</button>
+                        </section>
+                        <section class="card profile-applications tab-pane is-active" id="pane-applications">
+                            <div class="profile-applications__head">
+                                <div>
+                                    <h2>Мои отклики</h2>
+                                    <p>Все этапы — от первого отклика до оффера.</p>
+                                </div><span class="company-rating">4 отклика</span>
+                            </div>
+                            <div class="profile-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input
+                                        placeholder="Найти отклик или компанию" aria-label="Поиск откликов" data-search-input></label><select
+                                    class="filter-pill" aria-label="Фильтр по статусу" data-application-status>
+                                    <option value="all">Все статусы</option>
+                                    <option value="Приглашение">Приглашение</option>
+                                    <option value="На рассмотрении">На рассмотрении</option>
+                                    <option value="Отказ">Отказ</option>
+                                    <option value="Оффер">Оффер</option>
+                                </select></div>
+                            <div class="table-scroll" tabindex="0" aria-label="Таблица откликов. Прокручивайте по горизонтали.">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Вакансия и компания</th>
+                                            <th scope="col">Дата подачи</th>
+                                            <th scope="col">Статус</th>
+                                            <th scope="col">Действие</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="profile-applications-tbody">
+                                        <tr data-application-id="app-1" data-job-id="yandex-frontend">
+                                            <td>
+                                                <div class="application-company"><span
+                                                        class="company-logo company-logo--yandex">Я</span><span><strong>Младший
+                                                            фронтенд-разработчик</strong><small>Yandex · Москва ·
+                                                            Hybrid</small></span></div>
+                                            </td>
+                                            <td>05.10.2026</td>
+                                            <td><span class="status-badge status-badge--success">● Приглашение</span>
+                                            </td>
+                                            <td><button class="button button--small">Выбрать время</button></td>
+                                        </tr>
+                                        <tr data-application-id="app-2" data-job-id="sber-analyst">
+                                            <td>
+                                                <div class="application-company"><span
+                                                        class="company-logo company-logo--sber">С</span><span><strong>Аналитик
+                                                            данных</strong><small>Sber · Казань ·
+                                                            Удалённо</small></span></div>
+                                            </td>
+                                            <td>03.10.2026</td>
+                                            <td><span class="status-badge status-badge--warning">◷ На
+                                                    рассмотрении</span></td>
+                                            <td><button class="button button--outline button--small">Чат с HR</button>
+                                            </td>
+                                        </tr>
+                                        <tr data-application-id="app-3" data-job-id="vk-qa" id="feedback">
+                                            <td>
+                                                <div class="application-company"><span
+                                                        class="company-logo company-logo--vk">VK</span><span><strong>Тестировщик</strong><small>VK
+                                                            · Москва · Офис</small></span></div>
+                                            </td>
+                                            <td>01.10.2026</td>
+                                            <td><span class="status-badge status-badge--danger">● Отказ</span></td>
+                                            <td><a class="button button--outline button--small application-feedback" href="#feedback">Фидбек</a>
+                                            </td>
+                                        </tr>
+                                        <tr data-application-id="app-4" data-job-id="tbank-python">
+                                            <td>
+                                                <div class="application-company"><span
+                                                        class="company-logo company-logo--tbank">Т</span><span><strong>Python-разработчик</strong><small>Т-Банк
+                                                            · Москва · Удалённо</small></span></div>
+                                            </td>
+                                            <td>28.09.2026</td>
+                                            <td><span class="status-badge status-badge--purple">✦ Оффер!</span></td>
+                                            <td><button class="button button--small">Принять</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="profile-applications__foot"><span>Показаны 4 из 4 откликов</span><span>Обновлено
+                                    сегодня, 10:42</span></div>
+                        </section>
+                        <div class="profile-footnote">ⓘ Твои данные видны только компаниям, в которые ты откликнулся.
+                        </div>
+                    </section>
+                    <aside class="profile-side">
+                        <section class="card widget stack-card" id="stack">
+                            <h2>Мой профиль и стек</h2>
+                            <div class="stack-focus"><small>КАРЬЕРНЫЙ ФОКУС</small><strong>Разработка и
+                                    аналитика</strong>
+                                <div class="stack-focus__chips"><span class="chip">Стажировка</span><span
+                                        class="chip chip--neutral">Начальная позиция</span></div>
+                            </div>
+                            <div class="skill-list">
+                                <div class="skill"><span>Python</span><span class="skill__bars"><i
+                                            class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i
+                                            class="is-filled"></i></span></div>
+                                <div class="skill"><span>SQL</span><span class="skill__bars"><i class="is-filled"></i><i
+                                            class="is-filled"></i><i class="is-filled"></i><i
+                                            class="is-filled"></i></span></div>
+                                <div class="skill"><span>Figma</span><span class="skill__bars"><i
+                                            class="is-filled"></i><i class="is-filled"></i><i></i><i></i></span></div>
+                                <div class="skill"><span>Git</span><span class="skill__bars"><i class="is-filled"></i><i
+                                            class="is-filled"></i><i class="is-filled"></i><i></i></span></div>
+                            </div><button class="button button--outline button--full">Редактировать профиль</button>
+                        </section>
+                        <section class="card widget profile-tip">
+                            <h2>✦ Советы Buddie</h2>
+                            <div class="profile-tip__callout"><span class="profile-tip__mascot"><img src="./images/mascot-logo.png" alt="" width="64" height="64"></span><span
+                                    class="profile-tip__timer">◷ 24 часа</span></div>
+                            <p>Yandex ждёт твоего ответа! Запишись на интервью в течение 24 часов, чтобы не упустить
+                                слот.</p><button id="btn-interview-reminder" class="button button--full">Выбрать время</button>
+                        </section>
+                    </aside>
                 </div>
-                <div class="feed-notice">
-                  <span class="feed-notice__icon feed-notice__icon--info" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
-                  </span>
-                  <div class="feed-notice__content">
-                    <strong>На рассмотрении</strong>
-                    <span>Sber рассматривает твой отклик</span>
-                  </div>
-                </div>
-                <div class="feed-notice">
-                  <span class="feed-notice__icon feed-notice__icon--success" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-                  </span>
-                  <div class="feed-notice__content">
-                    <strong>Улучши своё резюме</strong>
-                    <span>Добавь проекты университета</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </aside>
-        </div>
-      </div>
-    </main>
-  </div>
-  <script src="./js/app.js?v=2.1" defer></script>
+            </div>
+        </main>
+    </div>
+    <script src="./js/app.js?v=2.1" defer></script>
 </body>
 
 </html>

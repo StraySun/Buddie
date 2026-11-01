@@ -4,7 +4,7 @@ const path = require('path');
 
 const PORT = 4173;
 const ROOT = path.resolve(__dirname, '..');
-const PUBLIC_DIR = path.join(ROOT, 'public');
+const DOCS_DIR = path.join(ROOT, 'docs');
 const DB_PATH = path.join(ROOT, 'data', 'db.json');
 const BACKUP_PATH = path.join(ROOT, 'data', 'db.json.backup');
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MB payload protection
@@ -160,9 +160,12 @@ function runMutation(mutatorFn) {
   return new Promise((resolve, reject) => {
     writeQueue = writeQueue.then(async () => {
       try {
-        const db = getDb();
-        const result = await mutatorFn(db);
-        await atomicPersist(db);
+        const currentDb = getDb();
+        // Глубокий клон для изоляции мутации и гарантии отката при ошибке диска
+        const dbClone = JSON.parse(JSON.stringify(currentDb));
+        const result = await mutatorFn(dbClone);
+        await atomicPersist(dbClone);
+        dbCache = dbClone;
         resolve(result);
       } catch (err) {
         reject(err);
@@ -224,6 +227,86 @@ function sendJson(res, statusCode, data, headers = {}) {
   res.end(jsonStr);
 }
 
+function safeDecodeURI(str) {
+  try {
+    return decodeURI(str);
+  } catch (_) {
+    return null;
+  }
+}
+
+function safeDecodeURIComponent(str) {
+  try {
+    return decodeURIComponent(str);
+  } catch (_) {
+    return null;
+  }
+}
+
+const KNOWN_JOBS = {
+  'yandex-frontend': {
+    id: 'yandex-frontend',
+    title: 'Младший фронтенд-разработчик',
+    company: 'Yandex',
+    companyLetter: 'Я',
+    companyLogoClass: 'company-logo--yandex',
+    salary: '120 000–160 000 ₽',
+    specialty: 'development',
+    format: 'hybrid',
+    description: 'Разработка современных веб-интерфейсов на React и TypeScript.'
+  },
+  'sber-analyst': {
+    id: 'sber-analyst',
+    title: 'Аналитик данных',
+    company: 'Sber',
+    companyLetter: 'С',
+    companyLogoClass: 'company-logo--sber',
+    salary: '100 000–140 000 ₽',
+    specialty: 'analysis',
+    format: 'remote',
+    description: 'Исследование пользовательского поведения и построение аналитических витрин.'
+  },
+  'vk-qa': {
+    id: 'vk-qa',
+    title: 'Тестировщик',
+    company: 'VK',
+    companyLetter: 'VK',
+    companyLogoClass: 'company-logo--vk',
+    salary: '80 000–110 000 ₽',
+    specialty: 'qa',
+    format: 'hybrid',
+    description: 'Ручное и автоматизированное тестирование веб-сервисов и мобильных приложений.'
+  },
+  'tbank-python': {
+    id: 'tbank-python',
+    title: 'Python-разработчик',
+    company: 'Т-Банк',
+    companyLetter: 'Т',
+    companyLogoClass: 'company-logo--tbank',
+    salary: '130 000–170 000 ₽',
+    specialty: 'development',
+    format: 'remote',
+    description: 'Разработка микросервисов, интеграций с внешними API и внутренних инструментов.'
+  }
+};
+
+const STATUS_HR_TO_APP = {
+  'new': 'На рассмотрении',
+  'review': 'На рассмотрении',
+  'interview': 'Интервью',
+  'offer': 'Оффер',
+  'rejected': 'Отказ'
+};
+
+const STATUS_APP_TO_HR = {
+  'На рассмотрении': 'review',
+  'Интервью': 'interview',
+  'Приглашение': 'interview',
+  'Оффер': 'offer',
+  'Оффер принят': 'offer',
+  'Отказ': 'rejected'
+};
+
 // Initial DB load
 getDb();
 
@@ -231,8 +314,19 @@ getDb();
 // Main HTTP Request Handler
 // ==========================================
 const server = http.createServer(async (req, res) => {
-  const fullUrl = new URL(req.url, `http://${req.headers.host || '127.0.0.1:4173'}`);
-  const reqPath = decodeURI(fullUrl.pathname);
+  let fullUrl;
+  try {
+    fullUrl = new URL(req.url, `http://${req.headers.host || '127.0.0.1:4173'}`);
+  } catch (_) {
+    sendJson(res, 400, { error: 'Invalid URL' });
+    return;
+  }
+
+  const reqPath = safeDecodeURI(fullUrl.pathname);
+  if (reqPath === null) {
+    sendJson(res, 400, { error: 'Invalid URL encoding' });
+    return;
+  }
 
   // ==========================================
   // REST API Endpoints
@@ -314,9 +408,14 @@ const server = http.createServer(async (req, res) => {
 
       // 2.1. GET /api/jobs/:id - Получить конкретную вакансию
       if (reqPath.startsWith('/api/jobs/') && req.method === 'GET') {
-        const jobId = decodeURIComponent(reqPath.slice('/api/jobs/'.length).replace(/\/+$/, ''));
+        const rawJobId = reqPath.slice('/api/jobs/'.length).replace(/\/+$/, '');
+        const jobId = safeDecodeURIComponent(rawJobId);
+        if (jobId === null) {
+          sendJson(res, 400, { error: 'Invalid jobId encoding' });
+          return;
+        }
         const db = getDb();
-        const job = (db.jobs || []).find(j => j.id === jobId);
+        const job = (db.jobs || []).find(j => j.id === jobId) || KNOWN_JOBS[jobId];
         if (job) {
           sendJson(res, 200, job);
         } else {
@@ -328,6 +427,22 @@ const server = http.createServer(async (req, res) => {
       // 3. POST /api/jobs - Создать вакансию (от HR)
       if (reqPath === '/api/jobs' && req.method === 'POST') {
         const newJob = await parseBody(req);
+        if (!newJob || typeof newJob.title !== 'string' || !newJob.title.trim()) {
+          sendJson(res, 400, { error: 'Поле title обязательно для заполнения' });
+          return;
+        }
+        if (newJob.title.trim().length > 200) {
+          sendJson(res, 400, { error: 'Длина поля title не должна превышать 200 символов' });
+          return;
+        }
+        newJob.title = newJob.title.trim();
+        if (newJob.company && typeof newJob.company === 'string') {
+          newJob.company = newJob.company.trim().slice(0, 100);
+        }
+        if (newJob.salary && typeof newJob.salary === 'string') {
+          newJob.salary = newJob.salary.trim().slice(0, 100);
+        }
+
         const createdJob = await runMutation(db => {
           newJob.id = newJob.id || 'job-' + Date.now();
           newJob.postedTime = 'Только что';
@@ -356,7 +471,12 @@ const server = http.createServer(async (req, res) => {
 
       // 3.1. PUT /api/jobs/:id - Обновить вакансию
       if (reqPath.startsWith('/api/jobs/') && req.method === 'PUT') {
-        const jobId = decodeURIComponent(reqPath.slice('/api/jobs/'.length).replace(/\/+$/, ''));
+        const rawJobId = reqPath.slice('/api/jobs/'.length).replace(/\/+$/, '');
+        const jobId = safeDecodeURIComponent(rawJobId);
+        if (jobId === null) {
+          sendJson(res, 400, { error: 'Invalid jobId encoding' });
+          return;
+        }
         const updateData = await parseBody(req);
         const updated = await runMutation(db => {
           db.jobs = db.jobs || [];
@@ -373,16 +493,35 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // 3.2. DELETE /api/jobs/:id - Удалить вакансию
+      // 3.2. DELETE /api/jobs/:id - Удалить вакансию (с каскадной очисткой и 404)
       if (reqPath.startsWith('/api/jobs/') && req.method === 'DELETE') {
-        const jobId = decodeURIComponent(reqPath.slice('/api/jobs/'.length).replace(/\/+$/, ''));
+        const rawJobId = reqPath.slice('/api/jobs/'.length).replace(/\/+$/, '');
+        const jobId = safeDecodeURIComponent(rawJobId);
+        if (jobId === null) {
+          sendJson(res, 400, { error: 'Invalid jobId encoding' });
+          return;
+        }
         const result = await runMutation(db => {
           db.jobs = db.jobs || [];
           const initialCount = db.jobs.length;
           db.jobs = db.jobs.filter(j => j.id !== jobId);
-          return { success: true, deleted: initialCount - db.jobs.length };
+          const deletedCount = initialCount - db.jobs.length;
+          if (deletedCount === 0) return null;
+
+          // B3: Каскадное удаление зависимых сущностей
+          db.applications = (db.applications || []).filter(a => a.jobId !== jobId);
+          db.candidates = (db.candidates || []).filter(c => c.jobId !== jobId);
+          db.savedJobs = (db.savedJobs || []).filter(id => id !== jobId);
+          db.appliedJobs = (db.appliedJobs || []).filter(id => id !== jobId);
+
+          return { success: true, deleted: deletedCount };
         });
-        sendJson(res, 200, result);
+
+        if (!result) {
+          sendJson(res, 404, { success: false, error: 'Job not found' });
+        } else {
+          sendJson(res, 200, result);
+        }
         return;
       }
 
@@ -395,7 +534,12 @@ const server = http.createServer(async (req, res) => {
 
       // 4.1. GET /api/applications/:id - Получить конкретный отклик
       if (reqPath.startsWith('/api/applications/') && req.method === 'GET') {
-        const appId = decodeURIComponent(reqPath.slice('/api/applications/'.length).replace(/\/+$/, ''));
+        const rawAppId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
+        const appId = safeDecodeURIComponent(rawAppId);
+        if (appId === null) {
+          sendJson(res, 400, { error: 'Invalid appId encoding' });
+          return;
+        }
         const db = getDb();
         const app = (db.applications || []).find(a => a.id === appId || a.jobId === appId);
         if (app) {
@@ -409,6 +553,11 @@ const server = http.createServer(async (req, res) => {
       // 4.2. POST /api/applications - Откликнуться на вакансию
       if (reqPath === '/api/applications' && req.method === 'POST') {
         const app = await parseBody(req);
+        if (!app || typeof app.jobId !== 'string' || !app.jobId.trim()) {
+          sendJson(res, 400, { error: 'Поле jobId обязательно для создания отклика' });
+          return;
+        }
+
         const result = await runMutation(db => {
           db.applications = db.applications || [];
           db.appliedJobs = db.appliedJobs || [];
@@ -422,10 +571,10 @@ const server = http.createServer(async (req, res) => {
 
           const comp = app.company || 'Компания';
           const compLower = comp.toLowerCase();
-          const logoLetter = compLower.includes('vk') ? 'VK' : comp[0].toUpperCase();
-          const logoClass = compLower.includes('yandex') ? 'company-logo--yandex' :
-                            compLower.includes('sber') ? 'company-logo--sber' :
-                            compLower.includes('vk') ? 'company-logo--vk' : 'company-logo--tbank';
+          const logoLetter = (compLower.includes('vk') || compLower.includes('вк')) ? 'VK' : comp[0].toUpperCase();
+          const logoClass = (compLower.includes('yandex') || compLower.includes('яндекс')) ? 'company-logo--yandex' :
+                            (compLower.includes('sber') || compLower.includes('сбер')) ? 'company-logo--sber' :
+                            (compLower.includes('vk') || compLower.includes('вк')) ? 'company-logo--vk' : 'company-logo--tbank';
 
           const timestamp = Date.now();
           const randSuffix = Math.random().toString(36).slice(2, 6);
@@ -474,10 +623,12 @@ const server = http.createServer(async (req, res) => {
 
       // 4.3. DELETE /api/applications/:id - Отмена заявки с каскадным удалением кандидата из db.candidates
       if (reqPath.startsWith('/api/applications/') && req.method === 'DELETE') {
-        let targetId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
-        try {
-          targetId = decodeURIComponent(targetId);
-        } catch {}
+        const rawTargetId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
+        const targetId = safeDecodeURIComponent(rawTargetId);
+        if (targetId === null) {
+          sendJson(res, 400, { error: 'Invalid application ID encoding' });
+          return;
+        }
 
         if (!targetId) {
           sendJson(res, 400, { error: 'Application ID is required' });
@@ -552,10 +703,14 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // 4.4. PUT /api/applications/:id - Обновление статуса заявки
+      // 4.4. PUT /api/applications/:id - Обновление статуса заявки с синхронизацией кандидата
       if (reqPath.startsWith('/api/applications/') && req.method === 'PUT') {
-        let appId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
-        try { appId = decodeURIComponent(appId); } catch {}
+        const rawAppId = reqPath.slice('/api/applications/'.length).replace(/\/+$/, '');
+        const appId = safeDecodeURIComponent(rawAppId);
+        if (appId === null) {
+          sendJson(res, 400, { error: 'Invalid appId encoding' });
+          return;
+        }
         const update = await parseBody(req);
 
         const updated = await runMutation(db => {
@@ -563,6 +718,20 @@ const server = http.createServer(async (req, res) => {
           const app = db.applications.find(a => a.id === appId || a.jobId === appId);
           if (app) {
             Object.assign(app, update);
+
+            // B4: Двусторонняя синхронизация со статусом кандидата
+            if (update.status && STATUS_APP_TO_HR[update.status]) {
+              const mappedStatus = STATUS_APP_TO_HR[update.status];
+              const cand = (db.candidates || []).find(c =>
+                c.id === app.id.replace('app-', 'cand-') ||
+                (app.jobId && c.jobId === app.jobId)
+              );
+              if (cand) {
+                cand.status = mappedStatus;
+                cand.statusLabel = update.status;
+              }
+            }
+
             return app;
           }
           return null;
@@ -585,8 +754,12 @@ const server = http.createServer(async (req, res) => {
 
       // 5.1. GET /api/candidates/:id - Получить кандидата
       if (reqPath.startsWith('/api/candidates/') && req.method === 'GET') {
-        let candId = reqPath.slice('/api/candidates/'.length).replace(/\/+$/, '');
-        try { candId = decodeURIComponent(candId); } catch {}
+        const rawCandId = reqPath.slice('/api/candidates/'.length).replace(/\/+$/, '');
+        const candId = safeDecodeURIComponent(rawCandId);
+        if (candId === null) {
+          sendJson(res, 400, { error: 'Invalid candidateId encoding' });
+          return;
+        }
         const db = getDb();
         const candidate = (db.candidates || []).find(c => c.id === candId);
         if (candidate) {
@@ -597,10 +770,14 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // 5.2. PUT /api/candidates/:id - Обновить кандидата (HR статус)
+      // 5.2. PUT /api/candidates/:id - Обновить кандидата (HR статус) с синхронизацией отклика
       if (reqPath.startsWith('/api/candidates/') && req.method === 'PUT') {
-        let candId = reqPath.slice('/api/candidates/'.length).replace(/\/+$/, '');
-        try { candId = decodeURIComponent(candId); } catch {}
+        const rawCandId = reqPath.slice('/api/candidates/'.length).replace(/\/+$/, '');
+        const candId = safeDecodeURIComponent(rawCandId);
+        if (candId === null) {
+          sendJson(res, 400, { error: 'Invalid candidateId encoding' });
+          return;
+        }
         const update = await parseBody(req);
 
         const updatedCandidate = await runMutation(db => {
@@ -608,6 +785,29 @@ const server = http.createServer(async (req, res) => {
           const candidate = db.candidates.find(c => c.id === candId);
           if (candidate) {
             Object.assign(candidate, update);
+
+            // B4: Двусторонняя синхронизация с откликом соискателя
+            if (update.status && STATUS_HR_TO_APP[update.status]) {
+              const mappedStatus = STATUS_HR_TO_APP[update.status];
+              const app = (db.applications || []).find(a =>
+                a.id === candidate.id.replace('cand-', 'app-') ||
+                (candidate.jobId && a.jobId === candidate.jobId)
+              );
+              if (app) {
+                app.status = mappedStatus;
+                if (update.status === 'offer') {
+                  app.statusClass = 'status-badge--purple';
+                  app.actionText = 'Принять';
+                } else if (update.status === 'interview') {
+                  app.statusClass = 'status-badge--success';
+                  app.actionText = 'Выбрать время';
+                } else if (update.status === 'rejected') {
+                  app.statusClass = 'status-badge--danger';
+                  app.actionText = 'Фидбек';
+                }
+              }
+            }
+
             return candidate;
           }
           return null;
@@ -636,8 +836,12 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (reqPath.startsWith('/api/saved-jobs/') && req.method === 'DELETE') {
-        let jobId = reqPath.slice('/api/saved-jobs/'.length).replace(/\/+$/, '');
-        try { jobId = decodeURIComponent(jobId); } catch {}
+        const rawJobId = reqPath.slice('/api/saved-jobs/'.length).replace(/\/+$/, '');
+        const jobId = safeDecodeURIComponent(rawJobId);
+        if (jobId === null) {
+          sendJson(res, 400, { error: 'Invalid jobId encoding' });
+          return;
+        }
         const saved = await runMutation(db => {
           db.savedJobs = (db.savedJobs || []).filter(id => id !== jobId);
           return db.savedJobs;
@@ -646,11 +850,35 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // 7. PUT /api/state - Обновление глобального стейта (Вуз, профиль)
+      // 7. PUT /api/state - Безопасное обновление глобального стейта (Вуз, профиль)
       if (reqPath === '/api/state' && req.method === 'PUT') {
         const stateUpdate = await parseBody(req);
+        if (!stateUpdate || typeof stateUpdate !== 'object' || Array.isArray(stateUpdate)) {
+          sendJson(res, 400, { error: 'Payload must be a non-null object' });
+          return;
+        }
+
+        // Защита основных сущностей от прямого стирания через /api/state (S4)
+        const FORBIDDEN_COLLECTIONS = ['jobs', 'applications', 'candidates'];
+        const forbiddenKeys = Object.keys(stateUpdate).filter(k => FORBIDDEN_COLLECTIONS.includes(k));
+        if (forbiddenKeys.length > 0) {
+          sendJson(res, 403, { error: `Direct overwrite of [${forbiddenKeys.join(', ')}] is forbidden via /api/state` });
+          return;
+        }
+
         const updatedDb = await runMutation(db => {
-          Object.assign(db, stateUpdate);
+          if (stateUpdate.profile && typeof stateUpdate.profile === 'object' && !Array.isArray(stateUpdate.profile)) {
+            db.profile = { ...(db.profile || {}), ...stateUpdate.profile };
+          }
+          if (typeof stateUpdate.university === 'string') {
+            db.university = stateUpdate.university.trim().slice(0, 100);
+          }
+          if (stateUpdate.savedJobs && Array.isArray(stateUpdate.savedJobs)) {
+            db.savedJobs = stateUpdate.savedJobs.filter(id => typeof id === 'string');
+          }
+          if (stateUpdate.appliedJobs && Array.isArray(stateUpdate.appliedJobs)) {
+            db.appliedJobs = stateUpdate.appliedJobs.filter(id => typeof id === 'string');
+          }
           return db;
         });
         sendJson(res, 200, { success: true, db: updatedDb });
@@ -689,10 +917,10 @@ const server = http.createServer(async (req, res) => {
   // Static File Serving with Traversal Guard
   // ==========================================
   const sanitizedPath = reqPath === '/' ? 'index.html' : reqPath.replace(/^\/+/, '');
-  const filePath = path.normalize(path.join(PUBLIC_DIR, sanitizedPath));
+  const filePath = path.normalize(path.join(DOCS_DIR, sanitizedPath));
 
   // Directory traversal defense
-  if (!filePath.startsWith(PUBLIC_DIR)) {
+  if (!filePath.startsWith(DOCS_DIR)) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('403 Forbidden');
     return;

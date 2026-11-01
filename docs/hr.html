@@ -1,18 +1,19 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buddie — Компании-партнёры</title>
+    <title>Buddie for HR — Рабочее пространство</title>
     <link rel="icon" type="image/png" href="./images/mascot-logo.png">
     <link rel="stylesheet" href="./css/variables.css">
     <link rel="stylesheet" href="./css/global.css">
     <link rel="stylesheet" href="./css/components.css">
-    <link rel="stylesheet" href="./css/companies.css">
+    <link rel="stylesheet" href="./css/hr.css">
 </head>
 
-<body>
+<body class="hr-page">
+    <a href="#main-content" class="skip-link">Перейти к основному контенту</a>
 <!-- Vector Icons Sprite (Phase 3) -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="icon-user" viewBox="0 0 24 24">
@@ -65,155 +66,153 @@
     <polyline points="12 7 12 12 15 15" />
   </symbol>
 </svg>
-    <div class="page-shell">
-        <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span class="brand__identity"><span
-                        class="brand__word">Buddie</span><span class="brand__caption">Buddie · Карьерная лента</span></span></a>
-            <div class="sidebar__label">Навигация</div>
-            <nav class="sidebar__nav">
-  <a class="sidebar__nav-item" href="index.html">
-    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-feed"></use></svg></span>
-    <span class="sidebar__nav-copy">Лента<small>Вакансии и стажировки</small></span>
-  </a>
-  <a class="sidebar__nav-item sidebar__nav-item--active" href="companies.html">
-    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-briefcase"></use></svg></span>
-    <span class="sidebar__nav-copy">Стажировки<small>Каталог компаний</small></span>
-  </a>
-  <a class="sidebar__nav-item" href="notifications.html">
-    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bell"></use></svg></span>
-    <span class="sidebar__nav-copy">Уведомления<small>Сигналы и дедлайны</small></span>
-    <span class="sidebar__count">4</span>
-  </a>
-  <a class="sidebar__nav-item" href="profile.html">
-    <span class="sidebar__icon" aria-hidden="true"><svg class="sidebar__icon-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-user"></use></svg></span>
-    <span class="sidebar__nav-copy">Личный кабинет<small>Профиль, отклики и резюме</small></span>
-    <span class="sidebar__count">4</span>
-  </a>
-</nav>
-            <a class="sidebar__hr-link" href="hr.html">Режим HR-партнёра →</a>
-            <div class="sidebar__progress">
-                <div class="sidebar__progress-title">Профиль заполнен <strong>85%</strong></div>
-                <div class="sidebar__track"><span></span></div>
-                <p>Добавь портфолио — работодатели заметят тебя быстрее.</p><a class="sidebar__link"
-                    href="profile.html">Дополнить профиль →</a>
+    <main class="hr-shell" id="main-content" tabindex="-1">
+        <header class="hr-topbar"><a class="hr-brand" href="index.html"><span
+                    class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span><strong>Buddie <span class="hr-brand__accent">for
+                            HR</span></strong><small>Рабочее пространство работодателя</small></span></a>
+            <a class="hr-topbar__return" href="./index.html">← Вернуться в Buddie</a>
+            <label class="hr-topbar__company">Компания<select aria-label="Выберите компанию"><option selected>ООО Яндекс</option><option>ООО Сбер</option><option>ООО Т-Банк</option></select></label>
+            <div class="hr-topbar__profile"><span class="avatar">АК</span><span>Анна К.<small class="hr-brand__role">HR-партнёр</small></span>
             </div>
-            <div class="sidebar__footer"><span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>Центр карьеры на связи</div>
-            <div class="sidebar__user">
-                <div class="avatar">НМ</div>
+        </header>
+        <div class="hr-heading">
+            <h1>Кандидаты и отклики</h1>
+            <p>Подбирайте студентов КФУ по навыкам и AI-совпадению.</p>
+        </div>
+        <section class="hr-metrics">
+            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-briefcase"></use></svg></span>
                 <div>
-                    <div class="sidebar__user-name">Нур М.</div>
-                    <div class="sidebar__user-meta">КФУ · 3-й курс</div>
+                    <div class="hr-metric__label">Активные вакансии</div>
+                    <div class="hr-metric__number">5</div>
                 </div>
+            </article>
+            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-application"></use></svg></span>
+                <div>
+                    <div class="hr-metric__label">Отклики студентов</div>
+                    <div class="hr-metric__number">48</div>
+                </div>
+            </article>
+            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg></span>
+                <div>
+                    <div class="hr-metric__label">Запланировано интервью</div>
+                    <div class="hr-metric__number">6</div>
+                </div>
+            </article>
+            <article class="card hr-metric"><span class="hr-metric__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-sparkles"></use></svg></span>
+                <div>
+                    <div class="hr-metric__label">Средний Match Rate</div>
+                    <div class="hr-metric__number">84%</div>
+                </div>
+            </article>
+        </section>
+        <div class="hr-actions" id="post"><a class="button" href="#post">＋ Разместить стажировку</a>
+            <div class="hr-actions__filters"><input class="hr-candidate-search" type="search" placeholder="Поиск кандидата..." aria-label="Поиск кандидата" data-search-input><select class="filter-pill" aria-label="Целевой университет" data-hr-university>
+                    <option value="kfu">Целевой ВУЗ: КФУ</option>
+                    <option value="all">Все университеты</option>
+                </select><select class="filter-pill" aria-label="Фильтр по вакансии" data-hr-job>
+                    <option value="all">Все вакансии</option>
+                </select><select class="filter-pill" aria-label="Фильтр статуса" data-hr-status>
+                    <option value="all">Все статусы</option>
+                    <option value="new">Новые</option>
+                    <option value="interview">Интервью</option>
+                    <option value="review">На рассмотрении</option>
+                </select></div>
+        </div>
+        <section class="card candidate-panel">
+            <div class="candidate-panel__head">
+                <h2>Подходящие кандидаты</h2><span>48 откликов · Обновлено 10 минут назад</span>
             </div>
-        </aside>
-        <main class="app-main">
-            <header class="header"><label class="header__search"><span aria-hidden="true">⌕</span><input
-                        placeholder="Поиск вакансий, компаний, навыков..." aria-label="Поиск" data-search-input></label>
-                <label class="header__select"><small>УНИВЕРСИТЕТ</small><select aria-label="Выберите университет"><option value="kfu" selected>Казанский федеральный университет</option><option value="itmo">Университет ИТМО</option><option value="hse">НИУ ВШЭ</option></select></label>
-                <div class="header__right"><a class="header__bell" href="notifications.html" aria-label="Уведомления"><svg class="header__bell-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bell"></use></svg><span>4</span></a><a
-                        class="header__profile" href="profile.html"><span class="avatar">НМ</span><span>Нур М.<small>3-й
-                                курс</small></span></a></div>
-            </header>
-            <div class="content">
-                <div class="page-heading">
-                    <div>
-                        <h1>Компании-партнёры КФУ</h1>
-                        <p>Прямой доступ к стажировкам и практикам аккредитованных работодателей.</p>
-                    </div><span class="page-heading__date">Проверено центром карьеры</span>
-                </div>
-                <div class="companies-tools"><label class="search-field"><span aria-hidden="true">⌕</span><input
-                            placeholder="Поиск компании..." aria-label="Поиск компаний" data-search-input></label>
-                    <div class="companies-filters"><button class="filter-pill filter-pill--active" type="button" data-company-filter="all" aria-pressed="true">Все компании</button><button class="filter-pill" type="button" data-company-filter="it" aria-pressed="false">IT &amp; Финтех</button><button class="filter-pill" type="button" data-company-filter="analytics" aria-pressed="false">Аналитика</button><button class="filter-pill" type="button" data-company-filter="engineering" aria-pressed="false">Инженерия</button></div>
-                </div>
-                <div class="company-summary"><span>Партнёрская сеть университета</span><span data-company-count role="status" aria-live="polite">6 из 6 компаний · 55 активных стажировок</span></div>
-                <section class="companies-grid">
-                    <article class="card company-card" data-company-card data-category="it">
-                        <div class="company-card__top"><span class="company-logo company-logo--yandex">Я</span>
-                            <div>
-                                <h2 class="company-card__name">Yandex</h2><span class="company-card__partner">✓ Партнёр
-                                    КФУ</span>
-                            </div>
-                        </div>
-                        <div class="company-card__count">12 активных стажировок</div>
-                        <div class="company-card__tags"><span class="chip">Python</span><span
-                                class="chip">Frontend</span><span class="chip">ML</span></div><a
-                            class="button button--outline button--small company-card__action" href="index.html#job-yandex-analyst">Перейти
-                            к вакансиям →</a>
-                    </article>
-                    <article class="card company-card" data-company-card data-category="analytics">
-                        <div class="company-card__top"><span class="company-logo company-logo--tbank">Т</span>
-                            <div>
-                                <h2 class="company-card__name">Т-Банк</h2><span class="company-card__partner">✓ Партнёр
-                                    КФУ</span>
-                            </div>
-                        </div>
-                        <div class="company-card__count">8 активных стажировок</div>
-                        <div class="company-card__tags"><span class="chip">SQL</span><span
-                                class="chip">Analytics</span><span class="chip">Java</span></div><a
-                            class="button button--outline button--small company-card__action" href="index.html#job-tbank-data">Перейти
-                            к вакансиям →</a>
-                    </article>
-                    <article class="card company-card" data-company-card data-category="engineering">
-                        <div class="company-card__top"><span class="company-logo company-logo--sber">С</span>
-                            <div>
-                                <h2 class="company-card__name">Сбер</h2><span class="company-card__partner">✓ Партнёр
-                                    КФУ</span>
-                            </div>
-                        </div>
-                        <div class="company-card__count">15 активных стажировок</div>
-                        <div class="company-card__tags"><span class="chip">Backend</span><span
-                                class="chip">Java</span><span class="chip">C#</span></div><a
-                            class="button button--outline button--small company-card__action" href="index.html#job-sber-java">Перейти
-                            к вакансиям →</a>
-                    </article>
-                    <article class="card company-card" data-company-card data-category="it">
-                        <div class="company-card__top"><span class="company-logo company-logo--vk">VK</span>
-                            <div>
-                                <h2 class="company-card__name">VK</h2><span class="company-card__partner">✓ Партнёр
-                                    КФУ</span>
-                            </div>
-                        </div>
-                        <div class="company-card__count">6 активных стажировок</div>
-                        <div class="company-card__tags"><span class="chip">Testing</span><span
-                                class="chip">Python</span><span class="chip">Web</span></div><a
-                            class="button button--outline button--small company-card__action" href="index.html">Перейти
-                            к вакансиям →</a>
-                    </article>
-                    <article class="card company-card" data-company-card data-category="analytics">
-                        <div class="company-card__top"><span class="company-logo company-logo--ozon">O</span>
-                            <div>
-                                <h2 class="company-card__name">Ozon</h2><span class="company-card__partner">✓ Партнёр
-                                    КФУ</span>
-                            </div>
-                        </div>
-                        <div class="company-card__count">9 активных стажировок</div>
-                        <div class="company-card__tags"><span class="chip">Data</span><span
-                                class="chip">Product</span><span class="chip">Logistics</span></div><a
-                            class="button button--outline button--small company-card__action" href="index.html">Перейти
-                            к вакансиям →</a>
-                    </article>
-                    <article class="card company-card" data-company-card data-category="engineering">
-                        <div class="company-card__top"><span class="company-logo company-logo--mts">М</span>
-                            <div>
-                                <h2 class="company-card__name">МТС</h2><span class="company-card__partner">✓ Партнёр
-                                    КФУ</span>
-                            </div>
-                        </div>
-                        <div class="company-card__count">5 активных стажировок</div>
-                        <div class="company-card__tags"><span class="chip">Telecom</span><span
-                                class="chip">Analytics</span><span class="chip">Cloud</span></div><a
-                            class="button button--outline button--small company-card__action" href="index.html">Перейти
-                            к вакансиям →</a>
-                    </article>
-                </section>
-                <div class="interaction-empty" data-companies-empty hidden role="status">
-                    <div class="empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-briefcase"></use></svg></div>
-                    <h3>Компании не найдены</h3>
-                    <p>По вашему запросу не нашлось подходящих работодателей</p>
-                    <button class="button button--small empty-cta" type="button" data-companies-reset>Сбросить фильтры</button>
-                </div>
+            <div class="table-scroll" tabindex="0" aria-label="Таблица кандидатов. Прокручивайте по горизонтали.">
+                <table class="candidate-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Студент</th>
+                            <th scope="col">ВУЗ / Курс</th>
+                            <th scope="col">Вакансия</th>
+                            <th scope="col">AI Match Score</th>
+                            <th scope="col">Стек</th>
+                            <th scope="col">Статус</th>
+                            <th scope="col">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hr-candidates-tbody">
+                        <tr>
+                            <td>
+                                <div class="candidate"><span class="candidate__avatar">НМ</span><span><strong>Нур
+                                            М.</strong><small>Аналитика данных</small></span></div>
+                            </td>
+                            <td>КФУ · 3-й курс</td>
+                            <td>Стажёр-аналитик данных</td>
+                            <td><span class="match-score">96%</span></td>
+                            <td>
+                                <div class="hr-skills"><span>Python</span><span>SQL</span><span>Pandas</span></div>
+                            </td>
+                            <td><span class="status-badge status-badge--success">Новый</span></td>
+                            <td><button class="button button--small">Открыть</button></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="candidate"><span class="candidate__avatar candidate__avatar--green">АИ</span><span><strong>Алина
+                                            И.</strong><small>Frontend-разработка</small></span></div>
+                            </td>
+                            <td>КФУ · 4-й курс</td>
+                            <td>Frontend-разработчик</td>
+                            <td><span class="match-score">92%</span></td>
+                            <td>
+                                <div class="hr-skills"><span>React</span><span>TypeScript</span><span>Git</span></div>
+                            </td>
+                            <td><span class="status-badge status-badge--purple">Интервью</span></td>
+                            <td><button class="button button--outline button--small">Профиль</button></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="candidate"><span class="candidate__avatar candidate__avatar--blue">ДК</span><span><strong>Дамир
+                                            К.</strong><small>Java-разработка</small></span></div>
+                            </td>
+                            <td>КФУ · 3-й курс</td>
+                            <td>Младший Java-разработчик</td>
+                            <td><span class="match-score">89%</span></td>
+                            <td>
+                                <div class="hr-skills"><span>Java</span><span>Spring</span><span>SQL</span></div>
+                            </td>
+                            <td><span class="status-badge status-badge--warning">На рассмотрении</span></td>
+                            <td><button class="button button--outline button--small">Профиль</button></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="candidate"><span class="candidate__avatar candidate__avatar--orange">ЕМ</span><span><strong>Елена
+                                            М.</strong><small>Продуктовая аналитика</small></span></div>
+                            </td>
+                            <td>КФУ · 2-й курс</td>
+                            <td>Стажёр-аналитик данных</td>
+                            <td><span class="match-score">86%</span></td>
+                            <td>
+                                <div class="hr-skills"><span>SQL</span><span>Tableau</span><span>Python</span></div>
+                            </td>
+                            <td><span class="status-badge status-badge--success">Новый</span></td>
+                            <td><button class="button button--small">Открыть</button></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="candidate"><span class="candidate__avatar candidate__avatar--purple">РС</span><span><strong>Роман
+                                            С.</strong><small>Машинное обучение</small></span></div>
+                            </td>
+                            <td>КФУ · 4-й курс</td>
+                            <td>ML Engineer Intern</td>
+                            <td><span class="match-score">83%</span></td>
+                            <td>
+                                <div class="hr-skills"><span>Python</span><span>ML</span><span>PyTorch</span></div>
+                            </td>
+                            <td><span class="status-badge status-badge--warning">На рассмотрении</span></td>
+                            <td><button class="button button--outline button--small">Профиль</button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </main>
-    </div>
+            <div class="hr-table-foot"><span>Показаны 5 из 48 кандидатов</span><span class="hr-table-foot__note">AI Match учитывает навыки,
+                    направление и интересы студента.</span></div>
+        </section>
+    </main>
     <script src="./js/app.js?v=2.1" defer></script>
 </body>
 

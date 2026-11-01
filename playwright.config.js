@@ -4,6 +4,8 @@ module.exports = defineConfig({
   testDir: './tests',
   outputDir: './test-results',
   reporter: 'list',
+  workers: 1,
+  fullyParallel: false,
   use: {
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
@@ -13,7 +15,7 @@ module.exports = defineConfig({
   webServer: {
     command: 'node src/server.js',
     url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 30000
   }
 });
