@@ -16,7 +16,9 @@ const path = require('path');
 
 const PORT = 4173;
 const ROOT = path.resolve(__dirname, '..');
-const DOCS_DIR = path.join(ROOT, 'docs');
+const STATIC_DIR = fs.existsSync(path.join(ROOT, 'docs'))
+  ? path.join(ROOT, 'docs')
+  : (fs.existsSync(path.join(ROOT, 'public')) ? path.join(ROOT, 'public') : ROOT);
 const DB_PATH = path.join(ROOT, 'data', 'db.json');
 const BACKUP_PATH = path.join(ROOT, 'data', 'db.json.backup');
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MB payload protection
@@ -930,10 +932,12 @@ const server = http.createServer(async (req, res) => {
   // Static File Serving with Traversal Guard
   // ==========================================
   const sanitizedPath = reqPath === '/' ? 'index.html' : reqPath.replace(/^\/+/, '');
-  const filePath = path.normalize(path.join(DOCS_DIR, sanitizedPath));
+  const filePath = path.normalize(path.join(STATIC_DIR, sanitizedPath));
 
-  // Directory traversal defense
-  if (!filePath.startsWith(DOCS_DIR)) {
+  // Directory traversal & sensitive source code guard
+  const blockedDirs = ['.git', 'node_modules', 'src', 'data', 'tests', 'test-results', '.vscode', '.agents'];
+  const isBlocked = blockedDirs.some(dir => sanitizedPath.startsWith(dir + '/') || sanitizedPath === dir || sanitizedPath.startsWith(dir + '\\'));
+  if (!filePath.startsWith(STATIC_DIR) || isBlocked || sanitizedPath.startsWith('.')) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('403 Forbidden');
     return;
@@ -955,6 +959,11 @@ const server = http.createServer(async (req, res) => {
 if (require.main === module) {
   server.listen(PORT, '127.0.0.1', () => {
     console.log(`Server with Database REST API running at http://127.0.0.1:${PORT}/`);
+    if (process.argv.includes('--open')) {
+      const { exec } = require('child_process');
+      const startCmd = process.platform === 'win32' ? 'start ""' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+      exec(`${startCmd} "http://127.0.0.1:${PORT}/"`);
+    }
   });
 }
 
