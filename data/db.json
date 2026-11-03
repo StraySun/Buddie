@@ -2,10 +2,13 @@
   "university": "kfu",
   "faculty": "itis",
   "profile": {
-    "name": "Нур М.",
+    "name": "Нур Мифтахов",
     "role": "Аналитика данных",
     "course": "3-й курс",
     "university": "Казанский федеральный университет",
+    "city": "Казань",
+    "email": "nur.m@stud.kfu.ru",
+    "telegram": "@nur_m",
     "skills": [
       "Python",
       "SQL",

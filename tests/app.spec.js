@@ -722,7 +722,7 @@ test('resume print styling hides shell and displays structured A4 resume', async
 
   // 2. Проверяем, что структура резюме отображается
   await expect(page.locator('.student-card')).toBeVisible();
-  await expect(page.locator('.student-card__identity h2')).toContainText('Нур М.');
+  await expect(page.locator('.student-card__identity h2')).toContainText('Нур');
   await expect(page.locator('.student-card__contacts')).toBeVisible();
   await expect(page.locator('#pane-stack')).toBeVisible();
   await expect(page.locator('#pane-applications')).toBeVisible();
@@ -1582,4 +1582,146 @@ test('Phase 4 HR portal enhancements: candidate pipeline, vacancy management, an
 
   await page.keyboard.press('Escape');
   await expect(postModal).toBeHidden();
+});
+
+test('Personal cabinet redesign: dynamic Buddie tip, 3-tab profile edit with contacts, resume tab, and application details modal', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // 1. Проверяем наличие и работу вкладки "Резюме и портфолио"
+  const resumeTabBtn = page.locator('.profile-tab-btn[data-tab="resume"]');
+  await expect(resumeTabBtn).toBeVisible();
+  await resumeTabBtn.click();
+  const resumePane = page.locator('#pane-resume');
+  await expect(resumePane).toBeVisible();
+  await expect(page.locator('#resume-sheet-name')).toContainText('Нур Мифтахов');
+  await expect(page.locator('#resume-sheet-contacts')).toContainText('Казань');
+  await expect(page.locator('#resume-sheet-contacts')).toContainText('nur.m@stud.kfu.ru');
+  await expect(page.locator('#resume-sheet-contacts')).toContainText('@nur_m');
+
+  // 2. Проверяем модалку редактирования профиля с 3 вкладками
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const editModal = page.locator('.modal-dialog');
+  await expect(editModal).toBeVisible();
+  const modalTabBtns = editModal.locator('.modal-tab-btn');
+  await expect(modalTabBtns).toHaveCount(3);
+  await expect(modalTabBtns.nth(0)).toHaveText('Основное');
+  await expect(modalTabBtns.nth(1)).toHaveText('Контакты и город');
+  await expect(modalTabBtns.nth(2)).toHaveText('Проекты');
+
+  // Переходим на вкладку "Контакты и город"
+  await modalTabBtns.nth(1).click();
+  await expect(editModal.locator('#modal-pane-contacts')).toBeVisible();
+  await expect(editModal.locator('#edit-profile-city')).toHaveValue('Казань');
+  await expect(editModal.locator('#edit-profile-email')).toHaveValue('nur.m@stud.kfu.ru');
+  await expect(editModal.locator('#edit-profile-telegram')).toHaveValue('@nur_m');
+
+  // Переходим на вкладку "Проекты"
+  await modalTabBtns.nth(2).click();
+  await expect(editModal.locator('#modal-pane-projects')).toBeVisible();
+  await expect(editModal.locator('#btn-add-profile-project')).toBeVisible();
+
+  // Закрываем модалку по Escape
+  await page.keyboard.press('Escape');
+  await expect(editModal).toBeHidden();
+
+  // 3. Проверяем динамический совет Бадди
+  const buddieTip = page.locator('.profile-tip');
+  await expect(buddieTip).toBeVisible();
+  const buddieBtn = page.locator('#btn-interview-reminder');
+  await expect(buddieBtn).toBeVisible();
+
+  // 4. Проверяем клик по компании в таблице откликов (модальное окно с деталями и таймлайном)
+  await page.locator('.profile-tab-btn[data-tab="applications"]').click();
+  await expect(page.locator('#pane-applications')).toBeVisible();
+  const firstCompany = page.locator('.data-table tbody tr .application-company').first();
+  await firstCompany.click();
+  const detailModal = page.locator('.modal-dialog');
+  await expect(detailModal).toBeVisible();
+  await expect(detailModal.locator('.modal-title')).toContainText('Детали отклика');
+  await expect(detailModal.locator('.app-timeline')).toBeVisible();
+  await expect(detailModal.locator('.app-hr-card')).toBeVisible();
+  await expect(detailModal.locator('.btn-cancel-application')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(detailModal).toBeHidden();
+
+  // 5. Проверяем вкладку "Сохранённые" с панелью фильтров
+  await page.locator('.profile-tab-btn[data-tab="saved"]').click();
+  await expect(page.locator('#pane-saved')).toBeVisible();
+  await expect(page.locator('.saved-jobs-toolbar')).toBeVisible();
+  await expect(page.locator('[data-saved-filter="all"]')).toBeVisible();
+  await expect(page.locator('[data-saved-filter="remote"]')).toBeVisible();
+  await expect(page.locator('[data-saved-filter="hybrid"]')).toBeVisible();
+});
+
+test('Personal cabinet audit: dynamic completeness 85-100%, share profile, interactive slot chips, saved filter empty states, and deep linking', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // 1. Проверяем динамический прогресс 85% и подсказку
+  const progressVal = page.locator('#profile-progress-val');
+  await expect(progressVal).toHaveText('85%');
+  const progressHint = page.locator('#profile-progress-hint');
+  await expect(progressHint).toContainText('Добавьте проект в резюме');
+
+  // 2. Открываем модалку, добавляем проект -> прогресс растёт до 100%
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const modal = page.locator('.modal-dialog');
+  await expect(modal).toBeVisible();
+  await modal.locator('.modal-tab-btn[data-modal-tab="projects"]').click();
+  await modal.locator('#btn-add-profile-project').click();
+  const titleInput = modal.locator('.edit-project-title').last();
+  await titleInput.fill('Distributed ETL Pipeline');
+  await modal.locator('.modal-confirm-btn').click();
+  await expect(modal).toBeHidden();
+
+  await expect(progressVal).toHaveText('100%');
+  await expect(progressHint).toContainText('Профиль заполнен на 100%!');
+
+  // 3. Проверяем кнопку «Поделиться профилем»
+  const shareBtn = page.locator('[data-share-profile-btn]');
+  await expect(shareBtn).toBeVisible();
+  await shareBtn.click();
+  await expect(shareBtn).toContainText('Ссылка скопирована');
+
+  // 4. Интерактивный выбор слота интервью с чипами времени
+  const interviewRow = page.locator('.data-table tbody tr', { hasText: 'Младший фронтенд-разработчик' });
+  const timeBtn = interviewRow.locator('button');
+  await timeBtn.click();
+  const slotModal = page.locator('.modal-dialog');
+  await expect(slotModal).toBeVisible();
+  await expect(slotModal.locator('.slot-picker')).toBeVisible();
+  const chips = slotModal.locator('.slot-chip');
+  await expect(chips).toHaveCount(4);
+  await chips.nth(1).click();
+  await expect(chips.nth(1)).toHaveClass(/is-selected/);
+  await slotModal.locator('.modal-confirm-btn').click();
+  await expect(slotModal).toBeHidden();
+  await expect(timeBtn).toContainText('✓');
+
+  // 5. Контекстный пустой фильтр сохранённых вакансий
+  // Сохраняем вакансию на index.html
+  await page.goto('/index.html');
+  const saveBtn = page.locator('[data-job-id="yandex-analyst"] [data-job-action="save"]');
+  await saveBtn.click();
+
+  // Переходим в сохранённые
+  await page.goto('/profile.html#saved');
+  await expect(page.locator('#pane-saved')).toBeVisible();
+  await expect(page.locator('.saved-jobs-container [data-job-id="yandex-analyst"]')).toBeVisible();
+
+  // Фильтруем по "remote" (yandex-analyst - hybrid, поэтому 0 remote)
+  await page.locator('[data-saved-filter="remote"]').click();
+  const filterEmpty = page.locator('.saved-filter-empty');
+  await expect(filterEmpty).toBeVisible();
+  await expect(filterEmpty).toContainText('Нет сохранённых вакансий с форматом «Удалённо»');
+  await filterEmpty.locator('[data-reset-saved-filter]').click();
+  await expect(page.locator('[data-saved-filter="all"]')).toHaveClass(/is-active/);
+  await expect(page.locator('.saved-jobs-container [data-job-id="yandex-analyst"]')).toBeVisible();
+
+  // 6. Сквозная глубокая ссылка: открытие профиля сразу с выбором слота
+  await page.goto('/profile.html?selectSlot=app-1#applications');
+  const autoModal = page.locator('.modal-dialog');
+  await expect(autoModal).toBeVisible();
+  await expect(autoModal.locator('.modal-title')).toContainText('Выбор слота интервью');
+  await page.keyboard.press('Escape');
+  await expect(autoModal).toBeHidden();
 });
