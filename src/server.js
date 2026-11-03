@@ -166,6 +166,14 @@ async function atomicPersist(data) {
     if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
   } catch {}
 
+  // Sync with public/data/db.json for GitHub Pages static fallback
+  try {
+    const publicDbPath = path.join(ROOT, 'public', 'data', 'db.json');
+    if (fs.existsSync(path.dirname(publicDbPath))) {
+      fs.copyFileSync(DB_PATH, publicDbPath);
+    }
+  } catch {}
+
   return renamed;
 }
 
