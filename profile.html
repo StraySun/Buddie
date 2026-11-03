@@ -65,6 +65,13 @@
     <circle cx="12" cy="12" r="9" />
     <polyline points="12 7 12 12 15 15" />
   </symbol>
+  <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+  </symbol>
 </svg>
     <div class="page-shell">
         <aside class="sidebar"><a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true"><img src="./images/mascot-logo.png" alt=""></span><span class="brand__identity"><span
@@ -125,7 +132,7 @@
                 <section class="card student-card" id="profile">
                     <div class="student-card__avatar">НМ</div>
                     <div class="student-card__identity">
-                        <h2>Нур М.</h2>
+                        <h2>Нур Мифтахов</h2>
                         <p>Казанский федеральный университет · 3-й курс</p><small>ИТ и аналитика · Открыт к стажировкам</small>
                         <div class="student-card__contacts">
                             <span>Email: nur.m@stud.kfu.ru</span> · <span>Telegram: @nur_m</span> · <span>Казань</span>
@@ -133,9 +140,18 @@
                         <p class="student-card__about">Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.</p>
                     </div>
                     <div class="student-card__progress">
-                        <div class="student-card__progress-head"><span>Профиль заполнен</span><strong>85%</strong></div>
-                        <div class="progress-track"><span></span></div>
-                    </div><div style="display: flex; gap: 8px; align-items: center;"><button class="button button--outline" type="button" data-edit-profile-btn>Редактировать профиль</button><button class="button" type="button">Скачать резюме PDF</button></div>
+                        <div class="student-card__progress-head"><span>Профиль заполнен</span><strong id="profile-progress-val">85%</strong></div>
+                        <div class="progress-track" role="progressbar" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100" aria-label="Заполненность профиля"><span id="profile-progress-bar" style="width: 85%;"></span></div>
+                        <small class="profile-progress-hint" id="profile-progress-hint"></small>
+                    </div>
+                    <div class="student-card__actions">
+                        <button class="button button--outline" type="button" data-edit-profile-btn>Редактировать профиль</button>
+                        <button class="button button--outline" type="button" data-share-profile-btn aria-label="Поделиться профилем">
+                            <svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#icon-share"></use></svg>
+                            <span>Поделиться</span>
+                        </button>
+                        <button class="button" type="button" id="btn-download-resume-header">Скачать резюме PDF</button>
+                    </div>
                 </section>
                 <div class="profile-layout">
                     <section class="profile-main">
@@ -143,6 +159,7 @@
                             <button class="profile-tab-btn is-active" type="button" data-tab="applications">Мои отклики <span class="profile-tab-count">4</span></button>
                             <button class="profile-tab-btn" type="button" data-tab="saved">Сохранённые <span class="profile-tab-count" data-saved-count>0</span></button>
                             <button class="profile-tab-btn" type="button" data-tab="stack">Мой профиль и стек</button>
+                            <button class="profile-tab-btn" type="button" data-tab="resume">Резюме и портфолио</button>
                             <button class="profile-tab-btn" type="button" data-tab="analytics">Аналитика</button>
                         </nav>
                         <div class="profile-metrics tab-pane" id="pane-analytics" style="display: none;">
@@ -175,11 +192,18 @@
                                 </div>
                                 <span class="company-rating" data-saved-badge>0 вакансий</span>
                             </div>
-                            <div class="saved-jobs-container" style="display: grid; gap: 12px; padding: 14px;"></div>
+                            <div class="saved-jobs-toolbar">
+                                <div class="saved-jobs-filters">
+                                    <span class="chip chip--neutral is-active" data-saved-filter="all">Все форматы</span>
+                                    <span class="chip" data-saved-filter="remote">Удалённо</span>
+                                    <span class="chip" data-saved-filter="hybrid">Гибрид / Офис</span>
+                                </div>
+                            </div>
+                            <div class="saved-jobs-container saved-jobs-grid"></div>
                             <div class="saved-empty" role="status">
                                 <div class="empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-bookmark"></use></svg></div>
                                 <h3>Нет сохранённых стажировок</h3>
-                                <p>Сохраняйте интересные предложения звёздочкой в карьерной ленте</p>
+                                <p>Сохраняйте интересные предложения звёздочкой в карьерной ленте для быстрого отклика</p>
                                 <a class="button button--small empty-cta" href="index.html">Перейти к вакансиям</a>
                             </div>
                         </section>
@@ -200,6 +224,76 @@
                                 <div class="skill"><span>Git</span><span class="skill__bars"><i class="is-filled"></i><i class="is-filled"></i><i class="is-filled"></i><i></i></span></div>
                             </div>
                             <button class="button button--outline button--full" type="button" data-edit-profile-btn>Редактировать профиль</button>
+                        </section>
+                        <section class="card resume-tab tab-pane" id="pane-resume" style="display: none;">
+                            <div class="profile-applications__head">
+                                <div>
+                                    <h2>Резюме и портфолио</h2>
+                                    <p>Готовое резюме студента для отправки рекрутерам и печати.</p>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="button button--outline button--small" type="button" data-edit-profile-btn>Редактировать</button>
+                                    <button class="button button--small" type="button" data-print-resume>Скачать PDF</button>
+                                </div>
+                            </div>
+                            <div class="resume-sheet">
+                                <header class="resume-sheet__header">
+                                    <div class="resume-sheet__main">
+                                        <h3 class="resume-sheet__name" id="resume-sheet-name">Нур Мифтахов</h3>
+                                        <div class="resume-sheet__role" id="resume-sheet-role">Аналитик данных · Открыт к стажировкам</div>
+                                        <div class="resume-sheet__contacts" id="resume-sheet-contacts">
+                                            <span>📍 Казань</span> · 
+                                            <span>📧 nur.m@stud.kfu.ru</span> · 
+                                            <span>💬 @nur_m</span>
+                                        </div>
+                                    </div>
+                                    <span class="chip chip--neutral" style="font-weight: 600; color: var(--color-primary-text, #6D28D9);">● Ищет стажировку</span>
+                                </header>
+                                <div class="resume-sheet__divider"></div>
+                                <section class="resume-sheet__section">
+                                    <h4 class="resume-sheet__title">Образование</h4>
+                                    <div class="resume-sheet__item">
+                                        <div class="resume-sheet__item-top">
+                                            <strong>Казанский федеральный университет (КФУ)</strong>
+                                            <span class="resume-sheet__date">2022 — 2026</span>
+                                        </div>
+                                        <div class="resume-sheet__item-sub">Институт ИТИС · Программная инженерия · 3-й курс</div>
+                                    </div>
+                                </section>
+                                <section class="resume-sheet__section">
+                                    <h4 class="resume-sheet__title">Ключевой стек</h4>
+                                    <div class="resume-sheet__skills" id="resume-sheet-skills">
+                                        <span class="chip">Python</span>
+                                        <span class="chip">SQL</span>
+                                        <span class="chip">Pandas</span>
+                                        <span class="chip">Tableau</span>
+                                        <span class="chip">Git</span>
+                                    </div>
+                                </section>
+                                <section class="resume-sheet__section">
+                                    <h4 class="resume-sheet__title">Проекты</h4>
+                                    <div class="resume-sheet__projects" id="resume-sheet-projects">
+                                        <div class="resume-project-item">
+                                            <div class="resume-project-item__head">
+                                                <strong>HR Analytics Dashboard</strong>
+                                                <span class="chip chip--neutral chip--small">Streamlit · PostgreSQL</span>
+                                            </div>
+                                            <p>Интерактивная аналитическая панель воронки кандидатов и ключевых HR-метрик для студенческих стажировок.</p>
+                                        </div>
+                                        <div class="resume-project-item">
+                                            <div class="resume-project-item__head">
+                                                <strong>Search &amp; Filter Microservice</strong>
+                                                <span class="chip chip--neutral chip--small">FastAPI · Redis</span>
+                                            </div>
+                                            <p>Сервис фильтрации и подбора вакансий для студентов с поддержкой полнотекстового поиска и тегов стека.</p>
+                                        </div>
+                                    </div>
+                                </section>
+                                <section class="resume-sheet__section">
+                                    <h4 class="resume-sheet__title">О себе</h4>
+                                    <p class="resume-sheet__about" id="resume-sheet-about">Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов. Открыт к летним и осенним стажировкам в продуктовых IT-командах.</p>
+                                </section>
+                            </div>
                         </section>
                         <section class="card profile-applications tab-pane is-active" id="pane-applications">
                             <div class="profile-applications__head">
@@ -308,8 +402,10 @@
                             <h2>✦ Советы Buddie</h2>
                             <div class="profile-tip__callout"><span class="profile-tip__mascot"><img src="./images/mascot-logo.png" alt="" width="64" height="64"></span><span
                                     class="profile-tip__timer">◷ 24 часа</span></div>
-                            <p>Yandex ждёт твоего ответа! Запишись на интервью в течение 24 часов, чтобы не упустить
-                                слот.</p><button id="btn-interview-reminder" class="button button--full">Выбрать время</button>
+                            <div class="profile-tip__content" aria-live="polite">
+                                <p id="profile-tip-text">Yandex ждёт твоего ответа! Запишись на интервью в течение 24 часов, чтобы не упустить слот.</p>
+                            </div>
+                            <button id="btn-interview-reminder" class="button button--full">Выбрать время</button>
                         </section>
                     </aside>
                 </div>
