@@ -270,12 +270,20 @@ const ApiService = {
     } catch (e) {
       console.warn('Network unavailable for db, using local fallback:', e);
     }
+    try {
+      const staticRes = await fetch('./data/db.json');
+      if (staticRes.ok) {
+        const staticData = await staticRes.json();
+        storage.write('buddie-db-cache', staticData);
+        return staticData;
+      }
+    } catch (staticErr) {}
     return storage.read('buddie-db-cache', null);
   },
 
   async getJobs() {
     if (isFileProtocol) {
-      const cached = storage.read('buddie-jobs-cache', null);
+    const cached = storage.read('buddie-jobs-cache', null);
       if (Array.isArray(cached) && cached.length > 0) return cached;
       return DEFAULT_JOBS;
     }
@@ -291,6 +299,16 @@ const ApiService = {
     } catch (e) {
       console.warn('Network unavailable for jobs, using local fallback:', e);
     }
+    try {
+      const staticRes = await fetch('./data/db.json');
+      if (staticRes.ok) {
+        const staticDb = await staticRes.json();
+        if (Array.isArray(staticDb.jobs) && staticDb.jobs.length > 0) {
+          storage.write('buddie-jobs-cache', staticDb.jobs);
+          return staticDb.jobs;
+        }
+      }
+    } catch (staticErr) {}
     const cached = storage.read('buddie-jobs-cache', null);
     if (Array.isArray(cached) && cached.length > 0) return cached;
     return DEFAULT_JOBS;
