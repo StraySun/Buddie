@@ -1252,11 +1252,11 @@ function restoreFiltersFromUrl() {
     const formatSelect = document.querySelector('[data-feed-format]');
     if (formatVal && formatSelect) formatSelect.value = formatVal;
 
-    const partnerVal = params.get('partner');
+    const partnerVal = params.get('partner') || params.get('company');
     if (partnerVal) {
-      currentPartnerFilter = partnerVal;
+      currentPartnerFilter = partnerVal.toLowerCase();
       document.querySelectorAll('[data-partner-filter]').forEach(item => {
-        const active = item.dataset.partnerFilter === partnerVal;
+        const active = item.dataset.partnerFilter.toLowerCase() === currentPartnerFilter;
         item.classList.toggle('partners__item--active', active);
         item.setAttribute('aria-pressed', String(active));
       });
@@ -1816,6 +1816,101 @@ function createApplicationRowHtml(app) {
   '</tr>';
 }
 
+function openInterviewSlotPicker(appId, jobId, company, triggerBtn, rowEl) {
+  const slots = [
+    { time: 'Завтра, 14:00 (МСК)', format: 'Онлайн · Google Meet' },
+    { time: 'Завтра, 16:30 (МСК)', format: 'Онлайн · Яндекс.Телемост' },
+    { time: 'Пятница, 11:30 (МСК)', format: 'Онлайн · СберДжаз' },
+    { time: 'Понедельник, 15:00 (МСК)', format: 'Онлайн · Звонок' }
+  ];
+
+  const html = `
+    <div class="slot-picker">
+      <p style="font-size:13px;color:#475569;margin-bottom:12px;">
+        Выберите удобное время для онлайн-интервью с командой <strong>${escapeHtml(company)}</strong>:
+      </p>
+      <div class="slot-picker-wrap" role="radiogroup" aria-label="Доступные слоты для интервью">
+        ${slots.map((s, idx) => `
+          <label class="slot-chip ${idx === 0 ? 'is-selected' : ''}">
+            <input type="radio" name="interview-time-slot" value="${escapeHtml(s.time)}" ${idx === 0 ? 'checked' : ''}>
+            <span class="slot-chip__time">◷ ${escapeHtml(s.time)}</span>
+            <span class="slot-chip__format">${escapeHtml(s.format)}</span>
+          </label>
+        `).join('')}
+      </div>
+      <select id="interview-time-slot" style="display:none;" aria-hidden="true">
+        ${slots.map(s => `<option value="${escapeHtml(s.time)}">${escapeHtml(s.time)}</option>`).join('')}
+      </select>
+      <p style="font-size:12px;color:#64748b;margin-top:8px;">
+        ⓘ Ссылка на встречу и напоминание будут продублированы вам в Telegram и на почту.
+      </p>
+    </div>
+  `;
+
+  openModal(
+    'Выбор слота интервью · ' + company,
+    html,
+    async (modal) => {
+      const selectedInput = modal.querySelector('input[name="interview-time-slot"]:checked');
+      const slot = selectedInput ? selectedInput.value : slots[0].time;
+      const shortSlot = slot.split(',')[0].replace(' (МСК)', '').trim();
+
+      if (triggerBtn) {
+        triggerBtn.textContent = '✓ ' + shortSlot;
+        triggerBtn.classList.add('button--soft');
+      }
+      if (rowEl) {
+        const rowBtn = rowEl.querySelector('button');
+        if (rowBtn) {
+          rowBtn.textContent = '✓ ' + shortSlot;
+          rowBtn.classList.add('button--soft');
+        }
+      }
+
+      const appsState = storage.read('buddie-applications-state', {});
+      appsState[appId] = Object.assign(appsState[appId] || {}, { interviewSlot: slot });
+      if (jobId) appsState[jobId] = appsState[appId];
+      storage.write('buddie-applications-state', appsState);
+
+      if (appId) {
+        await api.updateApplication(appId, { interviewSlot: slot });
+        // Синхронизация слота в HR-кабинет
+        try {
+          const db = await api.getDb();
+          if (db && Array.isArray(db.candidates)) {
+            const cand = db.candidates.find(c => (c.name && c.name.includes('Нур')) || c.jobId === jobId);
+            if (cand) {
+              await api.updateCandidate(cand.id, { interviewSlot: slot, status: 'interview', statusLabel: 'Интервью' });
+            }
+          }
+        } catch (e) {}
+      }
+
+      announce('Интервью с ' + company + ' успешно назначено: ' + slot + '!');
+      if (typeof updateBuddieTip === 'function') updateBuddieTip();
+    },
+    'Подтвердить встречу'
+  );
+
+  setTimeout(() => {
+    const modalEl = document.querySelector('.modal-dialog');
+    if (!modalEl) return;
+    const chips = modalEl.querySelectorAll('.slot-chip');
+    chips.forEach(chip => {
+      const radio = chip.querySelector('input[type="radio"]');
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('is-selected'));
+        chip.classList.add('is-selected');
+        if (radio) {
+          radio.checked = true;
+          const hiddenSelect = modalEl.querySelector('#interview-time-slot');
+          if (hiddenSelect) hiddenSelect.value = radio.value;
+        }
+      });
+    });
+  }, 50);
+}
+
 function bindApplicationRow(row) {
   const btn = row.querySelector('.button');
   if (!btn || btn._hasAppAction) return;
@@ -1873,6 +1968,7 @@ function bindApplicationRow(row) {
         await api.updateApplication(appId, { status: 'Оффер принят', statusClass: 'status-badge--success' });
       }
       announce('Поздравляем! Вы приняли оффер компании!');
+      if (typeof updateBuddieTip === 'function') updateBuddieTip();
     });
   } else if (btn.textContent.includes('Чат с HR')) {
     btn.addEventListener('click', () => {
@@ -1931,33 +2027,8 @@ function bindApplicationRow(row) {
     });
   } else if (btn.textContent.includes('Выбрать время') || btn.textContent.includes('✓')) {
     btn.addEventListener('click', () => {
-      openModal(
-        'Выбор слота интервью',
-        '<p>Выберите удобное время для онлайн-встречи с командой:</p>' +
-        '<div class="form-group">' +
-          '<select id="interview-time-slot">' +
-            '<option>Завтра, 14:00 (МСК)</option>' +
-            '<option>Завтра, 16:30 (МСК)</option>' +
-            '<option>Пятница, 11:00 (МСК)</option>' +
-          '</select>' +
-        '</div>',
-        async (modal) => {
-          const slot = modal.querySelector('#interview-time-slot').value;
-          btn.textContent = '✓ ' + slot.split(',')[0];
-          btn.classList.add('button--soft');
-
-          const appsState = storage.read('buddie-applications-state', {});
-          appsState[appId] = Object.assign(appsState[appId] || {}, { interviewSlot: slot });
-          if (jobId) appsState[jobId] = appsState[appId];
-          storage.write('buddie-applications-state', appsState);
-
-          if (appId) {
-            await api.updateApplication(appId, { interviewSlot: slot });
-          }
-          announce('Интервью успешно назначено: ' + slot + '!');
-        },
-        'Подтвердить встречу'
-      );
+      const company = row.querySelector('strong')?.textContent.trim() || 'Команда работодателя';
+      openInterviewSlotPicker(appId, jobId, company, btn, row);
     });
   } else if (btn.textContent.includes('Фидбек') || btn.classList.contains('application-feedback')) {
     btn.addEventListener('click', (e) => {
@@ -1985,6 +2056,26 @@ function bindApplicationRow(row) {
         null,
         'Понятно'
       );
+    });
+  }
+
+  const compEl = row.querySelector('.application-company');
+  if (compEl && !compEl._hasDetailAction) {
+    compEl._hasDetailAction = true;
+    compEl.style.cursor = 'pointer';
+    compEl.setAttribute('role', 'button');
+    compEl.setAttribute('tabindex', '0');
+    compEl.setAttribute('aria-label', `Подробнее о заявке: ${row.querySelector('strong')?.textContent || ''}`);
+    const onDetail = (e) => {
+      if (e.target.closest('button, a')) return;
+      openApplicationDetailModal(appId, jobId, row);
+    };
+    compEl.addEventListener('click', onDetail);
+    compEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openApplicationDetailModal(appId, jobId, row);
+      }
     });
   }
 }
@@ -2109,6 +2200,214 @@ function updateNotificationsBadge() {
   }
 }
 
+function openApplicationDetailModal(appId, jobId, row) {
+  const comp = row.querySelector('.application-company strong')?.textContent.trim() || 'Вакансия';
+  const meta = row.querySelector('.application-company small')?.textContent.trim() || '';
+  const date = row.children[1]?.textContent.trim() || 'Сегодня';
+  const statusBadge = row.querySelector('.status-badge');
+  const statusText = statusBadge?.textContent.trim() || 'В обработке';
+  const statusClass = statusBadge?.className || 'status-badge status-badge--warning';
+
+  const isInterview = statusText.includes('Приглашение');
+  const isOffer = statusText.includes('Оффер');
+  const isRejected = statusText.includes('Отказ');
+
+  const step1Class = 'is-done';
+  const step2Class = 'is-done';
+  const step3Class = isRejected ? '' : ((isInterview || isOffer) ? 'is-done' : 'is-current');
+  const step4Class = isOffer ? 'is-current' : '';
+
+  const modalHtml = `
+    <div class="app-detail">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:16px;color:#1e1b2e;">${escapeHtml(comp)}</h3>
+          <p style="margin:0;font-size:13px;color:#5b6474;">${escapeHtml(meta)} · Подано: ${escapeHtml(date)}</p>
+        </div>
+        <span class="${escapeHtml(statusClass)}">${escapeHtml(statusText)}</span>
+      </div>
+
+      <div style="background:#faf8fd;border:1px solid #f2edf8;border-radius:10px;padding:14px;">
+        <h4 style="margin:0 0 10px;font-size:13px;color:#5b6474;text-transform:uppercase;letter-spacing:0.04em;">Этапы рассмотрения:</h4>
+        <div class="app-timeline">
+          <div class="app-timeline__step ${step1Class}">
+            <strong>1. Заявка отправлена</strong>
+            <div style="font-size:12px;color:#6b7280;">Резюме и стек переданы в систему рекрутинга компании</div>
+          </div>
+          <div class="app-timeline__step ${step2Class}">
+            <strong>2. Скрининг резюме</strong>
+            <div style="font-size:12px;color:#6b7280;">Проверка соответствия профиля требованиям стажировки</div>
+          </div>
+          <div class="app-timeline__step ${step3Class}">
+            <strong>3. Собеседование с тимлидом</strong>
+            <div style="font-size:12px;color:#6b7280;">${isInterview ? 'Назначен слот для интервью' : (isOffer ? 'Интервью успешно пройдено' : 'Ожидает решения по скринингу')}</div>
+          </div>
+          <div class="app-timeline__step ${step4Class}">
+            <strong>4. Итоговое решение</strong>
+            <div style="font-size:12px;color:#6b7280;">${isOffer ? '✦ Поздравляем, сформирован официальный оффер!' : (isRejected ? '● Отбор завершён' : 'Финальное подтверждение выхода на стажировку')}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-hr-card">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#e0e7ff;color:#4338ca;display:grid;place-items:center;font-weight:700;font-size:14px;">HR</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;color:#1e1b2e;">HR-команда работодателя</div>
+            <div style="font-size:12px;color:#5b6474;">Быстрая связь по вопросам этапов отбора</div>
+          </div>
+        </div>
+        <button type="button" class="button button--small button--outline btn-detail-chat">Написать в чат</button>
+      </div>
+
+      <div style="border-top:1px dashed #e9e6ed;padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:#6b7280;">Хотите прекратить участие в отборе?</span>
+        <button type="button" class="button button--small button--soft btn-cancel-application" style="color:#dc2626;" aria-label="Отозвать отклик">Отозвать отклик</button>
+      </div>
+    </div>
+  `;
+
+  openModal(
+    'Детали отклика',
+    modalHtml,
+    null,
+    'Закрыть'
+  );
+
+  setTimeout(() => {
+    const modalEl = document.querySelector('.modal-dialog');
+    if (!modalEl) return;
+
+    modalEl.querySelector('.btn-detail-chat')?.addEventListener('click', () => {
+      closeModal();
+      const chatBtn = row.querySelector('.button');
+      if (chatBtn && chatBtn.textContent.includes('Чат с HR')) {
+        chatBtn.click();
+      } else {
+        announce('Чат с рекрутером доступен в строке отклика.');
+      }
+    });
+
+    modalEl.querySelector('.btn-cancel-application')?.addEventListener('click', async () => {
+      if (confirm(`Вы уверены, что хотите отозвать отклик на вакансию "${comp}"?`)) {
+        closeModal();
+        const idToRemove = appId || jobId;
+        await ApiService.removeApplication(idToRemove);
+        const apps = getEffectiveApplications().filter(a => a.id !== idToRemove && a.jobId !== idToRemove);
+        storage.write('buddie-applications-cache', apps);
+        renderApplicationsTable(apps);
+        updateApplicationsBadge(apps.length);
+        if (typeof updateBuddieTip === 'function') updateBuddieTip();
+        announce(`Отклик на вакансию "${comp}" успешно отозван.`);
+      }
+    });
+  }, 50);
+}
+
+function updateBuddieTip() {
+  const tipContainer = document.querySelector('.profile-tip');
+  if (!tipContainer) return;
+  const tipText = document.getElementById('profile-tip-text') || tipContainer.querySelector('p');
+  const tipTimer = tipContainer.querySelector('.profile-tip__timer');
+  const tipBtn = document.getElementById('btn-interview-reminder') || tipContainer.querySelector('button');
+
+  const apps = getEffectiveApplications();
+  const appsState = storage.read('buddie-applications-state', {});
+
+  // 1. Приоритет: есть приглашение, где еще не выбран слот
+  const interviewApp = apps.find(a => {
+    const st = (appsState[a.id]?.status || appsState[a.jobId]?.status || a.status);
+    const slot = (appsState[a.id]?.interviewSlot || appsState[a.jobId]?.interviewSlot || a.interviewSlot);
+    return (st === 'Приглашение' || a.actionText === 'Выбрать время') && !slot;
+  });
+
+  if (interviewApp) {
+    const comp = interviewApp.company || 'Yandex';
+    if (tipText) tipText.textContent = `${comp} ждёт твоего ответа! Запишись на интервью в течение 24 часов, чтобы закрепить слот.`;
+    if (tipTimer) {
+      tipTimer.textContent = '◷ 24 часа';
+      tipTimer.style.background = '#efe1ff';
+      tipTimer.style.color = '#7742ba';
+    }
+    if (tipBtn && !tipBtn.disabled) {
+      tipBtn.textContent = 'Выбрать время';
+      tipBtn.className = 'button button--full';
+    }
+    return;
+  }
+
+  // 2. Приоритет: есть оффер, который еще не принят
+  const offerApp = apps.find(a => {
+    const st = (appsState[a.id]?.status || appsState[a.jobId]?.status || a.status);
+    return st === 'Оффер' || (st && st.includes('Оффер') && !st.includes('принят'));
+  });
+
+  if (offerApp) {
+    const comp = offerApp.company || 'Т-Банк';
+    if (tipText) tipText.textContent = `🎉 Поздравляем! У тебя активный оффер от компании ${comp}. Подтверди готовность принять предложение.`;
+    if (tipTimer) {
+      tipTimer.textContent = '✦ Оффер';
+      tipTimer.style.background = '#f5f3ff';
+      tipTimer.style.color = '#6d28d9';
+    }
+    if (tipBtn) {
+      tipBtn.textContent = 'Посмотреть оффер';
+      tipBtn.className = 'button button--full';
+      tipBtn.disabled = false;
+      tipBtn.onclick = (e) => {
+        e.preventDefault();
+        const row = document.querySelector(`tr[data-application-id="${offerApp.id}"]`) || document.querySelector(`tr[data-job-id="${offerApp.jobId}"]`);
+        row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+    }
+    return;
+  }
+
+  // 3. Приоритет: есть отклики на рассмотрении
+  const pendingApp = apps.find(a => {
+    const st = (appsState[a.id]?.status || appsState[a.jobId]?.status || a.status);
+    return st === 'На рассмотрении';
+  });
+
+  if (pendingApp) {
+    const comp = pendingApp.company || 'Sber';
+    if (tipText) tipText.textContent = `Твоя заявка в ${comp} на рассмотрении у тимлида. Бадди пришлёт уведомление, как только статус изменится.`;
+    if (tipTimer) {
+      tipTimer.textContent = '◷ В процессе';
+      tipTimer.style.background = '#fef3c7';
+      tipTimer.style.color = '#92400e';
+    }
+    if (tipBtn) {
+      tipBtn.textContent = 'Смотреть отклики';
+      tipBtn.className = 'button button--full button--outline';
+      tipBtn.disabled = false;
+      tipBtn.onclick = (e) => {
+        e.preventDefault();
+        const tabBtn = document.querySelector('.profile-tab-btn[data-tab="applications"]');
+        if (tabBtn) tabBtn.click();
+      };
+    }
+    return;
+  }
+
+  // 4. Все отклики обработаны
+  if (tipText) tipText.textContent = 'Все твои отклики под контролем! Бадди отслеживает обновления. Загляни в ленту за свежими вакансиями.';
+  if (tipTimer) {
+    tipTimer.textContent = '✓ Всё готово';
+    tipTimer.style.background = '#ecfdf5';
+    tipTimer.style.color = '#065f46';
+  }
+  if (tipBtn) {
+    tipBtn.textContent = 'Найти вакансии';
+    tipBtn.className = 'button button--full';
+    tipBtn.disabled = false;
+    tipBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.href = 'index.html';
+    };
+  }
+}
+
 function renderApplicationsTable(applications) {
   const tbody = document.querySelector('.data-table tbody');
   if (!tbody) return;
@@ -2121,6 +2420,7 @@ function renderApplicationsTable(applications) {
     const footSpan = document.querySelector('.profile-applications__foot span');
     if (footSpan) footSpan.textContent = 'Показаны 0 из 0 откликов';
     updateApplicationsBadge(0);
+    if (typeof updateBuddieTip === 'function') updateBuddieTip();
     return;
   }
 
@@ -2135,6 +2435,10 @@ function renderApplicationsTable(applications) {
   updateApplicationsBadge(appList.length);
 
   updateSearch(searchTerm);
+
+  if (typeof updateBuddieTip === 'function') {
+    updateBuddieTip();
+  }
 }
 
 function createCandidateRowHtml(cand) {
@@ -2153,6 +2457,7 @@ function createCandidateRowHtml(cand) {
         '<span>' +
           '<strong>' + escapeHtml(cand.name || 'Кандидат') + '</strong>' +
           '<small>' + escapeHtml(cand.role || 'Соискатель') + '</small>' +
+          (cand.interviewSlot ? '<small class="cand-interview-slot" style="color:#2563eb;font-weight:600;display:block;">◷ ' + escapeHtml(cand.interviewSlot.split('(')[0].trim()) + '</small>' : '') +
         '</span>' +
       '</div>' +
     '</td>' +
@@ -2230,6 +2535,8 @@ function bindCandidateRow(row) {
   const skills = [...row.querySelectorAll('.hr-skills span')].map(s => s.textContent).join(', ');
   const candId = row.dataset.candidateId || '';
   const currentStatus = row.dataset.status || 'new';
+  const slotEl = row.querySelector('.cand-interview-slot');
+  const slotInfo = slotEl ? slotEl.textContent.trim() : '';
 
   openBtn.addEventListener('click', () => {
     openModal(
@@ -2237,6 +2544,7 @@ function bindCandidateRow(row) {
       '<p><strong>Специализация:</strong> ' + escapeHtml(role) + '</p>' +
       '<p><strong>AI Match Score:</strong> <span class="match-score">' + escapeHtml(score) + '</span></p>' +
       '<p><strong>Ключевые навыки:</strong> ' + escapeHtml(skills) + '</p>' +
+      (slotInfo ? '<p style="color:#2563eb;font-weight:600;margin-top:6px;"><strong>Интервью назначено:</strong> ' + escapeHtml(slotInfo.replace('◷ ', '')) + '</p>' : '') +
       '<div class="form-group" style="margin-top:16px;">' +
         '<label for="cand-status-select"><strong>Текущий статус пайплайна:</strong></label>' +
         '<select id="cand-status-select" style="width:100%; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-card); color:var(--text-main); margin-top:4px;">' +
@@ -3164,6 +3472,100 @@ function bindSkillBars(container) {
   });
 }
 
+function calculateProfileCompleteness(prof) {
+  if (!prof) return { percent: 85, hints: ['Добавьте проект в резюме'] };
+  let score = 0;
+  const hints = [];
+
+  // 1. Имя (15%)
+  if (prof.name && prof.name.trim().length > 2) {
+    score += 15;
+  } else {
+    hints.push('Укажите ФИО');
+  }
+
+  // 2. Вуз и курс (15%)
+  if (prof.university && prof.course) {
+    score += 15;
+  } else {
+    hints.push('Укажите вуз и курс');
+  }
+
+  // 3. Город (10%)
+  if (prof.city && prof.city.trim().length > 1) {
+    score += 10;
+  } else {
+    hints.push('Укажите город');
+  }
+
+  // 4. Email (10%)
+  if (prof.email && prof.email.includes('@')) {
+    score += 10;
+  } else {
+    hints.push('Укажите email');
+  }
+
+  // 5. Telegram (10%)
+  if (prof.telegram && prof.telegram.trim().length > 1) {
+    score += 10;
+  } else {
+    hints.push('Укажите Telegram');
+  }
+
+  // 6. Стек навыков (15%)
+  const skillCount = Array.isArray(prof.skills) ? prof.skills.length : 0;
+  if (skillCount >= 4) {
+    score += 15;
+  } else if (skillCount >= 1) {
+    score += 10;
+    hints.push('Добавьте навыки (минимум 4)');
+  } else {
+    hints.push('Укажите навыки');
+  }
+
+  // 7. О себе (10%)
+  if (prof.about && prof.about.trim().length >= 10) {
+    score += 10;
+  } else {
+    hints.push('Заполните поле «О себе»');
+  }
+
+  // 8. Проекты (15%)
+  const projectCount = Array.isArray(prof.projects) ? prof.projects.length : 0;
+  if (projectCount >= 1) {
+    score += 15;
+  } else {
+    hints.push('Добавьте проект в резюме');
+  }
+
+  return { percent: Math.min(100, score), hints };
+}
+
+function updateProfileCompleteness(prof) {
+  const { percent, hints } = calculateProfileCompleteness(prof);
+  const valEl = document.getElementById('profile-progress-val') || document.querySelector('.student-card__progress-head strong');
+  const barEl = document.getElementById('profile-progress-bar') || document.querySelector('.student-card .progress-track span');
+  const trackEl = document.querySelector('.student-card .progress-track');
+  const hintEl = document.getElementById('profile-progress-hint');
+
+  if (valEl) valEl.textContent = percent + '%';
+  if (barEl) barEl.style.width = percent + '%';
+  if (trackEl) {
+    trackEl.setAttribute('aria-valuenow', String(percent));
+    trackEl.classList.toggle('is-complete', percent === 100);
+  }
+
+  if (hintEl) {
+    if (percent >= 100) {
+      hintEl.innerHTML = '<span class="text-success">✦ Профиль заполнен на 100%! +40% к вниманию HR</span>';
+    } else if (hints.length > 0) {
+      hintEl.textContent = 'Для 100%: ' + hints.slice(0, 2).join(' · ');
+    } else {
+      hintEl.textContent = '';
+    }
+  }
+}
+
 function updateProfileDom(prof) {
   if (!prof) return;
 
@@ -3217,6 +3619,46 @@ function updateProfileDom(prof) {
     aboutEl.textContent = prof.about;
   }
 
+  // Контакты и город в карточке студента
+  const contactsEl = document.querySelector('.student-card__contacts');
+  if (contactsEl) {
+    const email = prof.email || 'nur.m@stud.kfu.ru';
+    const tg = prof.telegram || '@nur_m';
+    const city = prof.city || 'Казань';
+    contactsEl.innerHTML = `<span>Email: ${escapeHtml(email)}</span> · <span>Telegram: ${escapeHtml(tg)}</span> · <span>${escapeHtml(city)}</span>`;
+  }
+
+  // Обновление вкладки «Резюме и портфолио»
+  const resumeName = document.getElementById('resume-sheet-name');
+  if (resumeName && prof.name) resumeName.textContent = prof.name;
+  const resumeRole = document.getElementById('resume-sheet-role');
+  if (resumeRole && prof.role) resumeRole.textContent = prof.role + ' · Открыт к стажировкам';
+  const resumeContacts = document.getElementById('resume-sheet-contacts');
+  if (resumeContacts) {
+    const email = prof.email || 'nur.m@stud.kfu.ru';
+    const tg = prof.telegram || '@nur_m';
+    const city = prof.city || 'Казань';
+    resumeContacts.innerHTML = `<span>📍 ${escapeHtml(city)}</span> · <span>📧 ${escapeHtml(email)}</span> · <span>💬 ${escapeHtml(tg)}</span>`;
+  }
+  const resumeAbout = document.getElementById('resume-sheet-about');
+  if (resumeAbout && prof.about) resumeAbout.textContent = prof.about;
+  const resumeSkills = document.getElementById('resume-sheet-skills');
+  if (resumeSkills && Array.isArray(prof.skills)) {
+    resumeSkills.innerHTML = prof.skills.map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('');
+  }
+  const resumeProjects = document.getElementById('resume-sheet-projects');
+  if (resumeProjects && Array.isArray(prof.projects) && prof.projects.length > 0) {
+    resumeProjects.innerHTML = prof.projects.map(p => `
+      <div class="resume-project-item">
+        <div class="resume-project-item__head">
+          <strong>${escapeHtml(p.title)}</strong>
+          ${p.tags ? `<span class="chip chip--neutral chip--small">${escapeHtml(p.tags)}</span>` : ''}
+        </div>
+        <p>${escapeHtml(p.desc || '')}</p>
+      </div>
+    `).join('');
+  }
+
   // 4. Стек навыков с интерактивными уровнями
   const skills = Array.isArray(prof.skills) && prof.skills.length > 0
     ? prof.skills
@@ -3238,41 +3680,107 @@ function updateProfileDom(prof) {
 
     bindSkillBars(skillList);
   });
+
+  // 5. Динамический расчёт заполненности профиля
+  updateProfileCompleteness(prof);
 }
 
 async function openProfileEditModal() {
   const db = await api.getDb();
   const currentProf = (db && db.profile) || storage.read('buddie-profile-data', {
-    name: 'Нур М.',
+    name: 'Нур Мифтахов',
     role: 'Аналитика данных',
     course: '3-й курс',
     university: 'Казанский федеральный университет',
+    city: 'Казань',
+    email: 'nur.m@stud.kfu.ru',
+    telegram: '@nur_m',
     skills: ['Python', 'SQL', 'Pandas', 'Tableau', 'Git'],
-    about: 'Студент 3-го курса КФУ, открыт к стажировкам.'
+    about: 'Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.'
   });
 
   const skillsStr = Array.isArray(currentProf.skills) ? currentProf.skills.join(', ') : 'Python, SQL, Git';
+  const defaultCity = currentProf.city || 'Казань';
+  const defaultEmail = currentProf.email || 'nur.m@stud.kfu.ru';
+  const defaultTelegram = currentProf.telegram || '@nur_m';
+  const defaultGithub = currentProf.github || 'github.com/nur-m';
+  const defaultProjects = Array.isArray(currentProf.projects) && currentProf.projects.length > 0 ? currentProf.projects : [
+    { title: 'HR Analytics Dashboard', desc: 'Аналитическая панель воронки найма и метрик time-to-hire', tags: 'Python, Streamlit' },
+    { title: 'Search & Filter Microservice', desc: 'Микросервис поиска и подбора вакансий для студентов', tags: 'FastAPI, Redis' }
+  ];
+
+  const projectsHtml = defaultProjects.map((p, idx) => `
+    <div class="edit-project-row" data-project-idx="${idx}" style="background:#faf8fd;border:1px solid #e9e6ed;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <input type="text" class="edit-project-title" value="${escapeHtml(p.title)}" placeholder="Название проекта" style="font-weight:600;font-size:13px;width:75%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+        <button type="button" class="button button--small button--soft btn-remove-project" style="color:#dc2626;padding:2px 8px;font-size:11px;" aria-label="Удалить проект">✕</button>
+      </div>
+      <input type="text" class="edit-project-desc" value="${escapeHtml(p.desc)}" placeholder="Описание проекта" style="font-size:12px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
+      <input type="text" class="edit-project-tags" value="${escapeHtml(p.tags || '')}" placeholder="Стек (Python, SQL)" style="font-size:11px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+    </div>
+  `).join('');
+
+  const modalContent = `
+    <div class="modal-tabs" role="tablist">
+      <button class="modal-tab-btn is-active" type="button" data-modal-tab="general" role="tab" aria-selected="true">Основное</button>
+      <button class="modal-tab-btn" type="button" data-modal-tab="contacts" role="tab" aria-selected="false">Контакты и город</button>
+      <button class="modal-tab-btn" type="button" data-modal-tab="projects" role="tab" aria-selected="false">Проекты</button>
+    </div>
+
+    <!-- Вкладка 1: Основное -->
+    <div class="modal-pane is-active" id="modal-pane-general">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>
+        <input type="text" id="edit-profile-name" value="${escapeHtml(currentProf.name || 'Нур Мифтахов')}" placeholder="Например: Иван Иванов" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+        <small style="display:block;margin-top:3px;font-size:11px;color:#4A5568;">В меню и шапке будет автоматически сокращаться до формата «Имя Ф.»</small>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>
+        <input type="text" id="edit-profile-role" value="${escapeHtml(currentProf.role || 'Аналитика данных')}" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>
+        <input type="text" id="edit-profile-skills" value="${escapeHtml(skillsStr)}" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+        <small style="display:block;margin-top:3px;font-size:11px;color:#4A5568;">Уровни владения технологиями можно интерактивно кликать в блоке стека профиля</small>
+      </div>
+      <div class="form-group">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">О себе:</label>
+        <textarea id="edit-profile-about" style="width:100%;min-height:55px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">${escapeHtml(currentProf.about || 'Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.')}</textarea>
+      </div>
+    </div>
+
+    <!-- Вкладка 2: Контакты и город -->
+    <div class="modal-pane" id="modal-pane-contacts" style="display:none;">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Город проживания / поиска:</label>
+        <input type="text" id="edit-profile-city" value="${escapeHtml(defaultCity)}" placeholder="Казань, Москва..." style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Электронная почта (Email):</label>
+        <input type="email" id="edit-profile-email" value="${escapeHtml(defaultEmail)}" placeholder="nur.m@stud.kfu.ru" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Telegram (@username):</label>
+        <input type="text" id="edit-profile-telegram" value="${escapeHtml(defaultTelegram)}" placeholder="@nur_m" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">GitHub / Портфолио:</label>
+        <input type="text" id="edit-profile-github" value="${escapeHtml(defaultGithub)}" placeholder="github.com/nur-m" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+      </div>
+    </div>
+
+    <!-- Вкладка 3: Проекты -->
+    <div class="modal-pane" id="modal-pane-projects" style="display:none;">
+      <div id="modal-projects-list" style="max-height:220px;overflow-y:auto;margin-bottom:10px;">
+        ${projectsHtml}
+      </div>
+      <button type="button" class="button button--small button--outline button--full" id="btn-add-profile-project">+ Добавить проект</button>
+    </div>
+  `;
 
   openModal(
     'Редактирование профиля студента',
-    '<div class="form-group" style="margin-bottom:12px;">' +
-      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>' +
-      '<input type="text" id="edit-profile-name" value="' + escapeHtml(currentProf.name || 'Нур М.') + '" placeholder="Например: Иван Иванов" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
-      '<small style="display:block;margin-top:3px;font-size:11px;color:#4A5568;">В меню и шапке будет автоматически сокращаться до формата «Имя Ф.»</small>' +
-    '</div>' +
-    '<div class="form-group" style="margin-bottom:12px;">' +
-      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>' +
-      '<input type="text" id="edit-profile-role" value="' + escapeHtml(currentProf.role || 'Frontend-разработчик') + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
-    '</div>' +
-    '<div class="form-group" style="margin-bottom:12px;">' +
-      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>' +
-      '<input type="text" id="edit-profile-skills" value="' + escapeHtml(skillsStr) + '" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' +
-      '<small style="display:block;margin-top:3px;font-size:11px;color:#4A5568;">Уровни владения технологиями можно интерактивно кликать в блоке стека профиля</small>' +
-    '</div>' +
-    '<div class="form-group">' +
-      '<label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">О себе / Контакты:</label>' +
-      '<textarea id="edit-profile-about" style="width:100%;min-height:60px;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">' + escapeHtml(currentProf.about || 'Студент КФУ, открыт к стажировкам.') + '</textarea>' +
-    '</div>',
+    modalContent,
     async (modal) => {
       const name = modal.querySelector('#edit-profile-name')?.value.trim() || currentProf.name;
       const role = modal.querySelector('#edit-profile-role')?.value.trim() || currentProf.role;
@@ -3280,9 +3788,32 @@ async function openProfileEditModal() {
       const skills = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
       const about = modal.querySelector('#edit-profile-about')?.value.trim() || currentProf.about;
 
+      const city = modal.querySelector('#edit-profile-city')?.value.trim() || defaultCity;
+      const email = modal.querySelector('#edit-profile-email')?.value.trim() || defaultEmail;
+      const telegram = modal.querySelector('#edit-profile-telegram')?.value.trim() || defaultTelegram;
+      const github = modal.querySelector('#edit-profile-github')?.value.trim() || defaultGithub;
+
+      const projectRows = modal.querySelectorAll('.edit-project-row');
+      const projects = Array.from(projectRows).map(row => ({
+        title: row.querySelector('.edit-project-title')?.value.trim() || 'Проект',
+        desc: row.querySelector('.edit-project-desc')?.value.trim() || '',
+        tags: row.querySelector('.edit-project-tags')?.value.trim() || ''
+      })).filter(p => p.title);
+
       const cachedProfData = storage.read('buddie-profile-data', {}) || {};
       const skillLevels = currentProf.skillLevels || cachedProfData.skillLevels || {};
-      const updatedProfile = Object.assign({}, currentProf, { name, role, skills, about, skillLevels });
+      const updatedProfile = Object.assign({}, currentProf, {
+        name,
+        role,
+        skills,
+        about,
+        city,
+        email,
+        telegram,
+        github,
+        projects: projects.length ? projects : defaultProjects,
+        skillLevels
+      });
 
       updateProfileDom(updatedProfile);
       storage.write('buddie-profile-data', updatedProfile);
@@ -3291,6 +3822,54 @@ async function openProfileEditModal() {
     },
     'Сохранить изменения'
   );
+
+  setTimeout(() => {
+    const modalEl = document.querySelector('.modal-dialog');
+    if (!modalEl) return;
+
+    modalEl.querySelectorAll('.modal-tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabTarget = btn.dataset.modalTab;
+        modalEl.querySelectorAll('.modal-tab-btn').forEach(b => {
+          const isSelected = b === btn;
+          b.classList.toggle('is-active', isSelected);
+          b.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+        });
+        modalEl.querySelectorAll('.modal-pane').forEach(pane => {
+          pane.style.display = pane.id === `modal-pane-${tabTarget}` ? 'block' : 'none';
+        });
+      });
+    });
+
+    const addBtn = modalEl.querySelector('#btn-add-profile-project');
+    const projectsList = modalEl.querySelector('#modal-projects-list');
+    if (addBtn && projectsList) {
+      addBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const newRow = document.createElement('div');
+        newRow.className = 'edit-project-row';
+        newRow.style.cssText = 'background:#faf8fd;border:1px solid #e9e6ed;border-radius:8px;padding:10px;margin-bottom:8px;';
+        newRow.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <input type="text" class="edit-project-title" value="" placeholder="Название проекта" style="font-weight:600;font-size:13px;width:75%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+            <button type="button" class="button button--small button--soft btn-remove-project" style="color:#dc2626;padding:2px 8px;font-size:11px;" aria-label="Удалить проект">✕</button>
+          </div>
+          <input type="text" class="edit-project-desc" value="" placeholder="Описание проекта" style="font-size:12px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
+          <input type="text" class="edit-project-tags" value="" placeholder="Стек (Python, SQL)" style="font-size:11px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+        `;
+        newRow.querySelector('.btn-remove-project').addEventListener('click', () => newRow.remove());
+        projectsList.appendChild(newRow);
+        newRow.querySelector('.edit-project-title').focus();
+      });
+    }
+
+    modalEl.querySelectorAll('.btn-remove-project').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.closest('.edit-project-row')?.remove();
+      });
+    });
+  }, 50);
 }
 
 function initProfileEdit() {
@@ -3309,33 +3888,56 @@ function initProfileEdit() {
     btn._hasReminderAction = true;
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const slots = [
-        'Завтра, 14:00 (МСК) · Онлайн-интервью',
-        'Завтра, 16:30 (МСК) · Онлайн-интервью',
-        'Послезавтра, 11:00 (МСК) · Онлайн-интервью'
-      ];
-      openModal(
-        'Выбор слота интервью в Yandex',
-        '<div class="slot-picker">' +
-          '<p style="font-size:13px;color:#475569;margin-bottom:12px;">Выберите удобное время для технического скрининга с тимлидом:</p>' +
-          slots.map((s, idx) => `
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">
-              <input type="radio" name="interview-slot-reminder" value="${s}" ${idx === 0 ? 'checked' : ''}>
-              <span style="font-size:13px;font-weight:600;color:#1e293b;">${s}</span>
-            </label>
-          `).join('') +
-        '</div>',
-        async (modal) => {
-          const selected = modal.querySelector('input[name="interview-slot-reminder"]:checked')?.value || slots[0];
-          btn.textContent = '✓ ' + selected.split('·')[0].trim();
-          btn.classList.add('button--soft');
-          btn.disabled = true;
-          announce('Интервью в Yandex успешно назначено: ' + selected);
-        },
-        'Подтвердить встречу'
-      );
+      const appRow = document.querySelector('tr[data-application-id="app-1"]') || document.querySelector('.data-table tbody tr');
+      const company = appRow?.querySelector('strong')?.textContent.trim() || 'Yandex';
+      openInterviewSlotPicker('app-1', 'yandex-frontend', company, btn, appRow);
     });
   });
+
+  // Шеринг профиля / резюме с копированием ссылки
+  document.querySelectorAll('[data-share-profile-btn]').forEach(btn => {
+    if (btn._hasShareAction) return;
+    btn._hasShareAction = true;
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const shareUrl = window.location.origin + window.location.pathname + '#resume';
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+        }
+      } catch (err) {
+        // clipboard access fallback
+      }
+
+      const textSpan = btn.querySelector('span');
+      const originalText = textSpan ? textSpan.textContent : 'Поделиться';
+      btn.classList.add('button--soft');
+      if (textSpan) textSpan.textContent = '✓ Ссылка скопирована';
+      announce('Ссылка на резюме Нура Мифтахова скопирована в буфер обмена!');
+
+      setTimeout(() => {
+        btn.classList.remove('button--soft');
+        if (textSpan) textSpan.textContent = originalText;
+      }, 2500);
+    });
+  });
+
+  // Поддержка перехода по ссылке на выбор слота из уведомлений или URL (?selectSlot=app-1)
+  if (typeof window !== 'undefined' && window.location) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const slotTarget = urlParams.get('selectSlot') || (window.location.hash.startsWith('#select-slot-') ? window.location.hash.replace('#select-slot-', '') : null);
+    if (slotTarget) {
+      setTimeout(() => {
+        const appRow = document.querySelector(`tr[data-application-id="${slotTarget}"]`);
+        if (appRow) {
+          const company = appRow.querySelector('strong')?.textContent.trim() || 'Команда работодателя';
+          const jobId = appRow.dataset.jobId;
+          const btn = appRow.querySelector('button');
+          openInterviewSlotPicker(slotTarget, jobId, company, btn, appRow);
+        }
+      }, 400);
+    }
+  }
 
   // Клик по боковой панели пользователя (.sidebar__user)
   document.querySelectorAll('.sidebar__user').forEach(userEl => {
@@ -3406,7 +4008,7 @@ function initProfileTabs() {
   function getTabFromHash(hash) {
     if (!hash) return null;
     const clean = String(hash).replace(/^#/, '').toLowerCase().trim();
-    const validTabs = ['applications', 'saved', 'stack', 'analytics'];
+    const validTabs = ['applications', 'saved', 'stack', 'analytics', 'resume'];
     if (validTabs.includes(clean)) return clean;
     if (clean.startsWith('pane-')) {
       const sub = clean.replace('pane-', '');
@@ -3417,7 +4019,7 @@ function initProfileTabs() {
   }
 
   function switchTab(target, updateHash = true, animate = false) {
-    const validTabs = ['applications', 'saved', 'stack', 'analytics'];
+    const validTabs = ['applications', 'saved', 'stack', 'analytics', 'resume'];
     const activeTab = validTabs.includes(target) ? target : 'applications';
 
     tabBtns.forEach(b => {
@@ -3446,6 +4048,10 @@ function initProfileTabs() {
     }
     if (activeTab === 'applications') {
       renderApplicationsTable(getEffectiveApplications());
+    }
+    if (activeTab === 'resume') {
+      const dbProf = storage.read('buddie-profile-data', null);
+      if (dbProf) updateProfileDom(dbProf);
     }
 
     if (updateHash) {
@@ -3538,8 +4144,45 @@ function renderSavedJobsInProfileSync(db = null) {
   });
   const savedItems = [...allJobsMap.values()].filter(j => savedIds.includes(j.id));
 
-  container.innerHTML = savedItems.map(j => createJobCardHtml(j)).join('');
-  container.querySelectorAll('[data-job-id]').forEach(card => bindJobCard(card));
+  const filterChips = document.querySelectorAll('[data-saved-filter]');
+  filterChips.forEach(chip => {
+    if (chip._hasFilterAction) return;
+    chip._hasFilterAction = true;
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => c.classList.remove('is-active'));
+      chip.classList.add('is-active');
+      renderSavedJobsInProfileSync(db);
+    });
+  });
+
+  const activeChip = document.querySelector('[data-saved-filter].is-active');
+  const activeFormat = activeChip ? activeChip.dataset.savedFilter : 'all';
+  let filteredItems = savedItems;
+  if (activeFormat === 'remote') {
+    filteredItems = savedItems.filter(j => j.format === 'remote' || (j.location && j.location.toLowerCase().includes('удален')));
+  } else if (activeFormat === 'hybrid') {
+    filteredItems = savedItems.filter(j => j.format === 'hybrid' || j.format === 'office' || (j.location && !j.location.toLowerCase().includes('удален')));
+  }
+
+  if (!filteredItems.length) {
+    const formatName = activeFormat === 'remote' ? '«Удалённо»' : (activeFormat === 'hybrid' ? '«Гибрид / Офис»' : '');
+    container.innerHTML = `
+      <div class="saved-filter-empty" role="status">
+        <p>Нет сохранённых вакансий с форматом ${formatName}.</p>
+        <button class="button button--small button--outline" type="button" data-reset-saved-filter>Показать все сохранённые</button>
+      </div>
+    `;
+    const resetBtn = container.querySelector('[data-reset-saved-filter]');
+    if (resetBtn) {
+      resetBtn.onclick = () => {
+        filterChips.forEach(c => c.classList.toggle('is-active', c.dataset.savedFilter === 'all'));
+        renderSavedJobsInProfileSync(db);
+      };
+    }
+  } else {
+    container.innerHTML = filteredItems.map(j => createJobCardHtml(j)).join('');
+    container.querySelectorAll('[data-job-id]').forEach(card => bindJobCard(card));
+  }
 }
 
 async function renderSavedJobsInProfile() {
