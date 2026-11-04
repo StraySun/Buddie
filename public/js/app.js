@@ -3801,8 +3801,25 @@ function updateProfileDom(prof) {
   }
   const sidebarMeta = document.querySelector('.sidebar__user-meta');
   if (sidebarMeta && (prof.university || prof.course)) {
-    const uniShort = (prof.university || '').includes('ИТМО') ? 'ИТМО' : ((prof.university || '').includes('ВШЭ') ? 'ВШЭ' : 'КФУ');
+    const u = prof.university || '';
+    const uniShort = u.includes('ИТМО') ? 'ИТМО' : (u.includes('ВШЭ') ? 'ВШЭ' : (u.includes('МГУ') ? 'МГУ' : (u.includes('МГТУ') ? 'МГТУ' : (u.includes('СПбГУ') ? 'СПбГУ' : (u.includes('КФУ') ? 'КФУ' : (u.length > 12 ? u.slice(0, 10) + '…' : u || 'КФУ'))))));
     sidebarMeta.textContent = `${uniShort} · ${prof.course || '3-й курс'}`;
+  }
+
+  // Обновление блока «Образование» во вкладке «Резюме и портфолио»
+  const resumeUni = document.getElementById('resume-sheet-uni');
+  if (resumeUni && (prof.university || prof.course)) {
+    resumeUni.textContent = prof.university || 'Казанский федеральный университет (КФУ)';
+  }
+  const resumeYears = document.getElementById('resume-sheet-years');
+  if (resumeYears && prof.gradYears) {
+    resumeYears.textContent = prof.gradYears;
+  }
+  const resumeFacultyCourse = document.getElementById('resume-sheet-faculty-course');
+  if (resumeFacultyCourse && (prof.faculty || prof.course)) {
+    const faculty = prof.faculty || 'Институт ИТИС · Программная инженерия';
+    const course = prof.course || '3-й курс';
+    resumeFacultyCourse.textContent = `${faculty} · ${course}`;
   }
 
   // 3. Роль / карьерный фокус
@@ -3936,6 +3953,10 @@ async function openProfileEditModal(initialTab = 'general', autoAddNewProject = 
   const defaultEmail = currentProf.email || 'nur.m@stud.kfu.ru';
   const defaultTelegram = currentProf.telegram || '@WS2_WanderSun';
   const defaultGithub = currentProf.github || 'github.com/StraySun';
+  const currentUniversity = currentProf.university || 'Казанский федеральный университет';
+  const currentFaculty = currentProf.faculty || 'Институт ИТИС · Программная инженерия';
+  const currentCourse = currentProf.course || '3-й курс';
+  const currentGradYears = currentProf.gradYears || '2022 — 2026';
   const defaultProjects = Array.isArray(currentProf.projects) ? currentProf.projects : [];
 
   const emptyProjectsPlaceholder = `<div class="modal-empty-projects" style="text-align:center;padding:18px 12px;color:#6b7280;font-size:12px;background:#faf8fd;border:1px dashed #d8b4fe;border-radius:6px;margin-bottom:8px;">Список проектов пуст. Нажмите кнопку ниже, чтобы добавить проект со ссылкой на GitHub.</div>`;
@@ -3973,6 +3994,37 @@ async function openProfileEditModal(initialTab = 'general', autoAddNewProject = 
         <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Специальность / Карьерный фокус:</label>
         <input type="text" id="edit-profile-role" value="${escapeHtml(currentProf.role || 'Аналитика данных')}" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
       </div>
+
+      <!-- Блок Образование -->
+      <div style="background:#FAF5FF;border:1px solid #E9D5FF;border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:#6D28D9;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">🎓 Образование</div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="display:block;margin-bottom:3px;font-size:11.5px;font-weight:600;color:#5B6474;">Учебное заведение (Вуз):</label>
+          <input type="text" id="edit-profile-university" value="${escapeHtml(currentUniversity)}" placeholder="Казанский федеральный университет" style="width:100%;padding:7px 10px;border:1px solid #e9e6ed;border-radius:6px;font-size:12.5px;background:#fff;">
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="display:block;margin-bottom:3px;font-size:11.5px;font-weight:600;color:#5B6474;">Институт / Факультет / Специальность:</label>
+          <input type="text" id="edit-profile-faculty" value="${escapeHtml(currentFaculty)}" placeholder="Институт ИТИС · Программная инженерия" style="width:100%;padding:7px 10px;border:1px solid #e9e6ed;border-radius:6px;font-size:12.5px;background:#fff;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="form-group">
+            <label style="display:block;margin-bottom:3px;font-size:11.5px;font-weight:600;color:#5B6474;">Курс обучения:</label>
+            <select id="edit-profile-course" style="width:100%;padding:7px 10px;border:1px solid #e9e6ed;border-radius:6px;font-size:12.5px;background:#fff;">
+              <option value="1-й курс" ${currentCourse === '1-й курс' ? 'selected' : ''}>1-й курс</option>
+              <option value="2-й курс" ${currentCourse === '2-й курс' ? 'selected' : ''}>2-й курс</option>
+              <option value="3-й курс" ${currentCourse === '3-й курс' || !currentCourse ? 'selected' : ''}>3-й курс</option>
+              <option value="4-й курс" ${currentCourse === '4-й курс' ? 'selected' : ''}>4-й курс</option>
+              <option value="Магистратура" ${currentCourse === 'Магистратура' ? 'selected' : ''}>Магистратура</option>
+              <option value="Выпускник" ${currentCourse === 'Выпускник' ? 'selected' : ''}>Выпускник</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="display:block;margin-bottom:3px;font-size:11.5px;font-weight:600;color:#5B6474;">Годы обучения:</label>
+            <input type="text" id="edit-profile-gradyears" value="${escapeHtml(currentGradYears)}" placeholder="2022 — 2026" style="width:100%;padding:7px 10px;border:1px solid #e9e6ed;border-radius:6px;font-size:12.5px;background:#fff;">
+          </div>
+        </div>
+      </div>
+
       <div class="form-group" style="margin-bottom:12px;">
         <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Стек технологий (через запятую):</label>
         <input type="text" id="edit-profile-skills" value="${escapeHtml(skillsStr)}" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
@@ -4019,6 +4071,10 @@ async function openProfileEditModal(initialTab = 'general', autoAddNewProject = 
     async (modal) => {
       const name = modal.querySelector('#edit-profile-name')?.value.trim() || currentProf.name;
       const role = modal.querySelector('#edit-profile-role')?.value.trim() || currentProf.role;
+      const university = modal.querySelector('#edit-profile-university')?.value.trim() || currentUniversity;
+      const faculty = modal.querySelector('#edit-profile-faculty')?.value.trim() || currentFaculty;
+      const course = modal.querySelector('#edit-profile-course')?.value || currentCourse;
+      const gradYears = modal.querySelector('#edit-profile-gradyears')?.value.trim() || currentGradYears;
       const rawSkills = modal.querySelector('#edit-profile-skills')?.value || '';
       const skills = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
       const about = modal.querySelector('#edit-profile-about')?.value.trim() || currentProf.about;
@@ -4042,6 +4098,10 @@ async function openProfileEditModal(initialTab = 'general', autoAddNewProject = 
       const updatedProfile = Object.assign({}, currentProf, {
         name,
         role,
+        university,
+        faculty,
+        course,
+        gradYears,
         skills,
         about,
         city,
@@ -4275,6 +4335,11 @@ document.addEventListener('click', (e) => {
   if (btn || isPrintText) {
     e.preventDefault();
     announce('Формирование PDF резюме…');
+    // Если кнопка нажата не на вкладке резюме, переключаем на резюме для целостности DOM
+    const resumeTabBtn = document.querySelector('[data-tab="resume"]');
+    if (resumeTabBtn && !resumeTabBtn.classList.contains('is-active')) {
+      resumeTabBtn.click();
+    }
     setTimeout(() => window.print(), 300);
   }
 });
@@ -4406,6 +4471,7 @@ function initProfileTabs() {
 function renderSavedJobsInProfileSync(db = null) {
   const container = document.querySelector('.saved-jobs-container');
   const emptyMsg = document.querySelector('.saved-empty');
+  const toolbar = document.querySelector('.saved-jobs-toolbar');
   const countBadge = document.querySelector('[data-saved-count]');
   const badgeRating = document.querySelector('[data-saved-badge]');
 
@@ -4421,11 +4487,19 @@ function renderSavedJobsInProfileSync(db = null) {
 
   if (!savedIds.length) {
     container.innerHTML = '';
-    if (emptyMsg) emptyMsg.style.display = 'block';
+    if (toolbar) toolbar.style.display = 'none';
+    if (emptyMsg) {
+      emptyMsg.style.display = 'flex';
+      emptyMsg.removeAttribute('hidden');
+    }
     return;
   }
 
-  if (emptyMsg) emptyMsg.style.display = 'none';
+  if (toolbar) toolbar.style.display = '';
+  if (emptyMsg) {
+    emptyMsg.style.display = 'none';
+    emptyMsg.setAttribute('hidden', '');
+  }
 
   const cachedJobs = storage.read('buddie-jobs-cache', []);
   const allJobsMap = new Map();
@@ -4503,8 +4577,10 @@ function getOrMigrateProfile() {
       schemaVersion: 2,
       name: (cached && cached.name) || 'Нур Мифтахов',
       role: (cached && cached.role) || 'Аналитик данных',
-      course: '3-й курс',
-      university: 'Казанский федеральный университет',
+      course: (cached && cached.course) || '3-й курс',
+      university: (cached && cached.university) || 'Казанский федеральный университет',
+      faculty: (cached && cached.faculty) || 'Институт ИТИС · Программная инженерия',
+      gradYears: (cached && cached.gradYears) || '2022 — 2026',
       city: (cached && cached.city) || 'Казань',
       email: (cached && cached.email) || 'nur.m@stud.kfu.ru',
       telegram: '@WS2_WanderSun',

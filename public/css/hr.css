@@ -7,8 +7,41 @@ body.hr-page { background: linear-gradient(135deg,#f7f5fb,#eff0fa); }
 .hr-brand strong { font-size: 13px; }
 .hr-brand__accent { color: #7139bc; }
 .hr-brand__role { display: block; margin-top: 3px; color: #5B6474; font-size: 12px; font-weight: 400; }
-.hr-topbar__return { min-height: 40px; display: inline-flex; align-items: center; color: #6734a8; font-size: 12px; font-weight: 700; }
-.hr-topbar__return:hover { text-decoration: underline; }
+.hr-topbar__return {
+  position: relative;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  color: #6734a8;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.hr-topbar__return::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 9px;
+  width: 100%;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.hr-topbar__return:hover::after,
+.hr-topbar__return:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+.hr-topbar__return:hover,
+.hr-topbar__return:focus-visible {
+  color: #4c1d95;
+  text-decoration: none;
+}
 .hr-brand small { display: block; margin-top: 3px; color: #5B6474; font-size: 12px; }
 .hr-topbar__company { display: flex; align-items: center; gap: 6px; color: #5B6474; font-size: 12px; }
 .hr-topbar__company select {

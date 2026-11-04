@@ -81,6 +81,8 @@ function loadDbFromDisk() {
       role: 'Аналитика данных',
       course: '3-й курс',
       university: 'Казанский федеральный университет',
+      faculty: 'Институт ИТИС · Программная инженерия',
+      gradYears: '2022 — 2026',
       skills: ['Python', 'SQL'],
       about: 'Студент КФУ'
     },
