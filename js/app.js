@@ -63,11 +63,48 @@ const storage = {
   write(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    } catch (e) {
+      console.warn('Storage write failed or quota exceeded:', e);
+    }
   }
 };
 
 const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+const isGitHubPages = typeof window !== 'undefined' && window.location && window.location.hostname && (
+  window.location.hostname.endsWith('github.io') ||
+  window.location.hostname.endsWith('.pages.dev')
+);
+let isApiOnline = !isFileProtocol && !isGitHubPages;
+
+function getStaticDataUrl() {
+  if (typeof window === 'undefined' || !window.location) return './data/db.json';
+  let path = window.location.pathname || '/';
+  if (!path.endsWith('/') && !path.includes('.')) {
+    path += '/';
+  }
+  const dir = path.substring(0, path.lastIndexOf('/') + 1);
+  return (dir || './') + 'data/db.json';
+}
+
+function updateEnvironmentBadge() {
+  const isLive = !isFileProtocol && !isGitHubPages && isApiOnline;
+  document.querySelectorAll('.env-status-badge').forEach(badge => {
+    badge.classList.toggle('env-status-badge--live', isLive);
+    badge.classList.toggle('env-status-badge--demo', !isLive);
+    const textEl = badge.querySelector('.env-status-badge__text');
+    if (textEl) {
+      textEl.textContent = isLive ? 'Live API' : 'Демо (Local)';
+    }
+    badge.setAttribute('title', isLive ? 'Контур подключен к живому Node.js REST API' : 'Статический демо-контур (данные в localStorage)');
+    badge.setAttribute('aria-label', isLive ? 'Статус: Live API подключено' : 'Статус: Демо-режим localStorage');
+  });
+}
+
+function setApiOffline(reason = '') {
+  isApiOnline = false;
+  updateEnvironmentBadge();
+  if (reason) console.warn(reason);
+}
 
 const savedJobs = new Set(storage.readArray('buddie-saved-jobs'));
 const appliedJobs = new Set(storage.readArray('buddie-applied-jobs'));
@@ -260,18 +297,23 @@ const ApiService = {
         profile: storage.read('buddie-profile-data', null)
       });
     }
-    try {
-      const res = await fetch('/api/db');
-      if (res.ok) {
-        const data = await res.json();
-        storage.write('buddie-db-cache', data);
-        return data;
+    if (isApiOnline && !isGitHubPages) {
+      try {
+        const res = await fetch('/api/db');
+        if (res.ok) {
+          const data = await res.json();
+          storage.write('buddie-db-cache', data);
+          return data;
+        } else {
+          setApiOffline();
+        }
+      } catch (e) {
+        setApiOffline();
+        console.warn('Network unavailable for db, switching to offline fallback mode:', e);
       }
-    } catch (e) {
-      console.warn('Network unavailable for db, using local fallback:', e);
     }
     try {
-      const staticRes = await fetch('./data/db.json');
+      const staticRes = await fetch(getStaticDataUrl());
       if (staticRes.ok) {
         const staticData = await staticRes.json();
         storage.write('buddie-db-cache', staticData);
@@ -283,24 +325,29 @@ const ApiService = {
 
   async getJobs() {
     if (isFileProtocol) {
-    const cached = storage.read('buddie-jobs-cache', null);
+      const cached = storage.read('buddie-jobs-cache', null);
       if (Array.isArray(cached) && cached.length > 0) return cached;
       return DEFAULT_JOBS;
     }
-    try {
-      const res = await fetch('/api/jobs');
-      if (res.ok) {
-        const jobs = await res.json();
-        if (Array.isArray(jobs) && jobs.length > 0) {
-          storage.write('buddie-jobs-cache', jobs);
-          return jobs;
+    if (isApiOnline && !isGitHubPages) {
+      try {
+        const res = await fetch('/api/jobs');
+        if (res.ok) {
+          const jobs = await res.json();
+          if (Array.isArray(jobs) && jobs.length > 0) {
+            storage.write('buddie-jobs-cache', jobs);
+            return jobs;
+          }
+        } else {
+          setApiOffline();
         }
+      } catch (e) {
+        setApiOffline();
+        console.warn('Network unavailable for jobs, switching to offline fallback mode:', e);
       }
-    } catch (e) {
-      console.warn('Network unavailable for jobs, using local fallback:', e);
     }
     try {
-      const staticRes = await fetch('./data/db.json');
+      const staticRes = await fetch(getStaticDataUrl());
       if (staticRes.ok) {
         const staticDb = await staticRes.json();
         if (Array.isArray(staticDb.jobs) && staticDb.jobs.length > 0) {
@@ -315,7 +362,7 @@ const ApiService = {
   },
 
   async createJob(jobData) {
-    if (!isFileProtocol) {
+    if (isApiOnline && !isGitHubPages && !isFileProtocol) {
       try {
         const res = await fetch('/api/jobs', {
           method: 'POST',
@@ -327,8 +374,11 @@ const ApiService = {
           const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
           storage.write('buddie-jobs-cache', [created, ...cached.filter(j => j.id !== created.id)]);
           return created;
+        } else {
+          setApiOffline();
         }
       } catch (e) {
+        setApiOffline();
         console.warn('Network offline for createJob, falling back to localStorage:', e);
       }
     }
@@ -358,7 +408,7 @@ const ApiService = {
   },
 
   async deleteJob(jobId) {
-    if (!isFileProtocol) {
+    if (isApiOnline && !isGitHubPages && !isFileProtocol) {
       try {
         const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
           method: 'DELETE'
@@ -368,8 +418,15 @@ const ApiService = {
           const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
           storage.write('buddie-jobs-cache', cached.filter(j => j.id !== jobId));
           return resJson;
+        } else if (res.status === 404) {
+          const cached = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
+          storage.write('buddie-jobs-cache', cached.filter(j => j.id !== jobId));
+          return { success: true };
+        } else {
+          setApiOffline();
         }
       } catch (e) {
+        setApiOffline();
         console.warn('Network offline for deleteJob, falling back to localStorage:', e);
       }
     }
@@ -379,7 +436,7 @@ const ApiService = {
   },
 
   async applyJob(jobId, title, company, location) {
-    if (!isFileProtocol) {
+    if (isApiOnline && !isGitHubPages && !isFileProtocol) {
       try {
         const res = await fetch('/api/applications', {
           method: 'POST',
@@ -391,8 +448,11 @@ const ApiService = {
           const cachedApps = getEffectiveApplications();
           storage.write('buddie-applications-cache', [created, ...cachedApps.filter(a => a.jobId !== jobId && a.id !== created.id)]);
           return created;
+        } else {
+          setApiOffline();
         }
       } catch (e) {
+        setApiOffline();
         console.warn('Network offline for applyJob, falling back to localStorage:', e);
       }
     }
@@ -446,9 +506,9 @@ const ApiService = {
   },
 
   async removeApplication(id) {
-    if (!isFileProtocol) {
+    if (isApiOnline && !isGitHubPages && !isFileProtocol) {
       try {
-        const res = await fetch('/api/applications/' + id, { method: 'DELETE' });
+        const res = await fetch('/api/applications/' + encodeURIComponent(id), { method: 'DELETE' });
         if (res.ok) {
           const data = await res.json();
           const cachedApps = getEffectiveApplications();
@@ -458,8 +518,11 @@ const ApiService = {
             storage.write('buddie-candidates-cache', cachedCands.filter(c => c.id !== id && c.jobId !== id));
           }
           return data;
+        } else {
+          setApiOffline();
         }
       } catch (e) {
+        setApiOffline();
         console.warn('Network offline for removeApplication, falling back to localStorage:', e);
       }
     }
@@ -474,7 +537,7 @@ const ApiService = {
   },
 
   async saveJob(jobId) {
-    if (isFileProtocol) {
+    if (isFileProtocol || isGitHubPages || !isApiOnline) {
       return { ok: true, jobId, isOffline: true };
     }
     try {
@@ -484,23 +547,29 @@ const ApiService = {
         body: JSON.stringify({ jobId })
       });
       if (res.ok) return await res.json();
-    } catch {}
+      else setApiOffline();
+    } catch {
+      setApiOffline();
+    }
     return { ok: true, jobId, isOffline: true };
   },
 
   async removeSavedJob(jobId) {
-    if (isFileProtocol) {
+    if (isFileProtocol || isGitHubPages || !isApiOnline) {
       return { ok: true, jobId, isOffline: true };
     }
     try {
-      const res = await fetch('/api/saved-jobs/' + jobId, { method: 'DELETE' });
+      const res = await fetch('/api/saved-jobs/' + encodeURIComponent(jobId), { method: 'DELETE' });
       if (res.ok) return await res.json();
-    } catch {}
+      else setApiOffline();
+    } catch {
+      setApiOffline();
+    }
     return { ok: true, jobId, isOffline: true };
   },
 
   async updateState(state) {
-    if (isFileProtocol) {
+    if (isFileProtocol || isGitHubPages || !isApiOnline) {
       return { ok: true, state, isOffline: true };
     }
     try {
@@ -510,12 +579,15 @@ const ApiService = {
         body: JSON.stringify(state)
       });
       if (res.ok) return await res.json();
-    } catch {}
+      else setApiOffline();
+    } catch {
+      setApiOffline();
+    }
     return { ok: true, state, isOffline: true };
   },
 
   async getApplications() {
-    if (isFileProtocol) {
+    if (isFileProtocol || isGitHubPages || !isApiOnline) {
       return getEffectiveApplications();
     }
     try {
@@ -534,15 +606,18 @@ const ApiService = {
           storage.write('buddie-applications-cache', merged);
           return merged;
         }
+      } else {
+        setApiOffline();
       }
     } catch (e) {
+      setApiOffline();
       console.warn('Network offline for getApplications, falling back to localStorage:', e);
     }
     return getEffectiveApplications();
   },
 
   async getCandidates() {
-    if (isFileProtocol) {
+    if (isFileProtocol || isGitHubPages || !isApiOnline) {
       const cached = storage.read('buddie-candidates-cache', null);
       if (Array.isArray(cached) && cached.length > 0) return cached;
       return [];
@@ -555,8 +630,11 @@ const ApiService = {
           storage.write('buddie-candidates-cache', cands);
           return cands;
         }
+      } else {
+        setApiOffline();
       }
     } catch (e) {
+      setApiOffline();
       console.warn('Network offline for getCandidates, falling back to localStorage:', e);
     }
     const cached = storage.read('buddie-candidates-cache', null);
@@ -565,15 +643,17 @@ const ApiService = {
   },
 
   async updateCandidate(id, data) {
-    if (!isFileProtocol) {
+    if (isApiOnline && !isGitHubPages && !isFileProtocol) {
       try {
-        const res = await fetch('/api/candidates/' + id, {
+        const res = await fetch('/api/candidates/' + encodeURIComponent(id), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
         if (res.ok) return await res.json();
+        else setApiOffline();
       } catch (e) {
+        setApiOffline();
         console.warn('Network offline for updateCandidate:', e);
       }
     }
@@ -587,15 +667,17 @@ const ApiService = {
   },
 
   async updateApplication(id, data) {
-    if (!isFileProtocol) {
+    if (isApiOnline && !isGitHubPages && !isFileProtocol) {
       try {
-        const res = await fetch('/api/applications/' + id, {
+        const res = await fetch('/api/applications/' + encodeURIComponent(id), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
         if (res.ok) return await res.json();
+        else setApiOffline();
       } catch (e) {
+        setApiOffline();
         console.warn('Network offline for updateApplication:', e);
       }
     }
@@ -666,6 +748,72 @@ function playButtonSpring(element) {
     rotate: [0, -15, 0],
     duration: 450,
     easing: 'easeOutElastic(1, .5)'
+  });
+}
+
+function initFeedSkeletons() {
+  const container = document.querySelector('.feed-jobs');
+  if (!container) return;
+  if (container.dataset.skeletonDone) return;
+  container.dataset.skeletonDone = 'true';
+
+  const originalCards = Array.from(container.children).filter(c => c.classList.contains('job-card'));
+  if (!originalCards.length) return;
+
+  const skeletonWrapper = document.createElement('div');
+  skeletonWrapper.className = 'skeleton-feed-wrapper';
+  skeletonWrapper.setAttribute('aria-hidden', 'true');
+  skeletonWrapper.setAttribute('role', 'status');
+  skeletonWrapper.setAttribute('aria-label', 'Загрузка рекомендаций');
+
+  skeletonWrapper.innerHTML = [1, 2, 3].map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-header">
+        <div class="skeleton-avatar skeleton-shimmer"></div>
+        <div class="skeleton-header-info">
+          <div class="skeleton-line skeleton-line--title skeleton-shimmer"></div>
+          <div class="skeleton-line skeleton-line--w40 skeleton-shimmer"></div>
+        </div>
+      </div>
+      <div class="skeleton-line skeleton-line--w90 skeleton-shimmer"></div>
+      <div class="skeleton-line skeleton-line--w60 skeleton-shimmer"></div>
+      <div class="skeleton-tags">
+        <div class="skeleton-tag skeleton-shimmer"></div>
+        <div class="skeleton-tag skeleton-shimmer"></div>
+        <div class="skeleton-tag skeleton-shimmer"></div>
+      </div>
+      <div class="skeleton-footer">
+        <div class="skeleton-line skeleton-line--w40 skeleton-shimmer"></div>
+        <div class="skeleton-btn skeleton-shimmer"></div>
+      </div>
+    </div>
+  `).join('');
+
+  originalCards.forEach(c => { c.style.display = 'none'; });
+  container.prepend(skeletonWrapper);
+
+  setTimeout(() => {
+    skeletonWrapper.remove();
+    originalCards.forEach(c => { c.style.display = ''; });
+    playEntranceAnimations();
+  }, 280);
+}
+
+function applyCardFlipAnimation(cards) {
+  if (typeof anime === 'undefined') return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const visibleCards = Array.from(cards).filter(c => !c.hidden);
+  if (!visibleCards.length) return;
+
+  anime.remove(visibleCards);
+  anime({
+    targets: visibleCards,
+    translateY: [10, 0],
+    opacity: [0.4, 1],
+    easing: 'easeOutCubic',
+    duration: 320,
+    delay: anime.stagger(35)
   });
 }
 
@@ -1342,6 +1490,7 @@ function updateSearch(value) {
 
   updateEmptyStates();
   syncFiltersToUrl();
+  applyCardFlipAnimation(document.querySelectorAll('.feed-jobs .job-card:not([hidden])'));
 }
 
 
@@ -2288,8 +2437,27 @@ function openApplicationDetailModal(appId, jobId, row) {
       }
     });
 
-    modalEl.querySelector('.btn-cancel-application')?.addEventListener('click', async () => {
-      if (confirm(`Вы уверены, что хотите отозвать отклик на вакансию "${comp}"?`)) {
+    const cancelBtn = modalEl.querySelector('.btn-cancel-application');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async () => {
+        if (!cancelBtn.dataset.confirming) {
+          cancelBtn.dataset.confirming = 'true';
+          cancelBtn.textContent = 'Точно отозвать?';
+          cancelBtn.style.color = '#b91c1c';
+          cancelBtn.style.fontWeight = '700';
+          cancelBtn.setAttribute('aria-label', `Подтвердите отзыв отклика на вакансию "${comp}"`);
+          setTimeout(() => {
+            if (cancelBtn && cancelBtn.isConnected && cancelBtn.dataset.confirming) {
+              delete cancelBtn.dataset.confirming;
+              cancelBtn.textContent = 'Отозвать отклик';
+              cancelBtn.style.color = '#dc2626';
+              cancelBtn.style.fontWeight = 'normal';
+              cancelBtn.setAttribute('aria-label', 'Отозвать отклик');
+            }
+          }, 4000);
+          return;
+        }
+
         closeModal();
         const idToRemove = appId || jobId;
         await ApiService.removeApplication(idToRemove);
@@ -2299,8 +2467,8 @@ function openApplicationDetailModal(appId, jobId, row) {
         updateApplicationsBadge(apps.length);
         if (typeof updateBuddieTip === 'function') updateBuddieTip();
         announce(`Отклик на вакансию "${comp}" успешно отозван.`);
-      }
-    });
+      });
+    }
   }, 50);
 }
 
@@ -2775,13 +2943,13 @@ function handleJobDeepLink() {
 function initHrAutoSync() {
   const candTable = document.querySelector('.candidate-table');
   if (!candTable) return;
-  if (isFileProtocol) return;
+  if (isFileProtocol || isGitHubPages || !isApiOnline) return;
 
   let isSyncing = false;
   let lastDataHash = '';
 
   async function syncHrData() {
-    if (isSyncing || document.hidden) return;
+    if (isSyncing || document.hidden || !isApiOnline) return;
     isSyncing = true;
     try {
       const [cands, jobs] = await Promise.all([
@@ -2800,17 +2968,24 @@ function initHrAutoSync() {
       // Обновляем числовые метрики в hr.html
       calculateHrMetrics(jobs, cands);
     } catch (e) {
-      console.warn('HR auto-sync error:', e);
+      setApiOffline();
+      console.warn('HR auto-sync stopped due to network offline:', e);
     } finally {
       isSyncing = false;
     }
   }
 
   // Периодическая проверка раз в 3.5 секунды
-  setInterval(syncHrData, 3500);
+  const syncInterval = setInterval(() => {
+    if (!isApiOnline) {
+      clearInterval(syncInterval);
+      return;
+    }
+    syncHrData();
+  }, 3500);
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) syncHrData();
+    if (!document.hidden && isApiOnline) syncHrData();
   });
 }
 
@@ -2829,9 +3004,9 @@ async function loadInitialData() {
   // 2. Немедленный первичный рендер сохранённых вакансий в profile.html (Zero-Wait)
   renderSavedJobsInProfileSync();
 
-  // Если страница открыта напрямую через file:// (двойной клик по HTML),
+  // Если страница открыта напрямую через file:// или развернута на GitHub Pages,
   // данные полностью готовы из локального состояния, отменяем сетевые вызовы fetch к /api/*
-  if (isFileProtocol) {
+  if (isFileProtocol || isGitHubPages || !isApiOnline) {
     return;
   }
 
@@ -3363,7 +3538,19 @@ if (manageJobsBtn) {
           const itemRow = btn.closest('.manage-job-item');
           const jobTitle = itemRow?.querySelector('.manage-job-item__title')?.textContent || 'Вакансия';
 
-          if (!confirm('Вы действительно хотите удалить вакансию «' + jobTitle + '»?\nВсе связанные отклики и кандидаты также будут удалены.')) {
+          if (!btn.dataset.confirming) {
+            btn.dataset.confirming = 'true';
+            btn.textContent = 'Точно удалить?';
+            btn.classList.add('manage-job-item__delete--confirm');
+            btn.setAttribute('aria-label', `Подтвердите удаление вакансии «${jobTitle}»`);
+            setTimeout(() => {
+              if (btn && btn.isConnected && btn.dataset.confirming) {
+                delete btn.dataset.confirming;
+                btn.textContent = 'Удалить';
+                btn.classList.remove('manage-job-item__delete--confirm');
+                btn.setAttribute('aria-label', `Удалить вакансию «${jobTitle}»`);
+              }
+            }, 4000);
             return;
           }
 
@@ -3555,6 +3742,20 @@ function updateProfileCompleteness(prof) {
     trackEl.classList.toggle('is-complete', percent === 100);
   }
 
+  // Update sidebar progress across all pages
+  document.querySelectorAll('.sidebar__progress-title strong').forEach(el => {
+    el.textContent = percent + '%';
+  });
+  document.querySelectorAll('.sidebar__track span').forEach(el => {
+    el.style.width = percent + '%';
+  });
+  const sidebarHint = document.querySelector('.sidebar__progress p');
+  if (sidebarHint) {
+    sidebarHint.textContent = percent >= 100
+      ? 'Профиль заполнен на 100%! Работодатели видят тебя в топе.'
+      : 'Добавь проекты в резюме — работодатели заметят тебя быстрее.';
+  }
+
   if (hintEl) {
     if (percent >= 100) {
       hintEl.innerHTML = '<span class="text-success">✦ Профиль заполнен на 100%! +40% к вниманию HR</span>';
@@ -3623,9 +3824,12 @@ function updateProfileDom(prof) {
   const contactsEl = document.querySelector('.student-card__contacts');
   if (contactsEl) {
     const email = prof.email || 'nur.m@stud.kfu.ru';
-    const tg = prof.telegram || '@nur_m';
+    const tg = prof.telegram || '@WS2_WanderSun';
+    const tgClean = tg.replace(/^@/, '');
+    const gh = prof.github || 'github.com/StraySun';
+    const ghClean = gh.replace(/^https?:\/\//i, '').replace(/^github\.com\//i, '');
     const city = prof.city || 'Казань';
-    contactsEl.innerHTML = `<span>Email: ${escapeHtml(email)}</span> · <span>Telegram: ${escapeHtml(tg)}</span> · <span>${escapeHtml(city)}</span>`;
+    contactsEl.innerHTML = `<span>Email: <a href="mailto:${escapeHtml(email)}" class="contact-link">${escapeHtml(email)}</a></span> · <span>Telegram: <a href="https://t.me/${escapeHtml(tgClean)}" target="_blank" rel="noopener noreferrer" class="contact-link">${escapeHtml(tg)}</a></span> · <span>GitHub: <a href="https://github.com/${escapeHtml(ghClean)}" target="_blank" rel="noopener noreferrer" class="contact-link">github.com/${escapeHtml(ghClean)}</a></span> · <span>${escapeHtml(city)}</span>`;
   }
 
   // Обновление вкладки «Резюме и портфолио»
@@ -3636,9 +3840,12 @@ function updateProfileDom(prof) {
   const resumeContacts = document.getElementById('resume-sheet-contacts');
   if (resumeContacts) {
     const email = prof.email || 'nur.m@stud.kfu.ru';
-    const tg = prof.telegram || '@nur_m';
+    const tg = prof.telegram || '@WS2_WanderSun';
+    const tgClean = tg.replace(/^@/, '');
+    const gh = prof.github || 'github.com/StraySun';
+    const ghClean = gh.replace(/^https?:\/\//i, '').replace(/^github\.com\//i, '');
     const city = prof.city || 'Казань';
-    resumeContacts.innerHTML = `<span>📍 ${escapeHtml(city)}</span> · <span>📧 ${escapeHtml(email)}</span> · <span>💬 ${escapeHtml(tg)}</span>`;
+    resumeContacts.innerHTML = `<span>📍 ${escapeHtml(city)}</span> · <span>📧 <a href="mailto:${escapeHtml(email)}" class="contact-link">${escapeHtml(email)}</a></span> · <span>💬 <a href="https://t.me/${escapeHtml(tgClean)}" target="_blank" rel="noopener noreferrer" class="contact-link">${escapeHtml(tg)}</a></span> · <span>🐙 <a href="https://github.com/${escapeHtml(ghClean)}" target="_blank" rel="noopener noreferrer" class="contact-link">github.com/${escapeHtml(ghClean)}</a></span>`;
   }
   const resumeAbout = document.getElementById('resume-sheet-about');
   if (resumeAbout && prof.about) resumeAbout.textContent = prof.about;
@@ -3647,17 +3854,48 @@ function updateProfileDom(prof) {
     resumeSkills.innerHTML = prof.skills.map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('');
   }
   const resumeProjects = document.getElementById('resume-sheet-projects');
-  if (resumeProjects && Array.isArray(prof.projects) && prof.projects.length > 0) {
-    resumeProjects.innerHTML = prof.projects.map(p => `
-      <div class="resume-project-item">
-        <div class="resume-project-item__head">
-          <strong>${escapeHtml(p.title)}</strong>
-          ${p.tags ? `<span class="chip chip--neutral chip--small">${escapeHtml(p.tags)}</span>` : ''}
+  if (resumeProjects) {
+    if (Array.isArray(prof.projects) && prof.projects.length > 0) {
+      resumeProjects.innerHTML = prof.projects.map(p => {
+        let ghUrl = p.link || p.github || 'https://github.com/StraySun';
+        if (!/^https?:\/\//i.test(ghUrl)) {
+          ghUrl = 'https://' + ghUrl;
+        }
+        let demoUrl = p.demo ? p.demo.trim() : '';
+        if (demoUrl && !/^https?:\/\//i.test(demoUrl)) {
+          demoUrl = 'https://' + demoUrl;
+        }
+        const demoLinkHtml = demoUrl
+          ? `<a href="${escapeHtml(demoUrl)}" target="_blank" rel="noopener noreferrer" class="resume-project-item__link">Demo ↗</a>`
+          : '';
+        return `
+          <div class="resume-project-item">
+            <div class="resume-project-item__head">
+              <div class="resume-project-item__title-wrap">
+                <strong>${escapeHtml(p.title)}</strong>
+                ${p.tags ? `<span class="chip chip--neutral chip--small">${escapeHtml(p.tags)}</span>` : ''}
+              </div>
+              <div class="resume-project-item__links">
+                <a href="${escapeHtml(ghUrl)}" target="_blank" rel="noopener noreferrer" class="resume-project-item__link">GitHub ↗</a>
+                ${demoLinkHtml}
+              </div>
+            </div>
+            <p>${escapeHtml(p.desc || '')}</p>
+          </div>
+        `;
+      }).join('');
+    } else {
+      resumeProjects.innerHTML = `
+        <div class="resume-empty-projects" style="text-align: center; padding: 22px 16px; background: #faf8fd; border: 1.5px dashed #d8b4fe; border-radius: 8px; color: #6b7280;">
+          <p style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: #4c1d95;">Проекты в резюме ещё не добавлены</p>
+          <small style="display: block; margin-bottom: 12px; color: #6b7280;">Добавьте учебные или личные проекты со ссылками на GitHub, чтобы работодатели обратили внимание на ваш профиль</small>
+          <button type="button" class="button button--small button--outline" data-add-project-btn data-edit-profile-btn>+ Добавить проект в резюме</button>
         </div>
-        <p>${escapeHtml(p.desc || '')}</p>
-      </div>
-    `).join('');
+      `;
+    }
   }
+
+  updateProfileCompleteness(prof);
 
   // 4. Стек навыков с интерактивными уровнями
   const skills = Array.isArray(prof.skills) && prof.skills.length > 0
@@ -3685,50 +3923,47 @@ function updateProfileDom(prof) {
   updateProfileCompleteness(prof);
 }
 
-async function openProfileEditModal() {
+async function openProfileEditModal(initialTab = 'general', autoAddNewProject = false) {
   const db = await api.getDb();
-  const currentProf = (db && db.profile) || storage.read('buddie-profile-data', {
-    name: 'Нур Мифтахов',
-    role: 'Аналитика данных',
-    course: '3-й курс',
-    university: 'Казанский федеральный университет',
-    city: 'Казань',
-    email: 'nur.m@stud.kfu.ru',
-    telegram: '@nur_m',
-    skills: ['Python', 'SQL', 'Pandas', 'Tableau', 'Git'],
-    about: 'Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.'
-  });
+  const currentProf = (db && db.profile) || getOrMigrateProfile();
+
+  const isGeneral = initialTab !== 'projects' && initialTab !== 'contacts';
+  const isContacts = initialTab === 'contacts';
+  const isProjects = initialTab === 'projects';
 
   const skillsStr = Array.isArray(currentProf.skills) ? currentProf.skills.join(', ') : 'Python, SQL, Git';
   const defaultCity = currentProf.city || 'Казань';
   const defaultEmail = currentProf.email || 'nur.m@stud.kfu.ru';
-  const defaultTelegram = currentProf.telegram || '@nur_m';
-  const defaultGithub = currentProf.github || 'github.com/nur-m';
-  const defaultProjects = Array.isArray(currentProf.projects) && currentProf.projects.length > 0 ? currentProf.projects : [
-    { title: 'HR Analytics Dashboard', desc: 'Аналитическая панель воронки найма и метрик time-to-hire', tags: 'Python, Streamlit' },
-    { title: 'Search & Filter Microservice', desc: 'Микросервис поиска и подбора вакансий для студентов', tags: 'FastAPI, Redis' }
-  ];
+  const defaultTelegram = currentProf.telegram || '@WS2_WanderSun';
+  const defaultGithub = currentProf.github || 'github.com/StraySun';
+  const defaultProjects = Array.isArray(currentProf.projects) ? currentProf.projects : [];
 
-  const projectsHtml = defaultProjects.map((p, idx) => `
+  const emptyProjectsPlaceholder = `<div class="modal-empty-projects" style="text-align:center;padding:18px 12px;color:#6b7280;font-size:12px;background:#faf8fd;border:1px dashed #d8b4fe;border-radius:6px;margin-bottom:8px;">Список проектов пуст. Нажмите кнопку ниже, чтобы добавить проект со ссылкой на GitHub.</div>`;
+
+  const projectsHtml = defaultProjects.length ? defaultProjects.map((p, idx) => `
     <div class="edit-project-row" data-project-idx="${idx}" style="background:#faf8fd;border:1px solid #e9e6ed;border-radius:8px;padding:10px;margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <input type="text" class="edit-project-title" value="${escapeHtml(p.title)}" placeholder="Название проекта" style="font-weight:600;font-size:13px;width:75%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
         <button type="button" class="button button--small button--soft btn-remove-project" style="color:#dc2626;padding:2px 8px;font-size:11px;" aria-label="Удалить проект">✕</button>
       </div>
-      <input type="text" class="edit-project-desc" value="${escapeHtml(p.desc)}" placeholder="Описание проекта" style="font-size:12px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
-      <input type="text" class="edit-project-tags" value="${escapeHtml(p.tags || '')}" placeholder="Стек (Python, SQL)" style="font-size:11px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+      <input type="text" class="edit-project-desc" value="${escapeHtml(p.desc || '')}" placeholder="Описание проекта" style="font-size:12px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
+      <input type="text" class="edit-project-tags" value="${escapeHtml(p.tags || '')}" placeholder="Стек (Python, SQL)" style="font-size:11px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
+      <div style="display:flex;gap:6px;">
+        <input type="text" class="edit-project-link" value="${escapeHtml(p.link || p.github || '')}" placeholder="GitHub URL (https://github.com/StraySun/...)" style="font-size:11px;flex:1;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+        <input type="text" class="edit-project-demo" value="${escapeHtml(p.demo || '')}" placeholder="Demo URL (необязательно)" style="font-size:11px;flex:1;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+      </div>
     </div>
-  `).join('');
+  `).join('') : emptyProjectsPlaceholder;
 
   const modalContent = `
     <div class="modal-tabs" role="tablist">
-      <button class="modal-tab-btn is-active" type="button" data-modal-tab="general" role="tab" aria-selected="true">Основное</button>
-      <button class="modal-tab-btn" type="button" data-modal-tab="contacts" role="tab" aria-selected="false">Контакты и город</button>
-      <button class="modal-tab-btn" type="button" data-modal-tab="projects" role="tab" aria-selected="false">Проекты</button>
+      <button class="modal-tab-btn ${isGeneral ? 'is-active' : ''}" type="button" data-modal-tab="general" role="tab" aria-selected="${isGeneral}">Основное</button>
+      <button class="modal-tab-btn ${isContacts ? 'is-active' : ''}" type="button" data-modal-tab="contacts" role="tab" aria-selected="${isContacts}">Контакты и город</button>
+      <button class="modal-tab-btn ${isProjects ? 'is-active' : ''}" type="button" data-modal-tab="projects" role="tab" aria-selected="${isProjects}">Проекты</button>
     </div>
 
     <!-- Вкладка 1: Основное -->
-    <div class="modal-pane is-active" id="modal-pane-general">
+    <div class="modal-pane ${isGeneral ? 'is-active' : ''}" id="modal-pane-general" style="${isGeneral ? '' : 'display:none;'}">
       <div class="form-group" style="margin-bottom:12px;">
         <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Имя и фамилия:</label>
         <input type="text" id="edit-profile-name" value="${escapeHtml(currentProf.name || 'Нур Мифтахов')}" placeholder="Например: Иван Иванов" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
@@ -3750,7 +3985,7 @@ async function openProfileEditModal() {
     </div>
 
     <!-- Вкладка 2: Контакты и город -->
-    <div class="modal-pane" id="modal-pane-contacts" style="display:none;">
+    <div class="modal-pane ${isContacts ? 'is-active' : ''}" id="modal-pane-contacts" style="${isContacts ? '' : 'display:none;'}">
       <div class="form-group" style="margin-bottom:12px;">
         <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Город проживания / поиска:</label>
         <input type="text" id="edit-profile-city" value="${escapeHtml(defaultCity)}" placeholder="Казань, Москва..." style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
@@ -3761,16 +3996,16 @@ async function openProfileEditModal() {
       </div>
       <div class="form-group" style="margin-bottom:12px;">
         <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">Telegram (@username):</label>
-        <input type="text" id="edit-profile-telegram" value="${escapeHtml(defaultTelegram)}" placeholder="@nur_m" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+        <input type="text" id="edit-profile-telegram" value="${escapeHtml(defaultTelegram)}" placeholder="@WS2_WanderSun" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
       </div>
       <div class="form-group" style="margin-bottom:12px;">
         <label style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#5B6474;">GitHub / Портфолио:</label>
-        <input type="text" id="edit-profile-github" value="${escapeHtml(defaultGithub)}" placeholder="github.com/nur-m" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
+        <input type="text" id="edit-profile-github" value="${escapeHtml(defaultGithub)}" placeholder="github.com/StraySun" style="width:100%;padding:8px 12px;border:1px solid #e9e6ed;border-radius:8px;font-size:13px;">
       </div>
     </div>
 
     <!-- Вкладка 3: Проекты -->
-    <div class="modal-pane" id="modal-pane-projects" style="display:none;">
+    <div class="modal-pane ${isProjects ? 'is-active' : ''}" id="modal-pane-projects" style="${isProjects ? '' : 'display:none;'}">
       <div id="modal-projects-list" style="max-height:220px;overflow-y:auto;margin-bottom:10px;">
         ${projectsHtml}
       </div>
@@ -3797,7 +4032,9 @@ async function openProfileEditModal() {
       const projects = Array.from(projectRows).map(row => ({
         title: row.querySelector('.edit-project-title')?.value.trim() || 'Проект',
         desc: row.querySelector('.edit-project-desc')?.value.trim() || '',
-        tags: row.querySelector('.edit-project-tags')?.value.trim() || ''
+        tags: row.querySelector('.edit-project-tags')?.value.trim() || '',
+        link: row.querySelector('.edit-project-link')?.value.trim() || '',
+        demo: row.querySelector('.edit-project-demo')?.value.trim() || ''
       })).filter(p => p.title);
 
       const cachedProfData = storage.read('buddie-profile-data', {}) || {};
@@ -3811,7 +4048,7 @@ async function openProfileEditModal() {
         email,
         telegram,
         github,
-        projects: projects.length ? projects : defaultProjects,
+        projects: projects,
         skillLevels
       });
 
@@ -3844,42 +4081,86 @@ async function openProfileEditModal() {
 
     const addBtn = modalEl.querySelector('#btn-add-profile-project');
     const projectsList = modalEl.querySelector('#modal-projects-list');
+
+    function checkEmptyProjectsPlaceholder() {
+      if (!projectsList) return;
+      const count = projectsList.querySelectorAll('.edit-project-row').length;
+      let emptyMsg = projectsList.querySelector('.modal-empty-projects');
+      if (count === 0 && !emptyMsg) {
+        projectsList.insertAdjacentHTML('beforeend', '<div class="modal-empty-projects" style="text-align:center;padding:18px 12px;color:#6b7280;font-size:12px;background:#faf8fd;border:1px dashed #d8b4fe;border-radius:6px;margin-bottom:8px;">Список проектов пуст. Нажмите кнопку ниже, чтобы добавить проект со ссылкой на GitHub.</div>');
+      } else if (count > 0 && emptyMsg) {
+        emptyMsg.remove();
+      }
+    }
+
+    function addProjectRow(title = '', desc = '', tags = '', link = '', demo = '') {
+      if (!projectsList) return null;
+      const emptyMsg = projectsList.querySelector('.modal-empty-projects');
+      if (emptyMsg) emptyMsg.remove();
+
+      const newRow = document.createElement('div');
+      newRow.className = 'edit-project-row';
+      newRow.style.cssText = 'background:#faf8fd;border:1px solid #e9e6ed;border-radius:8px;padding:10px;margin-bottom:8px;';
+      newRow.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <input type="text" class="edit-project-title" value="${escapeHtml(title)}" placeholder="Название проекта" style="font-weight:600;font-size:13px;width:75%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+          <button type="button" class="button button--small button--soft btn-remove-project" style="color:#dc2626;padding:2px 8px;font-size:11px;" aria-label="Удалить проект">✕</button>
+        </div>
+        <input type="text" class="edit-project-desc" value="${escapeHtml(desc)}" placeholder="Описание проекта" style="font-size:12px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
+        <input type="text" class="edit-project-tags" value="${escapeHtml(tags)}" placeholder="Стек (Python, SQL)" style="font-size:11px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
+        <div style="display:flex;gap:6px;">
+          <input type="text" class="edit-project-link" value="${escapeHtml(link)}" placeholder="GitHub URL (https://github.com/StraySun/...)" style="font-size:11px;flex:1;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+          <input type="text" class="edit-project-demo" value="${escapeHtml(demo)}" placeholder="Demo URL (необязательно)" style="font-size:11px;flex:1;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
+        </div>
+      `;
+      newRow.querySelector('.btn-remove-project').addEventListener('click', () => {
+        newRow.remove();
+        checkEmptyProjectsPlaceholder();
+      });
+      projectsList.appendChild(newRow);
+      return newRow;
+    }
+
     if (addBtn && projectsList) {
       addBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const newRow = document.createElement('div');
-        newRow.className = 'edit-project-row';
-        newRow.style.cssText = 'background:#faf8fd;border:1px solid #e9e6ed;border-radius:8px;padding:10px;margin-bottom:8px;';
-        newRow.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <input type="text" class="edit-project-title" value="" placeholder="Название проекта" style="font-weight:600;font-size:13px;width:75%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
-            <button type="button" class="button button--small button--soft btn-remove-project" style="color:#dc2626;padding:2px 8px;font-size:11px;" aria-label="Удалить проект">✕</button>
-          </div>
-          <input type="text" class="edit-project-desc" value="" placeholder="Описание проекта" style="font-size:12px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;margin-bottom:4px;">
-          <input type="text" class="edit-project-tags" value="" placeholder="Стек (Python, SQL)" style="font-size:11px;width:100%;padding:4px 8px;border:1px solid #ddd;border-radius:4px;">
-        `;
-        newRow.querySelector('.btn-remove-project').addEventListener('click', () => newRow.remove());
-        projectsList.appendChild(newRow);
-        newRow.querySelector('.edit-project-title').focus();
+        const row = addProjectRow();
+        if (row) row.querySelector('.edit-project-title')?.focus();
       });
     }
 
     modalEl.querySelectorAll('.btn-remove-project').forEach(btn => {
       btn.addEventListener('click', () => {
         btn.closest('.edit-project-row')?.remove();
+        checkEmptyProjectsPlaceholder();
       });
     });
+
+    if (autoAddNewProject && isProjects) {
+      const row = addProjectRow();
+      if (row) {
+        setTimeout(() => row.querySelector('.edit-project-title')?.focus(), 80);
+      }
+    }
   }, 50);
 }
 
 function initProfileEdit() {
-  document.querySelectorAll('[data-edit-profile-btn], .stack-card .button').forEach(btn => {
-    if (btn._hasEditAction) return;
-    btn._hasEditAction = true;
-    btn.addEventListener('click', (e) => {
+  document.addEventListener('click', (e) => {
+    const addProjectBtn = e.target.closest('[data-add-project-btn], .resume-empty-projects button, #resume-sheet-projects [data-edit-profile-btn]');
+    if (addProjectBtn) {
       e.preventDefault();
-      openProfileEditModal();
-    });
+      openProfileEditModal('projects', true);
+      return;
+    }
+
+    const editProfileBtn = e.target.closest('[data-edit-profile-btn], .stack-card .button');
+    if (editProfileBtn) {
+      e.preventDefault();
+      const targetTab = editProfileBtn.dataset.modalTab || 'general';
+      openProfileEditModal(targetTab);
+      return;
+    }
   });
 
   // F1: Интерактивная запись на собеседование в виджете профиля
@@ -3988,17 +4269,18 @@ function initProfileEdit() {
 }
 
 // Кнопка скачать резюме PDF
-document.querySelectorAll('.button').forEach(btn => {
-  if (btn.textContent.includes('Скачать резюме')) {
-    btn.addEventListener('click', () => {
-      announce('Формирование PDF резюме…');
-      setTimeout(() => window.print(), 300);
-    });
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-print-resume], #btn-download-resume-header');
+  const isPrintText = e.target.tagName === 'BUTTON' && (e.target.textContent.includes('Скачать резюме') || e.target.textContent.includes('Скачать PDF'));
+  if (btn || isPrintText) {
+    e.preventDefault();
+    announce('Формирование PDF резюме…');
+    setTimeout(() => window.print(), 300);
   }
 });
 
 // ==========================================
-// 12. Табы в профиле студента с поддержкой Deep Linking (#saved, #stack, #analytics)
+// 12. Табы в профиле студента с поддержкой Deep Linking (#saved, #resume, #analytics)
 // ==========================================
 function initProfileTabs() {
   const tabBtns = Array.from(document.querySelectorAll('.profile-tab-btn'));
@@ -4008,8 +4290,12 @@ function initProfileTabs() {
   function getTabFromHash(hash) {
     if (!hash) return null;
     const clean = String(hash).replace(/^#/, '').toLowerCase().trim();
-    const validTabs = ['applications', 'saved', 'stack', 'analytics', 'resume'];
+    const validTabs = ['applications', 'saved', 'resume', 'analytics'];
     if (validTabs.includes(clean)) return clean;
+    if (clean === 'stack') {
+      document.getElementById('stack')?.scrollIntoView({ behavior: 'smooth' });
+      return 'resume';
+    }
     if (clean.startsWith('pane-')) {
       const sub = clean.replace('pane-', '');
       if (validTabs.includes(sub)) return sub;
@@ -4019,8 +4305,12 @@ function initProfileTabs() {
   }
 
   function switchTab(target, updateHash = true, animate = false) {
-    const validTabs = ['applications', 'saved', 'stack', 'analytics', 'resume'];
-    const activeTab = validTabs.includes(target) ? target : 'applications';
+    const validTabs = ['applications', 'saved', 'resume', 'analytics'];
+    let activeTab = validTabs.includes(target) ? target : 'applications';
+    if (target === 'stack') {
+      document.getElementById('stack')?.scrollIntoView({ behavior: 'smooth' });
+      activeTab = 'resume';
+    }
 
     tabBtns.forEach(b => {
       const isMatch = b.dataset.tab === activeTab;
@@ -4187,7 +4477,7 @@ function renderSavedJobsInProfileSync(db = null) {
 
 async function renderSavedJobsInProfile() {
   renderSavedJobsInProfileSync();
-  if (isFileProtocol) return;
+  if (isFileProtocol || isGitHubPages || !isApiOnline) return;
 
   try {
     const db = await api.getDb();
@@ -4199,15 +4489,51 @@ async function renderSavedJobsInProfile() {
   }
 }
 
-// Загрузка сохранённого профиля
-const cachedProf = storage.read('buddie-profile-data', null);
-if (cachedProf) {
-  updateProfileDom(cachedProf);
+// Загрузка сохранённого профиля с авто-миграцией схемы v2
+function getOrMigrateProfile() {
+  const cached = storage.read('buddie-profile-data', null);
+  const isStale = !cached ||
+                  cached.schemaVersion !== 2 ||
+                  cached.telegram === '@nur_m' ||
+                  (cached.github && cached.github.includes('nur-m')) ||
+                  (Array.isArray(cached.projects) && cached.projects.some(p => p.title === 'HR Analytics Dashboard' && !p.link));
+
+  if (isStale) {
+    const cleanProfile = {
+      schemaVersion: 2,
+      name: (cached && cached.name) || 'Нур Мифтахов',
+      role: (cached && cached.role) || 'Аналитик данных',
+      course: '3-й курс',
+      university: 'Казанский федеральный университет',
+      city: (cached && cached.city) || 'Казань',
+      email: (cached && cached.email) || 'nur.m@stud.kfu.ru',
+      telegram: '@WS2_WanderSun',
+      github: 'github.com/StraySun',
+      about: (cached && cached.about) || 'Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.',
+      skills: (cached && cached.skills && cached.skills.length) ? cached.skills : ['Python', 'SQL', 'Figma', 'Git'],
+      skillLevels: (cached && cached.skillLevels) || { 'Python': 4, 'SQL': 4, 'Figma': 2, 'Git': 3 },
+      projects: []
+    };
+    storage.write('buddie-profile-data', cleanProfile);
+    return cleanProfile;
+  }
+  return cached;
 }
-if (!isFileProtocol) {
+
+const currentStudentProfile = getOrMigrateProfile();
+updateProfileDom(currentStudentProfile);
+
+if (!isFileProtocol && !isGitHubPages && isApiOnline) {
   api.getDb().then(db => {
     if (db && db.profile) {
-      updateProfileDom(db.profile);
+      const merged = Object.assign({}, currentStudentProfile, db.profile, {
+        schemaVersion: 2,
+        telegram: (db.profile.telegram && db.profile.telegram !== '@nur_m') ? db.profile.telegram : '@WS2_WanderSun',
+        github: (db.profile.github && !db.profile.github.includes('nur-m')) ? db.profile.github : 'github.com/StraySun',
+        projects: Array.isArray(db.profile.projects) ? db.profile.projects : []
+      });
+      updateProfileDom(merged);
+      storage.write('buddie-profile-data', merged);
     }
   }).catch(() => {});
 }
@@ -4216,11 +4542,13 @@ initProfileEdit();
 initProfileTabs();
 
 // Phase 3 initialization
+updateEnvironmentBadge();
 updateLiveDates();
 const currentUni = storage.read('buddie-university', 'kfu');
 document.querySelectorAll('.header__select select').forEach(s => { s.value = currentUni; });
 updateTargetUniversityBadges(currentUni);
 updateFeedCounters();
+initFeedSkeletons();
 
 restoreFiltersFromUrl();
 loadInitialData();
