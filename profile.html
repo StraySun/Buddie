@@ -107,7 +107,9 @@
             <div class="sidebar__footer">
                 <span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>
                 <span>Центр карьеры на связи</span>
-                <div class="env-status-badge env-status-badge--live" id="app-env-badge" role="status" aria-label="Статус подключения API" title="Подключение к живому REST API"><span class="env-status-badge__dot" aria-hidden="true"></span><span class="env-status-badge__text">Live API</span></div>
+                <div class="env-status-anchor">
+                    <div class="env-status-badge env-status-badge--live" id="app-env-badge" role="status" tabindex="0" aria-label="Статус подключения API" title="Подключение к живому REST API"><span class="env-status-badge__dot" aria-hidden="true"></span><span class="env-status-badge__text">Live API</span></div>
+                </div>
             </div>
             <div class="sidebar__user">
                 <div class="avatar">НМ</div>
@@ -191,7 +193,7 @@
                                 </div>
                                 <span class="company-rating" data-saved-badge>0 вакансий</span>
                             </div>
-                            <div class="saved-jobs-toolbar">
+                            <div class="saved-jobs-toolbar" style="display: none;">
                                 <div class="saved-jobs-filters">
                                     <span class="chip chip--neutral is-active" data-saved-filter="all">Все форматы</span>
                                     <span class="chip" data-saved-filter="remote">Удалённо</span>
@@ -258,10 +260,10 @@
                                     <h4 class="resume-sheet__title">Образование</h4>
                                     <div class="resume-sheet__item">
                                         <div class="resume-sheet__item-top">
-                                            <strong>Казанский федеральный университет (КФУ)</strong>
-                                            <span class="resume-sheet__date">2022 — 2026</span>
+                                            <strong id="resume-sheet-uni">Казанский федеральный университет (КФУ)</strong>
+                                            <span class="resume-sheet__date" id="resume-sheet-years">2022 — 2026</span>
                                         </div>
-                                        <div class="resume-sheet__item-sub">Институт ИТИС · Программная инженерия · 3-й курс</div>
+                                        <div class="resume-sheet__item-sub" id="resume-sheet-faculty-course">Институт ИТИС · Программная инженерия · 3-й курс</div>
                                     </div>
                                 </section>
                                 <section class="resume-sheet__section">

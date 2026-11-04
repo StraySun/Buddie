@@ -11,7 +11,41 @@
 .feed-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .feed-section-heading h2 { margin: 0 0 5px; font-size: 20px; letter-spacing: -.35px; }
 .feed-section-heading p { margin: 0; color: #5B6474; font-size: 12px; line-height: 1.5; }
-.feed-section-heading a { color: #6e38b4; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.feed-section-heading a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: #6e38b4;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.feed-section-heading a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.feed-section-heading a:hover::after,
+.feed-section-heading a:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+.feed-section-heading a:hover,
+.feed-section-heading a:focus-visible {
+  color: #4c1d95;
+  text-decoration: none;
+}
 .feed-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .feed-active-chips {
   display: flex;
@@ -107,8 +141,7 @@
 .filter-chip__clear-all:hover {
   background: #ede4fb;
   color: #4c1d95;
-  text-decoration: underline;
-}
+  }
 .filter-chip__clear-all:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px #7c3aed;
