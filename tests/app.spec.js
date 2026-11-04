@@ -707,12 +707,15 @@ test('resume print styling hides shell and displays structured A4 resume', async
   await expect(page.locator('.button').first()).toBeHidden();
   await expect(page.locator('.student-card__progress')).toBeHidden();
 
-  // 2. Проверяем, что структура резюме отображается
-  await expect(page.locator('.student-card')).toBeVisible();
-  await expect(page.locator('.student-card__identity h2')).toContainText('Нур');
-  await expect(page.locator('.student-card__contacts')).toBeVisible();
-  await expect(page.locator('#pane-stack')).toBeVisible();
-  await expect(page.locator('#pane-applications')).toBeVisible();
+  // 2. Проверяем, что верхний блок профиля и служебные панели скрыты, а чистое A4 резюме отображается
+  await expect(page.locator('.student-card')).toBeHidden();
+  await expect(page.locator('#pane-stack')).toBeHidden();
+  await expect(page.locator('#pane-applications')).toBeHidden();
+  await expect(page.locator('#pane-resume')).toBeVisible();
+  await expect(page.locator('.resume-sheet')).toBeVisible();
+  await expect(page.locator('#resume-sheet-name')).toContainText('Нур');
+  await expect(page.locator('#resume-sheet-contacts')).toBeVisible();
+  await expect(page.locator('#pane-resume .profile-applications__head')).toBeHidden();
 });
 
 test('phase 3 UI polish: university selector on mobile, target university badges, empty states, and dynamic dates', async ({ page }) => {
@@ -1642,13 +1645,26 @@ test('Personal cabinet redesign: dynamic Buddie tip, 3-tab profile edit with con
   await page.keyboard.press('Escape');
   await expect(detailModal).toBeHidden();
 
-  // 5. Проверяем вкладку "Сохранённые" с панелью фильтров
+  // 5. Проверяем вкладку "Сохранённые": при отсутствии вакансий фильтры скрыты, отображается чистый empty state
   await page.locator('.profile-tab-btn[data-tab="saved"]').click();
   await expect(page.locator('#pane-saved')).toBeVisible();
+  await expect(page.locator('.saved-empty')).toBeVisible();
+  await expect(page.locator('.saved-jobs-toolbar')).toBeHidden();
+
+  // При наличии сохранённых вакансий панель фильтров отображается
+  await page.evaluate(() => {
+    localStorage.setItem('buddie-saved-jobs', JSON.stringify(['yandex-analyst']));
+  });
+  await page.goto('/profile.html#saved');
   await expect(page.locator('.saved-jobs-toolbar')).toBeVisible();
   await expect(page.locator('[data-saved-filter="all"]')).toBeVisible();
   await expect(page.locator('[data-saved-filter="remote"]')).toBeVisible();
   await expect(page.locator('[data-saved-filter="hybrid"]')).toBeVisible();
+
+  // Очищаем тестовые данные сохранённых вакансий
+  await page.evaluate(() => {
+    localStorage.removeItem('buddie-saved-jobs');
+  });
 });
 
 test('Personal cabinet audit: dynamic completeness 85-100%, share profile, interactive slot chips, saved filter empty states, and deep linking', async ({ page }) => {
@@ -1850,7 +1866,7 @@ test('Static resilience: Circuit breaker and getStaticDataUrl calculate correct 
 test('Phase 3 cabinet refinements: custom GitHub/Telegram links, project GitHub/demo editing, PDF download button, and refined select arrow', async ({ page }) => {
   await page.goto('/profile.html');
 
-  // 1. Verify GitHub & Telegram links
+  // 1. Verify GitHub & Telegram links and resting clean styling (no standard underline)
   const tg = page.locator('.student-card__contacts a[href*="t.me"]');
   await expect(tg).toHaveAttribute('href', 'https://t.me/WS2_WanderSun');
   await expect(tg).toHaveText('@WS2_WanderSun');
@@ -1858,6 +1874,24 @@ test('Phase 3 cabinet refinements: custom GitHub/Telegram links, project GitHub/
   const gh = page.locator('.student-card__contacts a[href*="github.com"]');
   await expect(gh).toHaveAttribute('href', 'https://github.com/StraySun');
   await expect(gh).toHaveText('github.com/StraySun');
+
+  const tgDeco = await tg.evaluate(el => window.getComputedStyle(el).textDecorationLine);
+  expect(tgDeco).toBe('none');
+  const ghDeco = await gh.evaluate(el => window.getComputedStyle(el).textDecorationLine);
+  expect(ghDeco).toBe('none');
+
+  // Resting state: pseudo-element line is scaled to 0 with right transform-origin
+  const restingTransform = await tg.evaluate(el => window.getComputedStyle(el, '::after').transform);
+  expect(restingTransform).toContain('matrix(0');
+
+  // On hover: Through Slide underline expands from left (origin at 0px / left)
+  await tg.hover();
+  await page.waitForTimeout(100);
+  const hoverOrigin = await tg.evaluate(el => window.getComputedStyle(el, '::after').transformOrigin);
+  expect(hoverOrigin).toContain('0px'); // left origin on hover!
+
+  const hoverColor = await tg.evaluate(el => window.getComputedStyle(el).color);
+  expect(hoverColor).toBeTruthy();
 
   // 2. Verify Applications status filter select dimensions & styling
   const statusSelect = page.locator('.profile-controls select');
@@ -1956,4 +1990,220 @@ test('Phase 3 cabinet refinements: contextual project addition from resume empty
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.resume-empty-projects')).toBeHidden();
   await page.emulateMedia({ media: 'screen' });
+});
+
+test('saved jobs empty state hides filter toolbar and centers empty placeholder layout', async ({ page }) => {
+  // Clear any saved vacancies
+  await page.addInitScript(() => {
+    localStorage.setItem('buddie-saved-jobs', JSON.stringify([]));
+  });
+
+  await page.goto('/profile.html#saved');
+
+  // 1. Verify toolbar is hidden when saved jobs list is empty
+  const toolbar = page.locator('.saved-jobs-toolbar');
+  await expect(toolbar).toBeHidden();
+
+  // 2. Verify empty state placeholder is visible and flex-aligned
+  const emptyPlaceholder = page.locator('.saved-empty');
+  await expect(emptyPlaceholder).toBeVisible();
+  await expect(emptyPlaceholder.locator('h3')).toHaveText('Нет сохранённых стажировок');
+  await expect(emptyPlaceholder.locator('.empty-cta')).toBeVisible();
+
+  const displayVal = await emptyPlaceholder.evaluate(el => window.getComputedStyle(el).display);
+  expect(displayVal).toBe('flex');
+});
+
+test('profile modal education block dynamically updates university, faculty, course, and years across card and resume, print hides student-card', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // 1. Open edit profile modal
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const modal = page.locator('.modal-dialog');
+  await expect(modal).toBeVisible();
+
+  // 2. Verify education block fields exist
+  const uniInput = modal.locator('#edit-profile-university');
+  const facultyInput = modal.locator('#edit-profile-faculty');
+  const courseSelect = modal.locator('#edit-profile-course');
+  const gradYearsInput = modal.locator('#edit-profile-gradyears');
+
+  await expect(uniInput).toBeVisible();
+  await expect(facultyInput).toBeVisible();
+  await expect(courseSelect).toBeVisible();
+  await expect(gradYearsInput).toBeVisible();
+
+  // 3. Fill with new values
+  await uniInput.fill('Университет Иннополис');
+  await facultyInput.fill('Факультет Computer Science');
+  await courseSelect.selectOption('4-й курс');
+  await gradYearsInput.fill('2023 — 2027');
+
+  // Save changes
+  await modal.locator('.modal-confirm-btn').click();
+  await expect(modal).toBeHidden();
+
+  // 4. Verify student card identity has updated
+  const identityP = page.locator('.student-card__identity p').first();
+  await expect(identityP).toContainText('Университет Иннополис · 4-й курс');
+
+  // 5. Verify Resume sheet education section has updated
+  await page.locator('.profile-tab-btn[data-tab="resume"]').click();
+  await expect(page.locator('#resume-sheet-uni')).toHaveText('Университет Иннополис');
+  await expect(page.locator('#resume-sheet-years')).toHaveText('2023 — 2027');
+  await expect(page.locator('#resume-sheet-faculty-course')).toHaveText('Факультет Computer Science · 4-й курс');
+
+  // 6. Verify print media hides .student-card and displays .resume-sheet
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('.student-card')).toBeHidden();
+  await expect(page.locator('#pane-resume')).toBeVisible();
+  await expect(page.locator('.resume-sheet')).toBeVisible();
+  await page.emulateMedia({ media: 'screen' });
+
+  // 7. Restore seed education parameters to preserve db state
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const restoreModal = page.locator('.modal-dialog');
+  await expect(restoreModal).toBeVisible();
+  await restoreModal.locator('#edit-profile-university').fill('Казанский федеральный университет');
+  await restoreModal.locator('#edit-profile-faculty').fill('Институт ИТИС · Программная инженерия');
+  await restoreModal.locator('#edit-profile-course').selectOption('3-й курс');
+  await restoreModal.locator('#edit-profile-gradyears').fill('2022 — 2026');
+  await restoreModal.locator('.modal-confirm-btn').click();
+  await expect(restoreModal).toBeHidden();
+});
+
+test('minimalist env status badge displays dot by default and reveals status on hover and focus without overlap or shift', async ({ page }) => {
+  await page.goto('/index.html');
+
+  const badge = page.locator('#app-env-badge');
+  await expect(badge).toBeVisible();
+
+  // 1. Verify resting state in sidebar footer: dot is visible, text element is collapsed, width is compact (<= 22px)
+  const dot = badge.locator('.env-status-badge__dot');
+  await expect(dot).toBeVisible();
+
+  const restingWidth = await badge.evaluate(el => el.getBoundingClientRect().width);
+  expect(restingWidth).toBeLessThanOrEqual(22);
+
+  const restingY = await badge.evaluate(el => el.getBoundingClientRect().y);
+  const restingTextOpacity = await badge.locator('.env-status-badge__text').evaluate(el => window.getComputedStyle(el).opacity);
+  expect(parseFloat(restingTextOpacity)).toBe(0);
+
+  // 2. Hover over sidebar badge: dot dips slightly down, footprint remains compact (no horizontal intrusion), tooltip reveals above dot
+  await badge.hover();
+  await page.waitForTimeout(350);
+  const hoverWidth = await badge.evaluate(el => el.getBoundingClientRect().width);
+  expect(hoverWidth).toBeLessThanOrEqual(22);
+
+  const hoverY = await badge.evaluate(el => el.getBoundingClientRect().y);
+  expect(hoverY).toBeGreaterThanOrEqual(restingY); // dot tactfully dips down
+
+  const tooltip = badge.locator('.env-status-badge__text');
+  const hoverTextOpacity = await tooltip.evaluate(el => window.getComputedStyle(el).opacity);
+  expect(parseFloat(hoverTextOpacity)).toBe(1);
+
+  // Tooltip floats above the badge without overlapping the recommendation progress block
+  const badgeBox = await badge.boundingBox();
+  const tooltipBox = await tooltip.boundingBox();
+  const progressBox = await page.locator('.sidebar__progress').boundingBox();
+
+  expect(tooltipBox).not.toBeNull();
+  expect(tooltipBox.y + tooltipBox.height).toBeLessThanOrEqual(badgeBox.y + 3);
+  expect(tooltipBox.y).toBeGreaterThan(progressBox.y + progressBox.height); // Does not overlap recommendation block!
+
+  // 3. Move mouse away: collapses back with capillary suction into the dot
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(500);
+  const unhoverTextOpacity = await badge.locator('.env-status-badge__text').evaluate(el => window.getComputedStyle(el).opacity);
+  expect(parseFloat(unhoverTextOpacity)).toBe(0);
+
+  // 4. Keyboard focus: focus via tab activates text tooltip
+  await badge.focus();
+  await page.waitForTimeout(350);
+  const focusedTextOpacity = await badge.locator('.env-status-badge__text').evaluate(el => window.getComputedStyle(el).opacity);
+  expect(parseFloat(focusedTextOpacity)).toBe(1);
+
+  // 5. Verify HR topbar: badge expands horizontally inside anchor without shifting adjacent elements (0px CLS)
+  await page.goto('/hr.html');
+  const hrBadge = page.locator('#hr-env-badge');
+  await expect(hrBadge).toBeVisible();
+
+  const hrProfile = page.locator('.hr-topbar__profile');
+  const hrCompany = page.locator('.hr-topbar__company');
+  const xProfileBefore = await hrProfile.evaluate(el => el.getBoundingClientRect().x);
+  const xCompanyBefore = await hrCompany.evaluate(el => el.getBoundingClientRect().x);
+
+  await hrBadge.hover();
+  await page.waitForTimeout(350);
+
+  const hrHoverWidth = await hrBadge.evaluate(el => el.getBoundingClientRect().width);
+  expect(hrHoverWidth).toBeGreaterThan(50);
+
+  const xProfileAfter = await hrProfile.evaluate(el => el.getBoundingClientRect().x);
+  const xCompanyAfter = await hrCompany.evaluate(el => el.getBoundingClientRect().x);
+
+  // Assert exactly zero pixels of shift on adjacent blocks
+  expect(Math.abs(xProfileBefore - xProfileAfter)).toBe(0);
+  expect(Math.abs(xCompanyBefore - xCompanyAfter)).toBe(0);
+});
+
+test('Through Slide animated underline across all application text links', async ({ page }) => {
+  await page.goto('/index.html');
+
+  // 1. Sidebar HR link (.sidebar__hr-link)
+  const hrLink = page.locator('.sidebar__hr-link');
+  await expect(hrLink).toBeVisible();
+  const hrDeco = await hrLink.evaluate(el => window.getComputedStyle(el).textDecorationLine);
+  expect(hrDeco).toBe('none');
+
+  const hrResting = await hrLink.evaluate(el => window.getComputedStyle(el, '::after').transform);
+  expect(hrResting).toContain('matrix(0');
+
+  await hrLink.hover();
+  await page.waitForTimeout(100);
+  const hrHoverOrigin = await hrLink.evaluate(el => window.getComputedStyle(el, '::after').transformOrigin);
+  expect(hrHoverOrigin).toContain('0px');
+
+  // 2. Sidebar Progress link (.sidebar__link)
+  const sideLink = page.locator('.sidebar__link');
+  await expect(sideLink).toBeVisible();
+  const sideDeco = await sideLink.evaluate(el => window.getComputedStyle(el).textDecorationLine);
+  expect(sideDeco).toBe('none');
+
+  const sideResting = await sideLink.evaluate(el => window.getComputedStyle(el, '::after').transform);
+  expect(sideResting).toContain('matrix(0');
+
+  await sideLink.hover();
+  await page.waitForTimeout(100);
+  const sideHoverOrigin = await sideLink.evaluate(el => window.getComputedStyle(el, '::after').transformOrigin);
+  expect(sideHoverOrigin).toContain('0px');
+
+  // 3. Feed section heading link (.feed-section-heading a)
+  const feedLink = page.locator('.feed-section-heading a');
+  await expect(feedLink).toBeVisible();
+  const feedDeco = await feedLink.evaluate(el => window.getComputedStyle(el).textDecorationLine);
+  expect(feedDeco).toBe('none');
+
+  const feedResting = await feedLink.evaluate(el => window.getComputedStyle(el, '::after').transform);
+  expect(feedResting).toContain('matrix(0');
+
+  await feedLink.hover();
+  await page.waitForTimeout(100);
+  const feedHoverOrigin = await feedLink.evaluate(el => window.getComputedStyle(el, '::after').transformOrigin);
+  expect(feedHoverOrigin).toContain('0px');
+
+  // 4. HR Topbar Return link (.hr-topbar__return)
+  await page.goto('/hr.html');
+  const returnLink = page.locator('.hr-topbar__return');
+  await expect(returnLink).toBeVisible();
+  const returnDeco = await returnLink.evaluate(el => window.getComputedStyle(el).textDecorationLine);
+  expect(returnDeco).toBe('none');
+
+  const returnResting = await returnLink.evaluate(el => window.getComputedStyle(el, '::after').transform);
+  expect(returnResting).toContain('matrix(0');
+
+  await returnLink.hover();
+  await page.waitForTimeout(100);
+  const returnHoverOrigin = await returnLink.evaluate(el => window.getComputedStyle(el, '::after').transformOrigin);
+  expect(returnHoverOrigin).toContain('0px');
 });
