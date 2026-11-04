@@ -199,6 +199,21 @@ function runMutation(mutatorFn) {
   });
 }
 
+function sanitizePayload(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizePayload);
+  }
+  const clean = {};
+  for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue;
+    }
+    clean[key] = sanitizePayload(obj[key]);
+  }
+  return clean;
+}
+
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -220,7 +235,7 @@ function parseBody(req) {
         return;
       }
       try {
-        resolve(JSON.parse(body));
+        resolve(sanitizePayload(JSON.parse(body)));
       } catch (err) {
         const jsonErr = new Error('Invalid JSON');
         jsonErr.statusCode = 400;
@@ -505,7 +520,7 @@ const server = http.createServer(async (req, res) => {
           db.jobs = db.jobs || [];
           const job = db.jobs.find(j => j.id === jobId);
           if (!job) return null;
-          Object.assign(job, updateData);
+          Object.assign(job, sanitizePayload(updateData));
           return job;
         });
         if (updated) {
@@ -740,7 +755,7 @@ const server = http.createServer(async (req, res) => {
           db.applications = db.applications || [];
           const app = db.applications.find(a => a.id === appId || a.jobId === appId);
           if (app) {
-            Object.assign(app, update);
+            Object.assign(app, sanitizePayload(update));
 
             // B4: Двусторонняя синхронизация со статусом кандидата
             if (update.status && STATUS_APP_TO_HR[update.status]) {
@@ -807,7 +822,7 @@ const server = http.createServer(async (req, res) => {
           db.candidates = db.candidates || [];
           const candidate = db.candidates.find(c => c.id === candId);
           if (candidate) {
-            Object.assign(candidate, update);
+            Object.assign(candidate, sanitizePayload(update));
 
             // B4: Двусторонняя синхронизация с откликом соискателя
             if (update.status && STATUS_HR_TO_APP[update.status]) {
@@ -919,7 +934,7 @@ const server = http.createServer(async (req, res) => {
         const profileUpdate = await parseBody(req);
         const updatedProfile = await runMutation(db => {
           db.profile = db.profile || {};
-          Object.assign(db.profile, profileUpdate);
+          Object.assign(db.profile, sanitizePayload(profileUpdate));
           return db.profile;
         });
         sendJson(res, 200, updatedProfile);

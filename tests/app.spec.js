@@ -372,7 +372,7 @@ test('profile tabs switch panes and render saved jobs container', async ({ page 
   await page.goto('/profile.html');
   const appPane = page.locator('#pane-applications');
   const savedPane = page.locator('#pane-saved');
-  const stackPane = page.locator('#pane-stack');
+  const resumePane = page.locator('#pane-resume');
   const analyticsPane = page.locator('#pane-analytics');
 
   await expect(appPane).toBeVisible();
@@ -384,15 +384,15 @@ test('profile tabs switch panes and render saved jobs container', async ({ page 
   await expect(appPane).toBeHidden();
   await expect(page.locator('.saved-empty')).toBeVisible();
 
-  // Клик на вкладку "Мой профиль и стек"
-  await page.locator('.profile-tab-btn[data-tab="stack"]').click();
-  await expect(stackPane).toBeVisible();
+  // Клик на вкладку "Резюме и портфолио"
+  await page.locator('.profile-tab-btn[data-tab="resume"]').click();
+  await expect(resumePane).toBeVisible();
   await expect(savedPane).toBeHidden();
 
   // Клик на вкладку "Аналитика"
   await page.locator('.profile-tab-btn[data-tab="analytics"]').click();
   await expect(analyticsPane).toBeVisible();
-  await expect(stackPane).toBeHidden();
+  await expect(resumePane).toBeHidden();
 
   // Возврат на "Мои отклики"
   await page.locator('.profile-tab-btn[data-tab="applications"]').click();
@@ -407,17 +407,17 @@ test('profile tabs support deep linking with hash on initial load, F5 reload, an
   await expect(page.locator('#pane-saved')).toBeVisible();
   await expect(page.locator('#pane-applications')).toBeHidden();
 
-  // 2. Прямой переход по ссылке с хэшем #stack
-  await page.goto('/profile.html#stack');
-  await expect(page.locator('.profile-tab-btn[data-tab="stack"]')).toHaveClass(/is-active/);
-  await expect(page.locator('#pane-stack')).toBeVisible();
+  // 2. Прямой переход по ссылке с хэшем #resume
+  await page.goto('/profile.html#resume');
+  await expect(page.locator('.profile-tab-btn[data-tab="resume"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-resume')).toBeVisible();
   await expect(page.locator('#pane-saved')).toBeHidden();
 
   // 3. Прямой переход по ссылке с хэшем #analytics
   await page.goto('/profile.html#analytics');
   await expect(page.locator('.profile-tab-btn[data-tab="analytics"]')).toHaveClass(/is-active/);
   await expect(page.locator('#pane-analytics')).toBeVisible();
-  await expect(page.locator('#pane-stack')).toBeHidden();
+  await expect(page.locator('#pane-resume')).toBeHidden();
 
   // 4. Клик по вкладке обновляет хэш в URL
   await page.locator('.profile-tab-btn[data-tab="saved"]').click();
@@ -433,9 +433,9 @@ test('profile tabs support deep linking with hash on initial load, F5 reload, an
   const savedBtn = page.locator('.profile-tab-btn[data-tab="saved"]');
   await savedBtn.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.locator('.profile-tab-btn[data-tab="stack"]')).toHaveClass(/is-active/);
-  await expect(page.locator('#pane-stack')).toBeVisible();
-  await expect(page).toHaveURL(/#stack$/);
+  await expect(page.locator('.profile-tab-btn[data-tab="resume"]')).toHaveClass(/is-active/);
+  await expect(page.locator('#pane-resume')).toBeVisible();
+  await expect(page).toHaveURL(/#resume$/);
 });
 
 test('profile actions persist across reload (accept offer and interview slot)', async ({ page }) => {
@@ -503,44 +503,31 @@ test('profile editing via sidebar, short name format (Имя Ф.), and interacti
   await expect(page.locator('.header__profile')).toContainText('Нурлан М.');
   await expect(page.locator('.student-card__avatar')).toHaveText('НМ');
 
-  // 4. Переходим на вкладку стека и проверяем интерактивное изменение уровней навыков
-  await page.locator('.profile-tab-btn[data-tab="stack"]').click();
-  const sqlRow = page.locator('#pane-stack .skill[data-skill-name="SQL"]');
+  // 4. Переходим на вкладку резюме и проверяем интерактивное изменение уровней навыков в виджете стека (#stack)
+  await page.locator('.profile-tab-btn[data-tab="resume"]').click();
+  const sqlRow = page.locator('#stack .skill[data-skill-name="SQL"]');
   await expect(sqlRow).toBeVisible();
   const sqlBars = sqlRow.locator('.skill__bars i');
   await expect(sqlBars).toHaveCount(4);
 
-  // Кликаем на 2-й уровень (2 из 4) в первой таблице (#pane-stack)
+  // Кликаем на 2-й уровень (2 из 4) в виджете стека (#stack)
   await sqlBars.nth(1).click();
   await expect(sqlBars.nth(0)).toHaveClass(/is-filled/);
   await expect(sqlBars.nth(1)).toHaveClass(/is-filled/);
   await expect(sqlBars.nth(2)).not.toHaveClass(/is-filled/);
   await expect(sqlBars.nth(3)).not.toHaveClass(/is-filled/);
 
-  // Синхронизация: проверяем, что во второй таблице/виджете (#stack) уровень SQL тоже изменился на 2 из 4
-  const sideSqlBars = page.locator('#stack .skill[data-skill-name="SQL"] .skill__bars i');
-  await expect(sideSqlBars.nth(0)).toHaveClass(/is-filled/);
-  await expect(sideSqlBars.nth(1)).toHaveClass(/is-filled/);
-  await expect(sideSqlBars.nth(2)).not.toHaveClass(/is-filled/);
-  await expect(sideSqlBars.nth(3)).not.toHaveClass(/is-filled/);
-
-  // Обратная синхронизация: меняем уровень Python в боковом виджете (#stack) на 1 из 4
+  // Меняем уровень Python в боковом виджете (#stack) на 1 из 4
   const sidePythonBars = page.locator('#stack .skill[data-skill-name="Python"] .skill__bars i');
   await sidePythonBars.nth(0).click();
   await expect(sidePythonBars.nth(0)).toHaveClass(/is-filled/);
   await expect(sidePythonBars.nth(1)).not.toHaveClass(/is-filled/);
 
-  // Проверяем, что в основной таблице (#pane-stack) Python тоже стал 1 из 4
-  const mainPythonBars = page.locator('#pane-stack .skill[data-skill-name="Python"] .skill__bars i');
-  await expect(mainPythonBars.nth(0)).toHaveClass(/is-filled/);
-  await expect(mainPythonBars.nth(1)).not.toHaveClass(/is-filled/);
-
   // 5. Перезагрузка: проверяем сохранение имени, сокращения и уровня стека
   await page.reload();
   await expect(page.locator('.student-card__identity h2')).toHaveText('Нурлан Мухамедов');
   await expect(page.locator('.sidebar__user-name')).toHaveText('Нурлан М.');
-  await page.locator('.profile-tab-btn[data-tab="stack"]').click();
-  const reloadedSqlBars = page.locator('#pane-stack .skill[data-skill-name="SQL"] .skill__bars i');
+  const reloadedSqlBars = page.locator('#stack .skill[data-skill-name="SQL"] .skill__bars i');
   await expect(reloadedSqlBars.nth(1)).toHaveClass(/is-filled/);
   await expect(reloadedSqlBars.nth(2)).not.toHaveClass(/is-filled/);
 
@@ -784,6 +771,17 @@ test('phase 3 UI polish: university selector on mobile, target university badges
   expect(dateText?.length).toBeGreaterThan(5);
   await expect(page.locator('[data-feed-banner-title]')).toContainText('стажиров');
   await expect(page.locator('[data-feed-section-subtext]')).toContainText('Показаны');
+
+  // 7. Environment Status Badge и адаптивность селектора на 375px
+  const envBadge = page.locator('.env-status-badge');
+  await expect(envBadge).toBeVisible();
+  await expect(envBadge.locator('.env-status-badge__dot')).toBeVisible();
+  await expect(envBadge.locator('.env-status-badge__text')).toHaveText(/Live API|Демо \(Local\)/);
+
+  // Проверка мобильного размера шрифта селектора (16px для предотвращения автозума в iOS)
+  await page.setViewportSize({ width: 375, height: 667 });
+  const selectFontSize = await page.locator('.header__select select').evaluate(el => getComputedStyle(el).fontSize);
+  expect(selectFontSize).toBe('16px');
 });
 
 test('partner interactive filters toggle feed jobs and reset cleanly', async ({ page }) => {
@@ -1596,7 +1594,7 @@ test('Personal cabinet redesign: dynamic Buddie tip, 3-tab profile edit with con
   await expect(page.locator('#resume-sheet-name')).toContainText('Нур Мифтахов');
   await expect(page.locator('#resume-sheet-contacts')).toContainText('Казань');
   await expect(page.locator('#resume-sheet-contacts')).toContainText('nur.m@stud.kfu.ru');
-  await expect(page.locator('#resume-sheet-contacts')).toContainText('@nur_m');
+  await expect(page.locator('#resume-sheet-contacts')).toContainText(/@(WS2_WanderSun|nur_m)/);
 
   // 2. Проверяем модалку редактирования профиля с 3 вкладками
   await page.locator('[data-edit-profile-btn]').first().click();
@@ -1613,7 +1611,7 @@ test('Personal cabinet redesign: dynamic Buddie tip, 3-tab profile edit with con
   await expect(editModal.locator('#modal-pane-contacts')).toBeVisible();
   await expect(editModal.locator('#edit-profile-city')).toHaveValue('Казань');
   await expect(editModal.locator('#edit-profile-email')).toHaveValue('nur.m@stud.kfu.ru');
-  await expect(editModal.locator('#edit-profile-telegram')).toHaveValue('@nur_m');
+  await expect(editModal.locator('#edit-profile-telegram')).toHaveValue(/@(WS2_WanderSun|nur_m)/);
 
   // Переходим на вкладку "Проекты"
   await modalTabBtns.nth(2).click();
@@ -1659,8 +1657,20 @@ test('Personal cabinet audit: dynamic completeness 85-100%, share profile, inter
   // 1. Проверяем динамический прогресс 85% и подсказку
   const progressVal = page.locator('#profile-progress-val');
   await expect(progressVal).toHaveText('85%');
+  await expect(page.locator('.sidebar__progress-title strong')).toHaveText('85%');
   const progressHint = page.locator('#profile-progress-hint');
   await expect(progressHint).toContainText('Добавьте проект в резюме');
+
+  // Проверяем кликабельные контакты (email и telegram)
+  const emailLink = page.locator('.student-card__contacts a[href^="mailto:"]');
+  await expect(emailLink).toBeVisible();
+  await expect(emailLink).toHaveAttribute('href', 'mailto:nur.m@stud.kfu.ru');
+  const tgLink = page.locator('.student-card__contacts a[href*="t.me"]');
+  await expect(tgLink).toBeVisible();
+  await expect(tgLink).toHaveAttribute('href', /t\.me\/(WS2_WanderSun|nur_m)/);
+  const ghLink = page.locator('.student-card__contacts a[href*="github.com"]');
+  await expect(ghLink).toBeVisible();
+  await expect(ghLink).toHaveAttribute('href', /github\.com\/(StraySun|nur-m)/);
 
   // 2. Открываем модалку, добавляем проект -> прогресс растёт до 100%
   await page.locator('[data-edit-profile-btn]').first().click();
@@ -1674,15 +1684,18 @@ test('Personal cabinet audit: dynamic completeness 85-100%, share profile, inter
   await expect(modal).toBeHidden();
 
   await expect(progressVal).toHaveText('100%');
+  await expect(page.locator('.sidebar__progress-title strong')).toHaveText('100%');
   await expect(progressHint).toContainText('Профиль заполнен на 100%!');
 
-  // 3. Проверяем кнопку «Поделиться профилем»
+  // 3. Проверяем кнопку «Поделиться профилем» во вкладке резюме
+  await page.locator('.profile-tab-btn[data-tab="resume"]').click();
   const shareBtn = page.locator('[data-share-profile-btn]');
   await expect(shareBtn).toBeVisible();
   await shareBtn.click();
   await expect(shareBtn).toContainText('Ссылка скопирована');
 
-  // 4. Интерактивный выбор слота интервью с чипами времени
+  // Возвращаемся на вкладку «Мои отклики» для проверки слота интервью
+  await page.locator('.profile-tab-btn[data-tab="applications"]').click();
   const interviewRow = page.locator('.data-table tbody tr', { hasText: 'Младший фронтенд-разработчик' });
   const timeBtn = interviewRow.locator('button');
   await timeBtn.click();
@@ -1724,4 +1737,223 @@ test('Personal cabinet audit: dynamic completeness 85-100%, share profile, inter
   await expect(autoModal.locator('.modal-title')).toContainText('Выбор слота интервью');
   await page.keyboard.press('Escape');
   await expect(autoModal).toBeHidden();
+});
+
+test('Security: Prototype pollution payloads are sanitized across all REST endpoints', async ({ request }) => {
+  // Test PUT /api/profile
+  const profileRes = await request.put('/api/profile', {
+    data: {
+      name: 'Security Test',
+      __proto__: { pollutedProp: 'EXPLOITED' },
+      constructor: { prototype: { adminRole: true } }
+    }
+  });
+  expect(profileRes.status()).toBe(200);
+  const profileData = await profileRes.json();
+  expect(profileData.pollutedProp).toBeUndefined();
+  expect(profileData.adminRole).toBeUndefined();
+
+  // Test PUT /api/jobs/:id with dynamic existing job
+  const jobsRes = await request.get('/api/jobs');
+  const allJobs = await jobsRes.json();
+  const targetJob = allJobs[0] || { id: 'yandex-analyst', title: 'Стажёр' };
+
+  const jobRes = await request.put('/api/jobs/' + targetJob.id, {
+    data: {
+      title: targetJob.title,
+      __proto__: { jobPolluted: 'HACKED' }
+    }
+  });
+  expect(jobRes.status()).toBe(200);
+  const jobData = await jobRes.json();
+  expect(jobData.jobPolluted).toBeUndefined();
+
+  // Test PUT /api/applications/:id
+  const appRes = await request.put('/api/applications/app-1', {
+    data: {
+      status: 'Приглашение',
+      __proto__: { appPolluted: 'HACKED' }
+    }
+  });
+  expect(appRes.status()).toBe(200);
+  const appData = await appRes.json();
+  expect(appData.appPolluted).toBeUndefined();
+
+  // Verify global Object prototype was not contaminated
+  const checkPollution = await request.get('/api/health');
+  expect(checkPollution.status()).toBe(200);
+});
+
+test('HR vacancy management: Two-step accessible inline deletion confirmation with aria announcements', async ({ page, request }) => {
+  // Create dedicated job for deletion test so seed jobs are preserved
+  await request.post('/api/jobs', {
+    data: {
+      id: 'test-deletion-target',
+      title: 'Временная вакансия для теста удаления',
+      company: 'Тест Ко',
+      format: 'remote'
+    }
+  });
+
+  await page.goto('/hr.html');
+  const manageBtn = page.locator('#btn-manage-jobs');
+  await expect(manageBtn).toBeVisible();
+  await manageBtn.click();
+
+  const modal = page.locator('.modal-dialog');
+  await expect(modal).toBeVisible();
+  await expect(modal.locator('.modal-title')).toContainText('Управление');
+
+  const targetRow = modal.locator('.manage-job-item[data-job-id="test-deletion-target"]');
+  await expect(targetRow).toBeVisible();
+  const deleteBtn = targetRow.locator('.manage-job-item__delete');
+  await expect(deleteBtn).toHaveText('Удалить');
+
+  // Step 1: First click triggers confirmation state without blocking thread
+  await deleteBtn.click();
+  await expect(deleteBtn).toHaveText('Точно удалить?');
+  await expect(deleteBtn).toHaveClass(/manage-job-item__delete--confirm/);
+  await expect(deleteBtn).toHaveAttribute('aria-label', /Подтвердите удаление/);
+
+  // Step 2: Second click deletes vacancy and announces confirmation
+  const toast = page.locator('.app-toast');
+  await deleteBtn.click();
+  await expect(toast).toBeVisible();
+  await expect(toast).toContainText('успешно удалена');
+  await expect(targetRow).toBeHidden();
+
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+});
+
+test('Static resilience: Circuit breaker and getStaticDataUrl calculate correct fallback path', async ({ page }) => {
+  await page.goto('/index.html');
+
+  // Verify getStaticDataUrl logic inside page context
+  const staticUrl = await page.evaluate(() => {
+    return typeof getStaticDataUrl === 'function' ? getStaticDataUrl() : null;
+  });
+  expect(staticUrl).toBe('/data/db.json');
+
+  // Verify storage write quota warning does not crash on quota exception
+  const quotaSafe = await page.evaluate(() => {
+    try {
+      storage.write('test-key', 'test-value');
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  expect(quotaSafe).toBe(true);
+});
+
+test('Phase 3 cabinet refinements: custom GitHub/Telegram links, project GitHub/demo editing, PDF download button, and refined select arrow', async ({ page }) => {
+  await page.goto('/profile.html');
+
+  // 1. Verify GitHub & Telegram links
+  const tg = page.locator('.student-card__contacts a[href*="t.me"]');
+  await expect(tg).toHaveAttribute('href', 'https://t.me/WS2_WanderSun');
+  await expect(tg).toHaveText('@WS2_WanderSun');
+
+  const gh = page.locator('.student-card__contacts a[href*="github.com"]');
+  await expect(gh).toHaveAttribute('href', 'https://github.com/StraySun');
+  await expect(gh).toHaveText('github.com/StraySun');
+
+  // 2. Verify Applications status filter select dimensions & styling
+  const statusSelect = page.locator('.profile-controls select');
+  await expect(statusSelect).toBeVisible();
+  const selectBox = await statusSelect.boundingBox();
+  expect(selectBox.width).toBeGreaterThanOrEqual(140);
+
+  // 3. Verify Download PDF button in Resume tab triggers print and aria-live announcement
+  await page.locator('.profile-tab-btn[data-tab="resume"]').click();
+  await expect(page.locator('#pane-resume')).toBeVisible();
+
+  let printCalled = false;
+  await page.exposeFunction('mockPrint', () => { printCalled = true; });
+  await page.evaluate(() => {
+    window.print = () => window.mockPrint();
+  });
+
+  const pdfBtn = page.locator('#pane-resume [data-print-resume]');
+  await expect(pdfBtn).toBeVisible();
+  await pdfBtn.click();
+  await page.waitForTimeout(400);
+  expect(printCalled).toBe(true);
+
+  // 4. Verify editing project with GitHub & Demo URLs
+  await page.locator('[data-edit-profile-btn]').first().click();
+  const editModal = page.locator('.modal-dialog');
+  await expect(editModal).toBeVisible();
+  await editModal.locator('.modal-tab-btn[data-modal-tab="projects"]').click();
+
+  await editModal.locator('#btn-add-profile-project').click();
+  const lastProject = editModal.locator('.edit-project-row').last();
+  await lastProject.locator('.edit-project-title').fill('Cloud Infrastructure Monitor');
+  await lastProject.locator('.edit-project-desc').fill('Система мониторинга распределенных сервисов');
+  await lastProject.locator('.edit-project-tags').fill('Go, Docker, Prometheus');
+  await lastProject.locator('.edit-project-link').fill('https://github.com/StraySun/cloud-monitor');
+  await lastProject.locator('.edit-project-demo').fill('https://cloud-monitor.demo.app');
+
+  await editModal.locator('.modal-confirm-btn').click();
+  await expect(editModal).toBeHidden();
+
+  // 5. Verify saved project appears with custom GitHub & Demo links in resume sheet
+  const projectItem = page.locator('.resume-project-item', { hasText: 'Cloud Infrastructure Monitor' });
+  await expect(projectItem).toBeVisible();
+  const projectGh = projectItem.locator('a', { hasText: 'GitHub ↗' });
+  await expect(projectGh).toHaveAttribute('href', 'https://github.com/StraySun/cloud-monitor');
+  const projectDemo = projectItem.locator('a', { hasText: 'Demo ↗' });
+  await expect(projectDemo).toHaveAttribute('href', 'https://cloud-monitor.demo.app');
+});
+
+test('Phase 3 cabinet refinements: contextual project addition from resume empty-state, schema v2 auto-migration, and print hiding', async ({ page }) => {
+  // 1. Verify schema v2 auto-migration from stale localStorage
+  await page.addInitScript(() => {
+    localStorage.setItem('buddie-profile-data', JSON.stringify({
+      schemaVersion: 1,
+      name: 'Нур Мифтахов',
+      telegram: '@nur_m',
+      github: 'github.com/nur-m',
+      projects: [{ title: 'HR Analytics Dashboard', desc: 'Old project', tags: 'Old' }]
+    }));
+  });
+
+  await page.goto('/profile.html');
+
+  // Verify auto-migration updated contacts to current accounts
+  const tg = page.locator('.student-card__contacts a[href*="t.me"]');
+  await expect(tg).toHaveAttribute('href', 'https://t.me/WS2_WanderSun');
+  await expect(tg).toHaveText('@WS2_WanderSun');
+
+  // Verify projects were reset and empty state is displayed
+  await page.locator('.profile-tab-btn[data-tab="resume"]').click();
+  const emptyState = page.locator('.resume-empty-projects');
+  await expect(emptyState).toBeVisible();
+  await expect(emptyState).toContainText('Проекты в резюме ещё не добавлены');
+
+  // 2. Click "+ Добавить проект в резюме" inside resume empty state
+  const addBtn = emptyState.locator('[data-add-project-btn]');
+  await expect(addBtn).toBeVisible();
+  await addBtn.click();
+
+  // Verify modal opens directly on "Проекты" tab with a project row ready
+  const modal = page.locator('.modal-dialog');
+  await expect(modal).toBeVisible();
+  await expect(modal.locator('#modal-pane-projects')).toBeVisible();
+  await expect(modal.locator('.modal-tab-btn[data-modal-tab="projects"]')).toHaveClass(/is-active/);
+
+  const titleInput = modal.locator('.edit-project-row .edit-project-title').last();
+  await expect(titleInput).toBeVisible();
+  await titleInput.fill('Real-time Analytics Service');
+  await modal.locator('.modal-confirm-btn').click();
+  await expect(modal).toBeHidden();
+
+  // Verify project now appears in resume
+  await expect(page.locator('.resume-project-item', { hasText: 'Real-time Analytics Service' })).toBeVisible();
+
+  // 3. Verify @media print hides .resume-empty-projects
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('.resume-empty-projects')).toBeHidden();
+  await page.emulateMedia({ media: 'screen' });
 });

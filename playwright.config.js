@@ -10,7 +10,9 @@ module.exports = defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
     hasTouch: true,
-    viewport: { width: 1440, height: 1000 }
+    viewport: { width: 1440, height: 1000 },
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure'
   },
   webServer: {
     command: 'node src/server.js',

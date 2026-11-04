@@ -14,7 +14,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible { 
 [hidden] { display: none !important; }
 .page-shell { min-height: 100vh; min-width: 0; max-width: 100%; overflow-x: hidden; }
 .interaction-empty { margin: 10px 0; padding: 16px; border: 1px dashed #cfc4dd; border-radius: 12px; color: #5B6474; background: #fff; text-align: center; font-size: 12px; }
-.table-scroll { display: block; width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; box-shadow: inset -12px 0 12px -8px rgba(15, 11, 30, 0.15); border-radius: var(--radius-md); scrollbar-width: thin; scrollbar-color: #c4b5fd #f1f0f5; }
+.table-scroll { display: block; width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; box-shadow: inset -14px 0 12px -8px rgba(124, 58, 237, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.04); border-radius: var(--radius-md); scrollbar-width: thin; scrollbar-color: #c4b5fd #f1f0f5; }
 .table-scroll::-webkit-scrollbar { height: 6px; }
 .table-scroll::-webkit-scrollbar-track { background: #f1f0f5; border-radius: 9999px; }
 .table-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 9999px; }

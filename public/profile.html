@@ -104,7 +104,11 @@
                 <p>Добавь портфолио — работодатели заметят тебя быстрее.</p><a class="sidebar__link"
                     href="#profile">Дополнить профиль →</a>
             </div>
-            <div class="sidebar__footer"><span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>Центр карьеры на связи</div>
+            <div class="sidebar__footer">
+                <span class="sidebar__footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-graduation-cap"></use></svg></span>
+                <span>Центр карьеры на связи</span>
+                <div class="env-status-badge env-status-badge--live" id="app-env-badge" role="status" aria-label="Статус подключения API" title="Подключение к живому REST API"><span class="env-status-badge__dot" aria-hidden="true"></span><span class="env-status-badge__text">Live API</span></div>
+            </div>
             <div class="sidebar__user">
                 <div class="avatar">НМ</div>
                 <div>
@@ -135,7 +139,7 @@
                         <h2>Нур Мифтахов</h2>
                         <p>Казанский федеральный университет · 3-й курс</p><small>ИТ и аналитика · Открыт к стажировкам</small>
                         <div class="student-card__contacts">
-                            <span>Email: nur.m@stud.kfu.ru</span> · <span>Telegram: @nur_m</span> · <span>Казань</span>
+                            <span>Email: <a href="mailto:nur.m@stud.kfu.ru" class="contact-link">nur.m@stud.kfu.ru</a></span> · <span>Telegram: <a href="https://t.me/WS2_WanderSun" target="_blank" rel="noopener noreferrer" class="contact-link">@WS2_WanderSun</a></span> · <span>GitHub: <a href="https://github.com/StraySun" target="_blank" rel="noopener noreferrer" class="contact-link">github.com/StraySun</a></span> · <span>Казань</span>
                         </div>
                         <p class="student-card__about">Студент 3-го курса КФУ, увлекаюсь продуктовой аналитикой, SQL и разработкой сервисов.</p>
                     </div>
@@ -146,10 +150,6 @@
                     </div>
                     <div class="student-card__actions">
                         <button class="button button--outline" type="button" data-edit-profile-btn>Редактировать профиль</button>
-                        <button class="button button--outline" type="button" data-share-profile-btn aria-label="Поделиться профилем">
-                            <svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#icon-share"></use></svg>
-                            <span>Поделиться</span>
-                        </button>
                         <button class="button" type="button" id="btn-download-resume-header">Скачать резюме PDF</button>
                     </div>
                 </section>
@@ -158,7 +158,6 @@
                         <nav class="profile-tabs" aria-label="Вкладки профиля">
                             <button class="profile-tab-btn is-active" type="button" data-tab="applications">Мои отклики <span class="profile-tab-count">4</span></button>
                             <button class="profile-tab-btn" type="button" data-tab="saved">Сохранённые <span class="profile-tab-count" data-saved-count>0</span></button>
-                            <button class="profile-tab-btn" type="button" data-tab="stack">Мой профиль и стек</button>
                             <button class="profile-tab-btn" type="button" data-tab="resume">Резюме и портфолио</button>
                             <button class="profile-tab-btn" type="button" data-tab="analytics">Аналитика</button>
                         </nav>
@@ -233,6 +232,10 @@
                                 </div>
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <button class="button button--outline button--small" type="button" data-edit-profile-btn>Редактировать</button>
+                                    <button class="button button--outline button--small" type="button" data-share-profile-btn aria-label="Поделиться резюме" title="Поделиться резюме">
+                                        <svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#icon-share"></use></svg>
+                                        <span>Поделиться</span>
+                                    </button>
                                     <button class="button button--small" type="button" data-print-resume>Скачать PDF</button>
                                 </div>
                             </div>
@@ -243,8 +246,9 @@
                                         <div class="resume-sheet__role" id="resume-sheet-role">Аналитик данных · Открыт к стажировкам</div>
                                         <div class="resume-sheet__contacts" id="resume-sheet-contacts">
                                             <span>📍 Казань</span> · 
-                                            <span>📧 nur.m@stud.kfu.ru</span> · 
-                                            <span>💬 @nur_m</span>
+                                            <span>📧 <a href="mailto:nur.m@stud.kfu.ru" class="contact-link">nur.m@stud.kfu.ru</a></span> · 
+                                            <span>💬 <a href="https://t.me/WS2_WanderSun" target="_blank" rel="noopener noreferrer" class="contact-link">@WS2_WanderSun</a></span> · 
+                                            <span>🐙 <a href="https://github.com/StraySun" target="_blank" rel="noopener noreferrer" class="contact-link">github.com/StraySun</a></span>
                                         </div>
                                     </div>
                                     <span class="chip chip--neutral" style="font-weight: 600; color: var(--color-primary-text, #6D28D9);">● Ищет стажировку</span>
@@ -271,21 +275,12 @@
                                     </div>
                                 </section>
                                 <section class="resume-sheet__section">
-                                    <h4 class="resume-sheet__title">Проекты</h4>
+                                    <h4 class="resume-sheet__title">Проекты и портфолио</h4>
                                     <div class="resume-sheet__projects" id="resume-sheet-projects">
-                                        <div class="resume-project-item">
-                                            <div class="resume-project-item__head">
-                                                <strong>HR Analytics Dashboard</strong>
-                                                <span class="chip chip--neutral chip--small">Streamlit · PostgreSQL</span>
-                                            </div>
-                                            <p>Интерактивная аналитическая панель воронки кандидатов и ключевых HR-метрик для студенческих стажировок.</p>
-                                        </div>
-                                        <div class="resume-project-item">
-                                            <div class="resume-project-item__head">
-                                                <strong>Search &amp; Filter Microservice</strong>
-                                                <span class="chip chip--neutral chip--small">FastAPI · Redis</span>
-                                            </div>
-                                            <p>Сервис фильтрации и подбора вакансий для студентов с поддержкой полнотекстового поиска и тегов стека.</p>
+                                        <div class="resume-empty-projects" style="text-align: center; padding: 22px 16px; background: #faf8fd; border: 1.5px dashed #d8b4fe; border-radius: 8px; color: #6b7280;">
+                                            <p style="margin: 0 0 6px; font-size: 13px; font-weight: 600; color: #4c1d95;">Проекты в резюме ещё не добавлены</p>
+                                            <small style="display: block; margin-bottom: 12px; color: #6b7280;">Добавьте учебные или личные проекты со ссылками на GitHub, чтобы работодатели обратили внимание на ваш профиль</small>
+                                            <button type="button" class="button button--small button--outline" data-add-project-btn data-edit-profile-btn>+ Добавить проект в резюме</button>
                                         </div>
                                     </div>
                                 </section>

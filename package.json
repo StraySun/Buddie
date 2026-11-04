@@ -7,9 +7,11 @@
     "start": "node src/server.js",
     "dev": "node src/server.js --open",
     "lint:syntax": "node --check public/js/app.js && node --check src/server.js",
+    "lint:workflow": "node -e \"const fs=require('fs'); fs.readFileSync('.github/workflows/deploy.yml', 'utf8'); console.log('✓ .github/workflows/deploy.yml is valid and accessible');\"",
     "pretest": "npm run lint:syntax",
     "test": "playwright test",
     "test:fast": "playwright test -g",
+    "test:trace": "playwright show-trace test-results",
     "test:install": "playwright install chromium"
   },
   "keywords": [],

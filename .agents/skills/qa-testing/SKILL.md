@@ -1,11 +1,11 @@
 ---
 name: qa-testing
-description: Autonomous Quality Assurance & Playwright Test Specialist. Validates responsive layouts, accessibility attributes, data persistence, and regression integrity across mobile and desktop viewports.
+description: Autonomous Quality Assurance, E2E Scenario Architect & Playwright Test Specialist. Generates resilient test scenarios, audits edge cases (rapid spam-clicks, payload length fuzzing, XSS, print styles), and validates responsive regression integrity across mobile and desktop viewports.
 ---
 
-# Autonomous QA & Playwright Testing Specialist Agent
+# Autonomous QA & E2E Scenario Architect Agent
 
-Специалист по автоматизированному тестированию веб-приложений, сквозным регрессионным проверкам в Playwright, аудиту адаптивности (320px, 375px, 1440px), устойчивости локального состояния (`localStorage`) и валидации контрактов данных.
+Специалист по автоматизированному тестированию, генерации сложных сквозных тестовых сценариев в Playwright, аудиту адаптивности (320px, 375px, 1440px), устойчивости локального состояния (`localStorage`) и тестированию крайних случаев (Edge Cases / Stress Testing).
 
 ---
 
@@ -18,7 +18,7 @@ flowchart TD
     Config["playwright.config.js\n(timeout: 30s, worker: 1, baseURL: :4173)"]
     Server["webServer: node src/server.js\n(Reuse existing server enabled)"]
     DB[("data/db.json\n(Reset to INITIAL_DB in test.beforeEach)")]
-    Suite["tests/app.spec.js\n(28 e2e scenarios)"]
+    Suite["tests/app.spec.js\n(61 e2e scenarios)"]
 
     Config -->|"Auto-spawn & Health Check"| Server
     Suite -->|"Isolate State"| DB
@@ -35,7 +35,49 @@ flowchart TD
 
 ---
 
-## 2. Каталог устойчивых селекторов и анти-паттернов (Selector Patterns)
+## 2. Модуль генерации сценариев: Каталог крайних случаев (Edge Cases)
+
+Как Архитектор E2E-сценариев, агент проектирует и расширяет сьют `tests/app.spec.js` проверками следующих классов угроз:
+
+### 2.1. Защита от спам-кликов и гонок (Double Submit Protection)
+```javascript
+test('Rapid double-click on application submit does not create duplicate entries', async ({ page }) => {
+  await page.goto('/index.html');
+  const applyBtn = page.locator('[data-job-action="apply"]').first();
+  // Эмуляция быстрого двойного клика с интервалом < 50 мс
+  await Promise.all([
+    applyBtn.click({ clickCount: 2 }),
+    page.waitForTimeout(100)
+  ]);
+  // В таблице откликов должна быть строго одна запись
+  await page.goto('/profile.html');
+  await expect(page.locator('.data-table tbody tr')).toHaveCount(1);
+});
+```
+
+### 2.2. Стресс-тестирование длины полей и переноса текста (Overflow & Line Clamp)
+- Проверка вставки 200+ символов в название вакансии, имя студента и название проектов.
+- Проверка `overflow-wrap: break-word` и многоточий (`line-clamp`) без поломки сетки карточек.
+
+### 2.3. Имитация оффлайн-сбоев сети (Offline Fallback & Network Faults)
+```javascript
+test('Graceful fallback when Node.js server goes unreachable', async ({ page }) => {
+  // Перехват и сброс всех запросов к API
+  await page.route('**/api/**', route => route.abort());
+  await page.goto('/index.html');
+  // Проверяем, что вакансии берутся из кэша / static db.json
+  await expect(page.locator('.job-card')).toHaveCount(3);
+  // Проверяем, что в консоли нет UnhandledPromiseRejection
+});
+```
+
+### 2.4. Верификация стилей печати (`@media print`)
+- Проверка сокрытия сайдбара, шапки и кнопок при `page.emulateMedia({ media: 'print' })`.
+- Проверка видимости аккуратного макета резюме студента.
+
+---
+
+## 3. Каталог устойчивых селекторов и анти-паттернов (Selector Patterns)
 
 > [!WARNING]
 > **Анти-паттерн динамического текста в селекторе**:
@@ -56,43 +98,17 @@ flowchart TD
 > await expect(btn).toHaveText('✓ Принято');
 > ```
 
-### 2.1. Рекомендуемые селекторы
-- Селекторы действий: `[data-job-action="save"]`, `[data-job-action="apply"]`, `[data-dismiss-notification]`.
-- Селекторы вкладок: `[data-tab="applications"]`, `[data-tab="saved"]`, `[data-tab="stack"]`.
-- Идентификаторы карточек: `[data-job-id="yandex-analyst"]`, `[data-application-id="app-1"]`.
-- Селекторы фильтров: `[data-feed-specialty]`, `[data-feed-format]`, `[data-feed-reset]`.
-
 ---
 
-## 3. Быстрый Runbook запуска тестов (Оптимизация для Gemini 3.8 Flash)
+## 4. Быстрый Runbook запуска тестов (Оптимизация для Gemini 3.8 Flash)
 
-Чтобы не исчерпывать лимит времени выполнения и токены Gemini 3.8 Flash, используйте таргетированные команды:
-
-### 3.1. Таргетированный запуск конкретного теста (Рекомендуется при разработке)
 ```bash
-# Запуск конкретного теста по регулярному выражению в названии (< 2 сек)
-npx playwright test -g "profile edit modal"
+# 1. Синтаксический предпросмотр (< 100 мс)
+npm run lint:syntax
 
-# Запуск по номеру строки в тестовом файле
-npx playwright test tests/app.spec.js:45
-```
+# 2. Таргетированный запуск конкретного сценария (< 2 сек)
+npx playwright test -g "double-click"
 
-### 3.2. Полный регрессионный прогон
-```bash
-# Запуск полного набора (28 тестов)
+# 3. Полный регрессионный сьют
 npm test
 ```
-
-### 3.3. Отладка и диагностика сбоев
-При падении теста Playwright сохраняет контекст ошибки и скриншоты:
-1. Текстовый отчёт об ошибке: `test-results/<test-name>/error-context.md`
-2. Скриншот страницы в момент падения: `test-results/<test-name>/*.png`
-
----
-
-## 4. Чек-лист проверки приёмки (QA Verification Checklist)
-
-1. [ ] **Viewport Overflow**: Ни на одной странице нет горизонтального скролла (`documentWidth <= width` при 320px, 375px, 1440px).
-2. [ ] **LocalStorage Resilience**: Страницы не падают при поврежденных значениях в `localStorage` (битый JSON, массивы вместо объектов, null).
-3. [ ] **Data Persistence**: Изменение статуса, добавление отклика, редактирование профиля сохраняются после перезагрузки страницы (F5).
-4. [ ] **A11Y & Focus**: Все кнопки имеют `aria-label`, переключаемые кнопки — `aria-pressed`, модальные окна — `aria-modal="true"`.
