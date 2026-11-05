@@ -156,6 +156,7 @@
   "candidates": [
     {
       "id": "cand-1",
+      "jobId": "sber-analyst",
       "name": "Нур М.",
       "initials": "НМ",
       "avatarClass": "",
@@ -174,6 +175,7 @@
     },
     {
       "id": "cand-2",
+      "jobId": "yandex-frontend",
       "name": "Алина И.",
       "initials": "АИ",
       "avatarClass": "candidate__avatar--green",
@@ -192,6 +194,7 @@
     },
     {
       "id": "cand-3",
+      "jobId": "sber-java",
       "name": "Дамир К.",
       "initials": "ДК",
       "avatarClass": "candidate__avatar--blue",
@@ -210,6 +213,7 @@
     },
     {
       "id": "cand-4",
+      "jobId": "vk-qa",
       "name": "Елена М.",
       "initials": "ЕМ",
       "avatarClass": "candidate__avatar--orange",
@@ -228,6 +232,7 @@
     },
     {
       "id": "cand-5",
+      "jobId": "tbank-python",
       "name": "Роман С.",
       "initials": "РС",
       "avatarClass": "candidate__avatar--purple",

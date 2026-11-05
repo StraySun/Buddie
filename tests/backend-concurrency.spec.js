@@ -4,6 +4,7 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
 const BACKUP_PATH = path.join(__dirname, '..', 'data', 'db.json.backup');
+const PUBLIC_DB_PATH = path.join(__dirname, '..', 'public', 'data', 'db.json');
 const INITIAL_DB = fs.readFileSync(DB_PATH, 'utf8');
 
 function safeWrite(filePath, data) {
@@ -22,11 +23,13 @@ function safeWrite(filePath, data) {
 test.beforeEach(async () => {
   safeWrite(DB_PATH, INITIAL_DB, 'utf8');
   safeWrite(BACKUP_PATH, INITIAL_DB, 'utf8');
+  safeWrite(PUBLIC_DB_PATH, INITIAL_DB, 'utf8');
 });
 
 test.afterAll(async () => {
   safeWrite(DB_PATH, INITIAL_DB, 'utf8');
   safeWrite(BACKUP_PATH, INITIAL_DB, 'utf8');
+  safeWrite(PUBLIC_DB_PATH, INITIAL_DB, 'utf8');
 });
 
 test.describe('Backend & Data Optimization Suite', () => {

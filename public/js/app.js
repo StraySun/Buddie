@@ -287,6 +287,84 @@ const DEFAULT_APPLICATIONS = [
   }
 ];
 
+const DEFAULT_CANDIDATES = [
+  {
+    id: "cand-1",
+    name: "Нур М.",
+    initials: "НМ",
+    avatarClass: "",
+    role: "Аналитика данных",
+    university: "КФУ · 3-й курс",
+    jobTitle: "Стажёр-аналитик данных",
+    matchScore: "96%",
+    skills: ["Python", "SQL", "Pandas"],
+    status: "new",
+    statusLabel: "Новый",
+    statusClass: "status-badge--success",
+    jobId: "sber-analyst"
+  },
+  {
+    id: "cand-2",
+    name: "Алина И.",
+    initials: "АИ",
+    avatarClass: "candidate__avatar--green",
+    role: "Frontend-разработка",
+    university: "КФУ · 4-й курс",
+    jobTitle: "Frontend-разработчик",
+    matchScore: "92%",
+    skills: ["React", "TypeScript", "Git"],
+    status: "interview",
+    statusLabel: "Интервью",
+    statusClass: "status-badge--purple",
+    jobId: "yandex-frontend"
+  },
+  {
+    id: "cand-3",
+    name: "Дамир К.",
+    initials: "ДК",
+    avatarClass: "candidate__avatar--blue",
+    role: "Java-разработка",
+    university: "КФУ · 3-й курс",
+    jobTitle: "Младший Java-разработчик",
+    matchScore: "89%",
+    skills: ["Java", "Spring", "SQL"],
+    status: "review",
+    statusLabel: "На рассмотрении",
+    statusClass: "status-badge--warning",
+    jobId: "sber-java"
+  },
+  {
+    id: "cand-4",
+    name: "Елена М.",
+    initials: "ЕМ",
+    avatarClass: "candidate__avatar--orange",
+    role: "Продуктовая аналитика",
+    university: "КФУ · 2-й курс",
+    jobTitle: "Стажёр-аналитик данных",
+    matchScore: "86%",
+    skills: ["SQL", "Tableau", "Python"],
+    status: "new",
+    statusLabel: "Новый",
+    statusClass: "status-badge--success",
+    jobId: "vk-qa"
+  },
+  {
+    id: "cand-5",
+    name: "Роман С.",
+    initials: "РС",
+    avatarClass: "candidate__avatar--purple",
+    role: "Машинное обучение",
+    university: "КФУ · 4-й курс",
+    jobTitle: "ML Engineer Intern",
+    matchScore: "83%",
+    skills: ["Python", "ML", "PyTorch"],
+    status: "review",
+    statusLabel: "На рассмотрении",
+    statusClass: "status-badge--warning",
+    jobId: "tbank-python"
+  }
+];
+
 const ApiService = {
   async getDb() {
     if (isFileProtocol) {
@@ -620,13 +698,24 @@ const ApiService = {
     if (isFileProtocol || isGitHubPages || !isApiOnline) {
       const cached = storage.read('buddie-candidates-cache', null);
       if (Array.isArray(cached) && cached.length > 0) return cached;
-      return [];
+      try {
+        const staticRes = await fetch(getStaticDataUrl());
+        if (staticRes.ok) {
+          const staticDb = await staticRes.json();
+          if (Array.isArray(staticDb.candidates) && staticDb.candidates.length > 0) {
+            storage.write('buddie-candidates-cache', staticDb.candidates);
+            return staticDb.candidates;
+          }
+        }
+      } catch (staticErr) {}
+      storage.write('buddie-candidates-cache', DEFAULT_CANDIDATES);
+      return DEFAULT_CANDIDATES;
     }
     try {
       const res = await fetch('/api/candidates');
       if (res.ok) {
         const cands = await res.json();
-        if (Array.isArray(cands)) {
+        if (Array.isArray(cands) && cands.length > 0) {
           storage.write('buddie-candidates-cache', cands);
           return cands;
         }
@@ -637,9 +726,19 @@ const ApiService = {
       setApiOffline();
       console.warn('Network offline for getCandidates, falling back to localStorage:', e);
     }
+    try {
+      const staticRes = await fetch(getStaticDataUrl());
+      if (staticRes.ok) {
+        const staticDb = await staticRes.json();
+        if (Array.isArray(staticDb.candidates) && staticDb.candidates.length > 0) {
+          storage.write('buddie-candidates-cache', staticDb.candidates);
+          return staticDb.candidates;
+        }
+      }
+    } catch (staticErr) {}
     const cached = storage.read('buddie-candidates-cache', null);
     if (Array.isArray(cached) && cached.length > 0) return cached;
-    return [];
+    return DEFAULT_CANDIDATES;
   },
 
   async updateCandidate(id, data) {
@@ -903,6 +1002,28 @@ function matchesHrFilters(row) {
   if (jobFilter !== 'all') {
     const jobCell = row.querySelectorAll('td')[2]?.textContent.trim().toLocaleLowerCase('ru') ?? '';
     matchesJob = jobCell.includes(jobFilter.toLocaleLowerCase('ru')) || text.includes(jobFilter.toLocaleLowerCase('ru'));
+  }
+
+  return matchesUniversity && matchesStatus && matchesJob;
+}
+
+function matchesHrKanbanFilters(card) {
+  const university = document.querySelector('[data-hr-university]')?.value ?? 'all';
+  const status = document.querySelector('[data-hr-status]')?.value ?? 'all';
+  const jobFilter = document.querySelector('[data-hr-job]')?.value ?? 'all';
+
+  const text = card.textContent.toLocaleLowerCase('ru');
+  const cardUni = card.dataset.university || (text.includes('кфу') ? 'kfu' : (text.includes('итмо') ? 'itmo' : (text.includes('вшэ') ? 'hse' : '')));
+  const matchesUniversity = university === 'all' || cardUni === university || (university === 'kfu' && text.includes('кфу'));
+
+  const cardStatus = card.dataset.status || '';
+  const matchesStatus = status === 'all' || cardStatus === status;
+
+  let matchesJob = true;
+  if (jobFilter !== 'all') {
+    const jobTitle = card.querySelector('.kanban-card__job')?.textContent.trim().toLocaleLowerCase('ru') ?? '';
+    const jobId = card.dataset.jobId || '';
+    matchesJob = jobTitle.includes(jobFilter.toLocaleLowerCase('ru')) || jobId.includes(jobFilter.toLocaleLowerCase('ru')) || text.includes(jobFilter.toLocaleLowerCase('ru'));
   }
 
   return matchesUniversity && matchesStatus && matchesJob;
@@ -1484,6 +1605,13 @@ function updateSearch(value) {
     setVisible(row, visibleText(row) && matchesHrFilters(row));
   });
 
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    setVisible(card, visibleText(card) && matchesHrKanbanFilters(card));
+  });
+  if (typeof updateKanbanColumnCounts === 'function') {
+    updateKanbanColumnCounts();
+  }
+
   document.querySelectorAll('.timeline-card').forEach(card => {
     setVisible(card, visibleText(card) && matchesNotificationFilter(card) && !isDismissed(card));
   });
@@ -1933,14 +2061,14 @@ function createApplicationRowHtml(app) {
     actionHtml = '<button class="button button--outline button--small" type="button">Чат с HR</button>';
   } else if (app.actionText === 'Выбрать время' || currentStatus === 'Приглашение') {
     if (currentSlot) {
-      actionHtml = '<button class="button button--small button--soft" type="button">✓ ' + currentSlot.split(',')[0] + '</button>';
+      actionHtml = '<button class="button button--small button--soft" type="button">✓ ' + escapeHtml(currentSlot.split(',')[0]) + '</button>';
     } else {
       actionHtml = '<button class="button button--small" type="button">Выбрать время</button>';
     }
   } else if (app.actionText === 'Принять' || currentStatus === 'Оффер') {
     actionHtml = '<button class="button button--small" type="button">Принять</button>';
   } else {
-    actionHtml = '<button class="button button--small" type="button">' + (app.actionText || 'Подробнее') + '</button>';
+    actionHtml = '<button class="button button--small" type="button">' + escapeHtml(app.actionText || 'Подробнее') + '</button>';
   }
 
   const rowIdAttr = (app.rowId || (currentStatus === 'Отказ' ? 'feedback' : '')) ? ' id="' + (app.rowId || 'feedback') + '"' : '';
@@ -2645,6 +2773,9 @@ async function applyCandidateStatus(row, candId, candName, status) {
   if (status === 'interview') {
     statusLabel = 'Интервью';
     statusClass = 'status-badge--success';
+  } else if (status === 'review') {
+    statusLabel = 'На рассмотрении';
+    statusClass = 'status-badge--warning';
   } else if (status === 'offer') {
     statusLabel = 'Оффер';
     statusClass = 'status-badge--purple';
@@ -2653,16 +2784,33 @@ async function applyCandidateStatus(row, candId, candName, status) {
     statusClass = 'status-badge--danger';
   }
 
-  row.dataset.status = status;
-  const badge = row.querySelector('.status-badge');
-  if (badge) {
-    badge.className = 'status-badge ' + statusClass;
-    badge.textContent = statusLabel;
+  const targetRow = row || (candId ? document.querySelector('.candidate-table tbody tr[data-candidate-id="' + candId + '"]') : null);
+  if (targetRow) {
+    targetRow.dataset.status = status;
+    const badge = targetRow.querySelector('.status-badge');
+    if (badge) {
+      badge.className = 'status-badge ' + statusClass;
+      badge.textContent = statusLabel;
+    }
+    const openBtn = targetRow.querySelector('.button');
+    if (openBtn) {
+      openBtn.className = 'button button--outline button--small';
+      openBtn.textContent = 'Профиль';
+    }
   }
-  const openBtn = row.querySelector('.button');
-  if (openBtn) {
-    openBtn.className = 'button button--outline button--small';
-    openBtn.textContent = 'Профиль';
+
+  const kanbanCard = candId ? document.querySelector('.kanban-card[data-candidate-id="' + candId + '"]') : null;
+  if (kanbanCard) {
+    kanbanCard.dataset.status = status;
+    const select = kanbanCard.querySelector('.kanban-card__select');
+    if (select && select.value !== status) {
+      select.value = status;
+    }
+    const dropzone = document.querySelector('.kanban-column[data-status="' + status + '"] .kanban-column__dropzone');
+    if (dropzone && kanbanCard.parentElement !== dropzone) {
+      dropzone.appendChild(kanbanCard);
+      updateKanbanColumnCounts();
+    }
   }
 
   if (candId) {
@@ -2769,6 +2917,7 @@ function renderCandidatesTable(candidates) {
     updateTableEmptyMessage('.candidate-table', [], 'Кандидаты не найдены');
     const footSpan = document.querySelector('.hr-table-foot span');
     if (footSpan) footSpan.textContent = 'Показаны 0 из 0 кандидатов';
+    renderKanbanBoard([]);
     return;
   }
 
@@ -2780,8 +2929,211 @@ function renderCandidatesTable(candidates) {
     footSpan.textContent = 'Показаны ' + candList.length + ' из ' + candList.length + ' кандидатов';
   }
 
+  renderKanbanBoard(candList);
+
   syncHrJobFilterOptions();
   updateSearch(searchTerm);
+}
+
+function createKanbanCardHtml(cand) {
+  const skillsHtml = (cand.skills || ['Python', 'SQL']).slice(0, 3).map(s => '<span>' + escapeHtml(s) + '</span>').join('');
+  const uni = escapeHtml(cand.university || 'КФУ · 3-й курс');
+  const uniData = uni.includes('КФУ') ? 'kfu' : (uni.includes('ИТМО') ? 'itmo' : (uni.includes('ВШЭ') ? 'hse' : 'all'));
+  const avatarClass = cand.avatarClass ? ' ' + escapeHtml(cand.avatarClass) : '';
+  const currentStatus = cand.status || 'new';
+
+  return '<article class="kanban-card" draggable="true" tabindex="0" data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(currentStatus) + '" data-job-id="' + escapeHtml(cand.jobId || '') + '" aria-label="Кандидат ' + escapeHtml(cand.name || '') + '">' +
+    '<div class="kanban-card__top">' +
+      '<div class="kanban-card__user">' +
+        '<span class="candidate__avatar' + avatarClass + '" aria-hidden="true">' + escapeHtml(cand.initials || 'К') + '</span>' +
+        '<div>' +
+          '<strong>' + escapeHtml(cand.name || 'Кандидат') + '</strong>' +
+          '<div class="kanban-card__role">' + escapeHtml(cand.role || 'Соискатель') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<span class="match-score kanban-card__match" title="AI Match Score">' + escapeHtml(cand.matchScore || '90%') + '</span>' +
+    '</div>' +
+    '<div class="kanban-card__job">' + escapeHtml(cand.jobTitle || 'Стажёр') + '</div>' +
+    '<div class="kanban-card__univ">' + uni + '</div>' +
+    (cand.interviewSlot ? '<div class="cand-interview-slot" style="color:#2563eb;font-size:11px;font-weight:600;">◷ ' + escapeHtml(cand.interviewSlot.split('(')[0].trim()) + '</div>' : '') +
+    '<div class="kanban-card__meta">' +
+      '<div class="kanban-card__skills">' + skillsHtml + '</div>' +
+    '</div>' +
+    '<div class="kanban-card__actions">' +
+      '<button type="button" class="button button--outline button--small btn-cand-profile" data-cand-id="' + escapeHtml(cand.id || '') + '" style="padding:2px 8px;font-size:11px;min-height:26px;">Профиль</button>' +
+      '<label class="kanban-card__move">' +
+        '<span class="sr-only">Переместить:</span>' +
+        '<select class="kanban-card__select" data-move-candidate="' + escapeHtml(cand.id || '') + '" aria-label="Сменить статус кандидата ' + escapeHtml(cand.name || '') + '">' +
+          '<option value="new"' + (currentStatus === 'new' ? ' selected' : '') + '>Новый</option>' +
+          '<option value="review"' + (currentStatus === 'review' ? ' selected' : '') + '>На рассмотрении</option>' +
+          '<option value="interview"' + (currentStatus === 'interview' ? ' selected' : '') + '>Интервью</option>' +
+          '<option value="offer"' + (currentStatus === 'offer' ? ' selected' : '') + '>Оффер</option>' +
+          '<option value="rejected"' + (currentStatus === 'rejected' ? ' selected' : '') + '>Отказ</option>' +
+        '</select>' +
+      '</label>' +
+    '</div>' +
+  '</article>';
+}
+
+function updateKanbanColumnCounts() {
+  const board = document.getElementById('hr-kanban-board');
+  if (!board) return;
+  board.querySelectorAll('.kanban-column').forEach(col => {
+    const countEl = col.querySelector('.kanban-column__count');
+    const dropzone = col.querySelector('.kanban-column__dropzone');
+    const visibleCards = dropzone ? dropzone.querySelectorAll('.kanban-card:not([hidden])').length : 0;
+    if (countEl) countEl.textContent = String(visibleCards);
+  });
+}
+
+function bindKanbanEvents() {
+  const board = document.getElementById('hr-kanban-board');
+  if (!board) return;
+
+  board.querySelectorAll('.kanban-card').forEach(card => {
+    if (card._hasKanbanDnD) return;
+    card._hasKanbanDnD = true;
+
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', card.dataset.candidateId);
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('is-dragging');
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('is-dragging');
+      board.querySelectorAll('.kanban-column__dropzone').forEach(dz => dz.classList.remove('is-drag-over'));
+    });
+
+    const profileBtn = card.querySelector('.btn-cand-profile');
+    if (profileBtn) {
+      profileBtn.addEventListener('click', () => {
+        const candId = card.dataset.candidateId;
+        const targetRow = document.querySelector('.candidate-table tbody tr[data-candidate-id="' + candId + '"]');
+        const openBtn = targetRow ? targetRow.querySelector('.button') : null;
+        if (openBtn) openBtn.click();
+      });
+    }
+
+    const select = card.querySelector('.kanban-card__select');
+    if (select) {
+      select.addEventListener('change', async (e) => {
+        const newStatus = e.target.value;
+        const candId = card.dataset.candidateId;
+        const candName = card.querySelector('strong')?.textContent.trim() || 'Кандидат';
+        await applyCandidateStatus(null, candId, candName, newStatus);
+      });
+    }
+  });
+
+  board.querySelectorAll('.kanban-column__dropzone').forEach(dropzone => {
+    if (dropzone._hasDropzoneEvents) return;
+    dropzone._hasDropzoneEvents = true;
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      dropzone.classList.add('is-drag-over');
+    });
+
+    dropzone.addEventListener('dragleave', (e) => {
+      if (!dropzone.contains(e.relatedTarget)) {
+        dropzone.classList.remove('is-drag-over');
+      }
+    });
+
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('is-drag-over');
+      const candId = e.dataTransfer.getData('text/plain');
+      if (!candId) return;
+
+      const card = board.querySelector('.kanban-card[data-candidate-id="' + candId + '"]');
+      const targetColumn = dropzone.closest('.kanban-column');
+      const newStatus = targetColumn ? targetColumn.dataset.status : null;
+      if (!card || !newStatus || card.dataset.status === newStatus) return;
+
+      const candName = card.querySelector('strong')?.textContent.trim() || 'Кандидат';
+      dropzone.appendChild(card);
+      card.dataset.status = newStatus;
+      const cardSelect = card.querySelector('.kanban-card__select');
+      if (cardSelect) cardSelect.value = newStatus;
+      updateKanbanColumnCounts();
+
+      await applyCandidateStatus(null, candId, candName, newStatus);
+    });
+  });
+}
+
+function renderKanbanBoard(candidates) {
+  const board = document.getElementById('hr-kanban-board');
+  if (!board) return;
+
+  const candList = Array.isArray(candidates) ? candidates : [];
+  board.querySelectorAll('.kanban-column__dropzone').forEach(dz => {
+    dz.innerHTML = '';
+  });
+
+  const columns = {
+    new: board.querySelector('.kanban-column[data-status="new"] .kanban-column__dropzone'),
+    review: board.querySelector('.kanban-column[data-status="review"] .kanban-column__dropzone'),
+    interview: board.querySelector('.kanban-column[data-status="interview"] .kanban-column__dropzone'),
+    offer: board.querySelector('.kanban-column[data-status="offer"] .kanban-column__dropzone'),
+    rejected: board.querySelector('.kanban-column[data-status="rejected"] .kanban-column__dropzone')
+  };
+
+  candList.forEach(c => {
+    let status = c.status || 'new';
+    if (!columns[status]) status = 'new';
+    const cardHtml = createKanbanCardHtml(c);
+    if (columns[status]) {
+      columns[status].insertAdjacentHTML('beforeend', cardHtml);
+    }
+  });
+
+  bindKanbanEvents();
+  updateKanbanColumnCounts();
+}
+
+function initHrViewSwitcher() {
+  const switcher = document.querySelector('.view-switcher');
+  const tableScroll = document.querySelector('.candidate-panel .table-scroll');
+  const kanbanBoard = document.getElementById('hr-kanban-board');
+  const foot = document.querySelector('.hr-table-foot');
+  if (!switcher || !tableScroll || !kanbanBoard) return;
+
+  const setView = (mode) => {
+    const isKanban = mode === 'kanban';
+    tableScroll.style.display = isKanban ? 'none' : '';
+    kanbanBoard.style.display = isKanban ? 'grid' : 'none';
+    if (foot) foot.style.display = isKanban ? 'none' : '';
+
+    switcher.querySelectorAll('.view-switcher__btn').forEach(btn => {
+      const active = btn.dataset.view === mode;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+
+    storage.write('buddie-hr-view-mode', mode);
+    if (isKanban) {
+      updateKanbanColumnCounts();
+    }
+  };
+
+  switcher.querySelectorAll('.view-switcher__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setView(btn.dataset.view);
+    });
+  });
+
+  const savedMode = storage.read('buddie-hr-view-mode', 'table');
+  setView(savedMode);
+
+  // Initial populate if empty
+  const cands = storage.read('buddie-candidates-cache', DEFAULT_CANDIDATES);
+  if (Array.isArray(cands) && cands.length > 0 && kanbanBoard.querySelectorAll('.kanban-card').length === 0) {
+    renderKanbanBoard(cands);
+  }
 }
 
 
@@ -3266,6 +3618,7 @@ function openModal(title, contentHtml, onConfirm, confirmText = 'Подтвер�
     if (newConfirmBtn.disabled) return;
     newConfirmBtn.disabled = true;
     newConfirmBtn.classList.add('is-loading');
+    newConfirmBtn.setAttribute('aria-busy', 'true');
     try {
       if (onConfirm) {
         const res = await onConfirm(modal);
@@ -3277,6 +3630,7 @@ function openModal(title, contentHtml, onConfirm, confirmText = 'Подтвер�
     } finally {
       newConfirmBtn.disabled = false;
       newConfirmBtn.classList.remove('is-loading');
+      newConfirmBtn.removeAttribute('aria-busy');
     }
   });
 
@@ -4631,6 +4985,7 @@ loadInitialData();
 updateSearch(searchTerm);
 
 initHrAutoSync();
+initHrViewSwitcher();
 handleJobDeepLink();
 window.addEventListener('hashchange', () => {
   if (window.location.hash.startsWith('#job-')) {

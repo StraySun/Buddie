@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
+const PUBLIC_DB_PATH = path.join(__dirname, '..', 'public', 'data', 'db.json');
 const INITIAL_DB = fs.readFileSync(DB_PATH, 'utf8');
 const { test: base, expect } = require('@playwright/test');
 
@@ -22,6 +23,9 @@ function safeWriteDb(content) {
   for (let i = 0; i < 5; i++) {
     try {
       fs.writeFileSync(DB_PATH, content, 'utf8');
+      try {
+        fs.writeFileSync(PUBLIC_DB_PATH, content, 'utf8');
+      } catch {}
       return;
     } catch (err) {
       if (i === 4) throw err;
@@ -2206,4 +2210,67 @@ test('Through Slide animated underline across all application text links', async
   await page.waitForTimeout(100);
   const returnHoverOrigin = await returnLink.evaluate(el => window.getComputedStyle(el, '::after').transformOrigin);
   expect(returnHoverOrigin).toContain('0px');
+});
+
+test('HR Kanban pipeline: view switcher toggles views, cards render across 5 columns, move updates counts and mirrors to table and persists across reload', async ({ page }) => {
+  await page.goto('/hr.html');
+
+  const switcher = page.locator('.view-switcher');
+  await expect(switcher).toBeVisible();
+
+  const tableBtn = switcher.locator('[data-view="table"]');
+  const kanbanBtn = switcher.locator('[data-view="kanban"]');
+  const tableScroll = page.locator('.candidate-panel .table-scroll');
+  const kanbanBoard = page.locator('#hr-kanban-board');
+
+  // 1. Initial default state: Table view active
+  await expect(tableBtn).toHaveClass(/is-active/);
+  await expect(tableBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(tableScroll).toBeVisible();
+  await expect(kanbanBoard).toBeHidden();
+
+  // 2. Switch to Kanban view
+  await kanbanBtn.click();
+  await expect(kanbanBtn).toHaveClass(/is-active/);
+  await expect(kanbanBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(tableBtn).not.toHaveClass(/is-active/);
+  await expect(tableScroll).toBeHidden();
+  await expect(kanbanBoard).toBeVisible();
+
+  // 3. Verify 5 columns rendered
+  const columns = kanbanBoard.locator('.kanban-column');
+  await expect(columns).toHaveCount(5);
+
+  const newDropzone = kanbanBoard.locator('.kanban-column[data-status="new"] .kanban-column__dropzone');
+  const interviewDropzone = kanbanBoard.locator('.kanban-column[data-status="interview"] .kanban-column__dropzone');
+
+  const cand1Card = kanbanBoard.locator('.kanban-card[data-candidate-id="cand-1"]');
+  await expect(cand1Card).toBeVisible();
+  await expect(cand1Card).toHaveAttribute('data-status', 'new');
+  await expect(newDropzone.locator('.kanban-card[data-candidate-id="cand-1"]')).toBeVisible();
+
+  // 4. Move card using accessible select from "new" to "interview"
+  const select = cand1Card.locator('.kanban-card__select');
+  await select.selectOption('interview');
+
+  // Verify card moved to interview dropzone and has status interview
+  await expect(interviewDropzone.locator('.kanban-card[data-candidate-id="cand-1"]')).toBeVisible();
+  await expect(cand1Card).toHaveAttribute('data-status', 'interview');
+
+  // 5. Reload page (F5) and verify state persistence
+  await page.reload();
+  await expect(kanbanBoard).toBeVisible();
+  await expect(tableScroll).toBeHidden();
+  await expect(kanbanBtn).toHaveClass(/is-active/);
+  await expect(interviewDropzone.locator('.kanban-card[data-candidate-id="cand-1"]')).toBeVisible();
+
+  // 6. Switch back to table view and verify status mirrored in DOM
+  await tableBtn.click();
+  await expect(tableScroll).toBeVisible();
+  await expect(kanbanBoard).toBeHidden();
+
+  const cand1Row = page.locator('.candidate-table tbody tr[data-candidate-id="cand-1"]');
+  await expect(cand1Row).toBeVisible();
+  await expect(cand1Row).toHaveAttribute('data-status', 'interview');
+  await expect(cand1Row.locator('.status-badge')).toHaveText(/интервью/i);
 });
