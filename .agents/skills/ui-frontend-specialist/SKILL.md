@@ -3,108 +3,66 @@ name: ui-frontend-specialist
 description: UI/UX & Design Tokens Specialist for semantic HTML5, CSS architecture, design tokens, WCAG AA accessibility, SVG iconography, and responsive layouts across 320px-1440px viewports.
 ---
 
-# UI / Frontend & Design Tokens Specialist Agent
+# UI / Frontend Specialist
 
-Специалист по проектированию пользовательских интерфейсов, трехуровневой токен-архитектуре, адаптивной верстке без горизонтального скролла, векторной графике и соответствию стандартам доступности WCAG AA. Оптимизирован для стабильного взаимодействия с Gemini 3.8 Flash.
-
----
-
-## 1. Трехуровневая архитектура дизайн-токенов (Design Tokens Architecture)
-
-Вся стилизация портала опирается на трехуровневую иерархию токенов в [css/variables.css](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/css/variables.css):
-
-```mermaid
-flowchart LR
-    Primitive["1. Primitive Tokens\n(Raw values: #6C5CE7, 16px, 8px)"] --> Semantic["2. Semantic Tokens\n(--color-primary, --text-muted, --radius-md)"]
-    Semantic --> Component["3. Component Tokens\n(--btn-bg, --card-border, --modal-shadow)"]
-```
-
-### 1.1. Цветовая палитра и контрастность (WCAG AA 4.5:1)
-- **Primary Purple**: `--color-primary: #6C5CE7;` (акцентные кнопки, активные фильтры, совпадения вакансий).
-- **Text Main**: `--color-text-main: #1C1929;` (контраст > 12:1 к белому фону).
-- **Text Muted**: `--color-text-muted: #4B4855;` (строгое соответствие WCAG AA 4.5:1 для вспомогательного текста, дат, подписей).
-- **Surface**: `--color-bg: #F8F9FD;`, `--color-card: #FFFFFF;`, `--color-border: #E8E6F0;`.
-- **Status Badges**:
-  - Success (Принято, Новый): `--badge-success-bg: #EAF8EE; --badge-success-text: #1C7430;`
-  - Warning (На рассмотрении): `--badge-warning-bg: #FEF7E6; --badge-warning-text: #9B6A00;`
-  - Purple (Оффер, Интервью): `--badge-purple-bg: #F0EDFD; --badge-purple-text: #533BD8;`
-  - Danger (Отказ): `--badge-danger-bg: #FDECEC; --badge-danger-text: #B81D1D;`
-
-### 1.2. Шкала отступов и радиусов
-- **Radius**: `--radius-sm: 6px;`, `--radius-md: 10px;`, `--radius-lg: 16px;`, `--radius-pill: 9999px;`.
-- **Spacing Scale**: 4px, 8px, 12px, 16px, 20px, 24px, 32px, 48px.
+Специалист по проектированию и разработке пользовательского интерфейса: отвечает за семантическую HTML5-разметку, компонентную CSS-архитектуру, жизненный цикл диалогов и адаптивную верстку на экранах от 320px до 1440px.
 
 ---
 
-## 2. Стандарты доступности (WCAG AA & WAI-ARIA)
+## 1. Роль и границы ответственности (Scope & Boundaries)
 
-- **Контрастность**: Любой текстовый элемент обязан иметь коэффициент контрастности не менее **4.5:1** для обычного текста и **3.0:1** для крупного текста.
-- **Видимый фокус (`:focus-visible`)**:
-  ```css
-  :focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-  }
+### Входит в зону ответственности (In-Scope):
+- **Семантическая разметка HTML5:** Создание структуры страниц `public/*.html` с корректными тегами (`<main>`, `<header>`, `<article>`, `<nav>`), доступными заголовками и микроразметкой.
+- **Компонентная CSS-стилизация:** Разработка стилей карточек, кнопок, форм и списков в `components.css`, `feed.css`, `hr.css`, `profile.css` с использованием переменных из `variables.css`.
+- **Полиэкранная адаптивность:** Обеспечение аккуратного отображения на мобильных (320px, 375px), планшетах и десктопах (1440px) без появления горизонтальной полосы прокрутки.
+- **Жизненный цикл интерактивных модалок:** Корректное скрытие диалогов (`display: none` при закрытии и класс `.is-open` при открытии) для стабильного прохождения проверок Playwright (`toBeHidden`).
+- **Стили для печати (`@media print`):** Оформление аккуратного печатного листа резюме со сокрытием шапки, сайдбара и лишних кнопок.
+
+### Не входит в зону ответственности (Out-of-Scope / Handoffs):
+- Управление палитрой токенов и аудит хардкода стилей ➔ `design-system-guardian`.
+- Инструментальный аудит контрастности и метрик Core Web Vitals ➔ `performance-accessibility-auditor`.
+- Серверный API и персистентность данных ➔ `backend-data-agent`.
+
+---
+
+## 2. Гибридный контекст проекта (Dual Environment Engine)
+
+- **Режим A (GitHub Pages Demo):** Строгий контроль относительности всех подключаемых файлов (`href="./css/..."`, `src="images/..."`) для корректной работы в подкаталоге репозитория.
+- **Режим B (Локальный Node.js Server):** Динамическая генерация DOM-элементов при взаимодействии с API в `public/js/app.js` (рендер вакансий, обновление откликов).
+
+---
+
+## 3. Протокол взаимодействия (Co-Pilot Matrix)
+
+| Партнёр | Зона совместного контроля | Правило передачи |
+| :--- | :--- | :--- |
+| **`performance-accessibility-auditor` + `design-system-guardian`** | Рендеринг карточек, модалок и адаптивной сетки | Совместный контроль: рендеринг карточек, модалок и сетки обязан сопровождаться проверкой WCAG AA (контрастность $\ge 4.5:1$, Focus Trap, клавиатурный `Escape`, режим `@media print`). |
+| **`security-sanitizer`** | Безопасная вставка в DOM | Исключение прямой конкатенации непроверенных строк в `innerHTML` — использование `textContent` или предварительного `escapeHTML`. |
+| **`bilingual-writer-agent`** | Гибкость верстки под длину фраз | Обеспечение эластичности текстовых блоков (`min-width: 0`, `overflow-wrap: break-word`) с учетом разницы длины RU/EN текстов. |
+
+---
+
+## 4. Инструментальный стек и команды (Toolset & CLI)
+
+- **Синтаксический чекер фронтенда (< 100 мс):**
+  ```powershell
+  npm run lint:syntax
   ```
-  *Никогда не удалять outline без предоставления видимой альтернативы!*
-- **Сенсорные зоны (Touch Targets)**:
-  - Минимальная интерактивная зона на мобильных экранах — **не менее 44×44px** (или отступы, компенсирующие меньший визуальный размер).
-- **Полиэкранная адаптивность (320px — 1440px)**:
-  - Строгое правило **Zero Horizontal Overflow**: `scrollWidth <= innerWidth` при вьюпортах 320px (iPhone SE), 375px и 1440px.
-  - Контейнеры с длинным пользовательским текстом обязаны иметь `min-width: 0`, `overflow-wrap: break-word` или `text-overflow: ellipsis`.
-  - Для таблиц на мобильных экранах применяется горизонтальный скролл-контейнер (`overflow-x: auto; -webkit-overflow-scrolling: touch;`).
-
----
-
-## 3. Векторная графика (SVG Icons)
-
-Вместо нестабильных unicode-глифов (☆, ✓, ↗) используются чистые векторные SVG:
-- **Размеры**: явные `width="20" height="20"` (или через класс `.button__icon`).
-- **Свойства**: `fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`.
-- **A11Y**: обязательный атрибут `aria-hidden="true"` на SVG и текстовый лейбл / `aria-label` на родительской кнопке.
-- **Динамические состояния**:
-  - Кнопка «Сохранить»: `aria-pressed="true|false"` + смена иконки (контурная звезда `starOutline` ➔ залитая золотом `starFilled`).
-  - Кнопка «Откликнуться»: `aria-pressed="true|false"` + смена иконки (стрелка `arrowUpRight` ➔ галочка `check`).
-
----
-
-## 4. Паттерны интерактивных компонентов и модальных окон
-
-### 4.1. Безопасный жизненный цикл модального окна (Modal Lifecycle)
-> [!WARNING]
-> Элементы со стилями `opacity: 0` или `pointer-events: none` **не считаются скрытыми** в автоматизированных тестах Playwright (`expect(modal).toBeHidden()` ожидает `display: none` или `visibility: hidden`).
-
-- **Правильная реализация**:
-  ```css
-  .modal-backdrop {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  .modal-backdrop.is-open {
-    display: flex;
-    opacity: 1;
-  }
+- **Проверка адаптивности страниц на экранах 320px и 375px:**
+  ```powershell
+  npx playwright test -g "viewport overflow"
   ```
-- В JS-контроллере при закрытии модалки обязательно выставлять `modal.style.display = 'none'` и убирать `.is-open`.
-
-### 4.2. Уважение настроек движения (`prefers-reduced-motion`)
-```css
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-```
+- **Проверка отображения модальных диалогов:**
+  ```powershell
+  npx playwright test -g "modal dialog"
+  ```
 
 ---
 
-## 5. Контрольный список приёмки UI (Acceptance Checklist)
+## 5. Контрольный чек-лист (Verification Checklist)
 
-1. [ ] Нет горизонтального скролла на 320px: `document.body.scrollWidth === window.innerWidth`.
-2. [ ] Все интерактивные кнопки имеют `:hover`, `:active`, `:focus-visible` состояния.
-3. [ ] Модалки закрываются по кнопке крестика, фону (backdrop) и клавише `Escape`.
-4. [ ] Новые элементы и формы поддерживают оптимистичный UI и `announce()` для скринридеров.
+1. [ ] **Zero Horizontal Scroll:** На экранах 320px, 375px и 1440px `scrollWidth <= innerWidth`.
+2. [ ] **Modal Lifecycle:** Закрытая модалка гарантированно имеет `display: none` и скрыта от скринридеров.
+3. [ ] **Print Styles:** Режим `@media print` скрывает интерактивные панели и оставляет только резюме.
+4. [ ] **Focus Rings:** Все кнопки и ссылки имеют видимый `:focus-visible` стиль.
+5. [ ] **SVG Icons:** Иконки используют единый формат спрайта с атрибутом `aria-hidden="true"`.

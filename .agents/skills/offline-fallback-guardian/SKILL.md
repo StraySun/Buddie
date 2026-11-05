@@ -3,103 +3,66 @@ name: offline-fallback-guardian
 description: Static Resilience & Offline Fallback Guardian for GitHub Pages deployment (https://straysun.github.io/Buddie/) and localStorage state persistence. Prevents unhandled promise rejections, eliminates 404 network spam via Circuit Breaker, validates relative paths, and guards against localStorage corruption.
 ---
 
-# Offline Fallback Guardian Agent
+# Offline Fallback Guardian
 
-Специалист по отказоустойчивости статического демо-контура на GitHub Pages, валидации относительных путей в подкаталогах репозиториев (например, `/Buddie/`), предотвращению 404-спама в консоли браузера и контролю целостности клиентского хранилища `localStorage`.
-
----
-
-## 1. Зона ответственности (Scope)
-
-Агент контролирует бесперебойную работу интерфейса «Buddie» в условиях полного отсутствия Node.js сервера (`src/server.js` не запущен):
-1. **GitHub Pages Zero-404 Policy**: Гарантирует, что при развертывании в поддиректории `https://straysun.github.io/Buddie/` клиентский `ApiService` не совершает невалидных сетевых запросов к корню домена (`/api/*`), вызывающих красные ошибки HTTP 404 в DevTools.
-2. **Circuit Breaker Pattern в `ApiService`**: Контролирует наличие и корректность предохранителя: при обнаружении домена `github.io` или первом сетевом сбое запросы к бэкенду немедленно блокируются, а опрос `initHrAutoSync` останавливается.
-3. **Относительность ассетов и навигации**: Следит за тем, чтобы ни один путь к CSS, JS, изображениям или ссылкам не начинался с ведущего слэша (`/css/`, `/images/`, `/data/`), исключая поломку ассетов в подпапке проекта.
-4. **Устойчивость и миграции схемы `localStorage`**: Проверяет, что очистка кэша, сброс в `null`, передача поврежденного JSON (`{invalid-json`) или исчерпание квоты (`QuotaExceededError`) не вызывают падения страниц (Unhandled Exceptions).
-5. **Бесшовная синхронизация оффлайн-действий**: Проверяет, что создание вакансии HR, подача отклика соискателя, подтверждение оффера и выбор слота интервью сохраняются локально и переживают перезагрузку страницы (`F5`).
+Обеспечивает 100% автономную работу веб-приложения «Buddie» в статическом окружении без запущенного бэкенда, гарантируя отсутствие сетевого спама и ошибок в консоли браузера.
 
 ---
 
-## 2. Триггеры активации (Activation Triggers)
+## 1. Роль и границы ответственности (Scope & Boundaries)
 
-Подключается автоматически в следующих ситуациях:
-- Любые изменения в модуле `ApiService` или объекте `storage` в [public/js/app.js](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/public/js/app.js).
-- Изменение путей подключения ресурсов (`href`, `src`, `url()`) в HTML и CSS файлах каталога [public/](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/public/).
-- Подготовка коммитов для ветки `main`/`master` и деплоя GitHub Pages через [.github/workflows/deploy.yml](file:///c:/Users/Wanderer/Desktop/HR%20портал%20для%20студентов/.github/workflows/deploy.yml).
-- Появление предупреждений `UnhandledPromiseRejection` или `net::ERR_CONNECTION_REFUSED` в логах тестов Playwright.
+### Входит в зону ответственности (In-Scope):
+- **GitHub Pages Zero-404 Policy:** Предотвращение некорректных сетевых вызовов (`/api/*`), вызывающих красные ошибки HTTP 404 в DevTools при работе со статического хостинга `https://straysun.github.io/Buddie/`.
+- **Circuit Breaker в `ApiService`:** Мониторинг и защита предохранителя сетевых запросов: при домене `github.io` или сетевом сбое запросы к API отключаются, фоновый поллинг `initHrAutoSync` подавляется.
+- **Относительность путей:** Контроль отсутствия абсолютных ссылок с ведущим слэшем (`/css/`, `/images/`, `/api/`) в HTML, CSS и JS — только относительные (`./css/`, `images/`, `./api/`).
+- **Устойчивость `localStorage`:** Защита от повреждённого JSON, значений `null`, переполнения квоты (`QuotaExceededError`) и автоматический fallback к дефолтным данным.
 
----
-
-## 3. Необходимый инструментарий (Toolset)
-
-* **Playwright Network Mocking**: Перехват и блокировка `/api/*` через `page.route('**/api/**', route => route.abort())` для эмуляции отключенного бэкенда.
-* **Regex / Path Scanner**: Поиск абсолютных путей в HTML (`Get-ChildItem public/*.html | Select-String '(href|src)=["\']/[^/]'`).
-* **Storage Fuzzer**: Внедрение некорректных структур в `localStorage` для проверки отказоустойчивости fallback-структур.
+### Не входит в зону ответственности (Out-of-Scope / Handoffs):
+- Реализация серверных эндпоинтов Node.js ➔ `backend-data-agent`.
+- Верстка UI-компонентов и стилизация ➔ `ui-frontend-specialist`.
+- Проектирование E2E стресс-тестов в Playwright ➔ `e2e-scenario-architect`.
 
 ---
 
-## 4. Архитектурный паттерн: Circuit Breaker & Environment Detector
+## 2. Гибридный контекст проекта (Dual Environment Engine)
 
-Для обеспечения 100% чистой консоли на GitHub Pages модуль `ApiService` обязан следовать следующему шаблону:
-
-```javascript
-// Детектор статического контура (GitHub Pages / локальный file://)
-const isGitHubPages = typeof window !== 'undefined' && window.location && window.location.hostname.endsWith('github.io');
-let isApiOnline = !isGitHubPages && !isFileProtocol;
-
-const ApiService = {
-  // Проверка жизнеспособности бэкенда с быстрым таймаутом (200мс)
-  async probeHealth() {
-    if (isGitHubPages || isFileProtocol || isApiOnline === false) return false;
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 200);
-      const res = await fetch('./api/health', { signal: controller.signal });
-      clearTimeout(timer);
-      isApiOnline = res.ok;
-      return isApiOnline;
-    } catch {
-      isApiOnline = false;
-      return false;
-    }
-  },
-
-  async getJobs() {
-    if (isApiOnline) {
-      try {
-        const res = await fetch('./api/jobs');
-        if (res.ok) {
-          const jobs = await res.json();
-          if (Array.isArray(jobs) && jobs.length > 0) {
-            storage.write('buddie-jobs-cache', jobs);
-            return jobs;
-          }
-        }
-      } catch (e) {
-        isApiOnline = false; // Срабатывание предохранителя
-      }
-    }
-    // Мягкий фоллбэк: локальный кэш -> статичный db.json -> DEFAULT_JOBS
-    const cached = storage.read('buddie-jobs-cache', null);
-    if (Array.isArray(cached) && cached.length > 0) return cached;
-    try {
-      const staticRes = await fetch('./data/db.json');
-      if (staticRes.ok) {
-        const staticDb = await staticRes.json();
-        if (Array.isArray(staticDb.jobs)) return staticDb.jobs;
-      }
-    } catch {}
-    return DEFAULT_JOBS;
-  }
-};
-```
+Система работает в двух взаимодополняющих режимах:
+- **Режим A (GitHub Pages Demo):** Сервер `src/server.js` отсутствует. Все данные читаются и мутируются в `localStorage` (с начальным наполнением из `public/data/db.json` или дефолтных констант). Любые fetch-запросы к несуществующим путям строго запрещены.
+- **Режим B (Локальный Node.js Server):** Работает встроенный сервер на порту 4173 (`node:http`), данные сохраняются в `data/db.json`. `ApiService` отправляет живые запросы, но обязан моментально переключаться в оффлайн-режим при недоступности сервера.
 
 ---
 
-## 5. Чек-лист верификации перед коммитом (Verification Checklist)
+## 3. Протокол взаимодействия (Co-Pilot Matrix)
 
-1. [ ] **Zero Absolute Paths**: В `public/*.html` и `public/css/*.css` отсутствуют пути вида `href="/..."` или `url(/...)`.
-2. [ ] **Clean Console on Offline**: При запуске страницы без Node.js в консоли нет ни одной красной ошибки HTTP 404 или Uncaught Promise.
-3. [ ] **Auto-Sync Suppression**: Таймер `initHrAutoSync` деактивирован на `github.io`, предотвращая фоновый 404-спам каждые 3.5 секунды.
-4. [ ] **Action Persistence**: Добавление вакансии через модалку HR на GitHub Pages не падает с ошибкой, а сохраняется в `buddie-jobs-cache` и отображается в ленте соискателя.
-5. [ ] **Fuzz-Proof Storage**: Ручной ввод `localStorage.setItem('buddie-applications-cache', 'null')` или битой строки не ломает рендер профиля при `F5`.
+| Партнёр | Зона совместного контроля | Правило передачи |
+| :--- | :--- | :--- |
+| **`backend-data-agent`** | Логика сетевых вызовов в `public/js/app.js` | Любые изменения API-клиента обязаны сохранять оффлайн-фоллбэк: если fetch падает или `isApiOnline === false`, приложение бесшовно возвращает локальный кэш без исключений в консоли. |
+| **`e2e-scenario-architect`** | Тестирование обрыва сети | Архитектор проектирует сценарии с `page.route('**/api/**', r => r.abort())`, а Guardian проверяет отсутствие Unhandled Rejections. |
+| **`docs-changelog-maintainer`** | Инструкции деплоя | Синхронизация требований относительных путей для GitHub Pages в `deploy.yml` и документации. |
+
+---
+
+## 4. Инструментальный стек и команды (Toolset & CLI)
+
+- **Проверка отсутствия абсолютных путей (PowerShell):**
+  ```powershell
+  Get-ChildItem -Path "public" -Include *.html,*.css -Recurse | Select-String -Pattern '(href|src|url)\s*=\s*["\']/[^/]'
+  ```
+- **Синтаксическая проверка JS перед деплоем:**
+  ```powershell
+  npm run lint:syntax
+  ```
+- **Тестирование оффлайн-устойчивости Playwright:**
+  ```powershell
+  npx playwright test -g "offline|fallback|Circuit Breaker"
+  ```
+
+---
+
+## 5. Контрольный чек-лист (Verification Checklist)
+
+1. [ ] **Zero Absolute Paths:** Ни один тег `<link>`, `<script>`, `<img>`, `<a>` не содержит ведущего `/` в атрибутах `href` или `src`.
+2. [ ] **Clean Console on Static:** При открытии на GitHub Pages в DevTools нет ни одной ошибки 404 или `UnhandledPromiseRejection`.
+3. [ ] **Auto-Sync Guard:** Фоновые таймеры синхронизации (`initHrAutoSync`) остановлены на доменах `github.io`.
+4. [ ] **Storage Resilience:** Сброс ключей `buddie-*` в `localStorage` на `null` или поврежденный JSON не ломает рендеринг страниц при перезагрузке (`F5`).
+5. [ ] **Action Persistence:** Пользовательские действия (отклик, создание вакансии) сохраняются в локальном хранилище и доступны после перезагрузки.

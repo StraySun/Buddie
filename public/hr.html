@@ -123,7 +123,19 @@
         </div>
         <section class="card candidate-panel">
             <div class="candidate-panel__head">
-                <h2>Подходящие кандидаты</h2><span>48 откликов · Обновлено 10 минут назад</span>
+                <div class="candidate-panel__titles">
+                    <h2>Подходящие кандидаты</h2><span>48 откликов · Обновлено 10 минут назад</span>
+                </div>
+                <div class="view-switcher" role="group" aria-label="Режим отображения кандидатов">
+                    <button type="button" class="view-switcher__btn is-active" data-view="table" aria-pressed="true">
+                        <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                        Таблица
+                    </button>
+                    <button type="button" class="view-switcher__btn" data-view="kanban" aria-pressed="false">
+                        <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v10M12 7v6M16 7v10"/></svg>
+                        Канбан
+                    </button>
+                </div>
             </div>
             <div class="table-scroll" tabindex="0" aria-label="Таблица кандидатов. Прокручивайте по горизонтали.">
                 <table class="candidate-table">
@@ -211,6 +223,58 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="kanban-board" id="hr-kanban-board" style="display: none;" role="region" aria-label="Канбан-доска кандидатов">
+                <div class="kanban-column" data-status="new">
+                    <div class="kanban-column__head">
+                        <div class="kanban-column__title">
+                            <span class="kanban-column__dot kanban-column__dot--new" aria-hidden="true"></span>
+                            <h3>Новые</h3>
+                        </div>
+                        <span class="kanban-column__count" aria-label="Количество кандидатов в колонке Новые">0</span>
+                    </div>
+                    <div class="kanban-column__dropzone" data-dropzone="new" role="list" aria-label="Колонка Новые"></div>
+                </div>
+                <div class="kanban-column" data-status="review">
+                    <div class="kanban-column__head">
+                        <div class="kanban-column__title">
+                            <span class="kanban-column__dot kanban-column__dot--review" aria-hidden="true"></span>
+                            <h3>На рассмотрении</h3>
+                        </div>
+                        <span class="kanban-column__count" aria-label="Количество кандидатов в колонке На рассмотрении">0</span>
+                    </div>
+                    <div class="kanban-column__dropzone" data-dropzone="review" role="list" aria-label="Колонка На рассмотрении"></div>
+                </div>
+                <div class="kanban-column" data-status="interview">
+                    <div class="kanban-column__head">
+                        <div class="kanban-column__title">
+                            <span class="kanban-column__dot kanban-column__dot--interview" aria-hidden="true"></span>
+                            <h3>Интервью</h3>
+                        </div>
+                        <span class="kanban-column__count" aria-label="Количество кандидатов в колонке Интервью">0</span>
+                    </div>
+                    <div class="kanban-column__dropzone" data-dropzone="interview" role="list" aria-label="Колонка Интервью"></div>
+                </div>
+                <div class="kanban-column" data-status="offer">
+                    <div class="kanban-column__head">
+                        <div class="kanban-column__title">
+                            <span class="kanban-column__dot kanban-column__dot--offer" aria-hidden="true"></span>
+                            <h3>Оффер</h3>
+                        </div>
+                        <span class="kanban-column__count" aria-label="Количество кандидатов в колонке Оффер">0</span>
+                    </div>
+                    <div class="kanban-column__dropzone" data-dropzone="offer" role="list" aria-label="Колонка Оффер"></div>
+                </div>
+                <div class="kanban-column" data-status="rejected">
+                    <div class="kanban-column__head">
+                        <div class="kanban-column__title">
+                            <span class="kanban-column__dot kanban-column__dot--rejected" aria-hidden="true"></span>
+                            <h3>Отказ</h3>
+                        </div>
+                        <span class="kanban-column__count" aria-label="Количество кандидатов в колонке Отказ">0</span>
+                    </div>
+                    <div class="kanban-column__dropzone" data-dropzone="rejected" role="list" aria-label="Колонка Отказ"></div>
+                </div>
             </div>
             <div class="hr-table-foot"><span>Показаны 5 из 48 кандидатов</span><span class="hr-table-foot__note">AI Match учитывает навыки,
                     направление и интересы студента.</span></div>
