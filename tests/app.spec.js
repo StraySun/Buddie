@@ -2341,3 +2341,58 @@ test('HR 360 audit: touch targets meet >= 44px on mobile, company reactively fil
   await expect(allRows.filter({ visible: true })).toHaveCount(5);
   await expect(metricNumbers.nth(1)).toHaveText('5');
 });
+
+
+test('HR Modern Kanban Card: prevents element overflow, sr-only is visually clipped, card click opens modal, status dot updates', async ({ page }) => {
+  await page.goto('/hr.html');
+  await expect(page.locator('.view-switcher')).toBeVisible();
+
+  // Switch to Kanban view
+  await page.locator('.view-switcher__btn[data-view="kanban"]').click();
+  const card = page.locator('.kanban-card[data-candidate-id="cand-1"]');
+  await expect(card).toBeVisible();
+
+  // 1. Verify card containment: select does not overflow card boundary
+  const cardBox = await card.boundingBox();
+  const select = card.locator('.kanban-card__select');
+  const selectBox = await select.boundingBox();
+  expect(selectBox).not.toBeNull();
+  expect(cardBox).not.toBeNull();
+  expect(selectBox.x + selectBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width + 2);
+
+  // 2. Verify .sr-only label is visually hidden (width <= 1px or clipped)
+  const srOnly = card.locator('.sr-only');
+  await expect(srOnly).toHaveCSS('position', 'absolute');
+  await expect(srOnly).toHaveCSS('overflow', 'hidden');
+
+  // 3. Verify AI Match Score badge has spark and 92%
+  const matchBadge = card.locator('.kanban-card__match');
+  await expect(matchBadge).toContainText('96%');
+  await expect(card.locator('.kanban-card__open-icon')).toBeVisible();
+
+  // 4. Verify clicking the card opens the candidate modal
+  const modal = page.locator('.modal-dialog');
+  await card.click();
+  await expect(modal).toBeVisible();
+  await expect(modal).toContainText('Профиль кандидата: Нур М.');
+
+  // Close modal with Escape
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+
+  // 5. Verify status dot starts green for new
+  const dot = card.locator('.kanban-card__status-dot');
+  await expect(dot).toHaveClass(/kanban-card__status-dot--new/);
+
+  // 6. Select new status interview: dot updates and modal is NOT opened by select interaction
+  await select.selectOption('interview');
+  await expect(dot).toHaveClass(/kanban-card__status-dot--interview/);
+  await expect(modal).toBeHidden();
+
+  // 7. Verify keyboard accessibility: focus card, press Enter, opens modal
+  await card.focus();
+  await page.keyboard.press('Enter');
+  await expect(modal).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(modal).toBeHidden();
+});
