@@ -983,6 +983,56 @@ function matchesApplicationStatus(row) {
   return selected === 'all' || row.textContent.includes(selected);
 }
 
+function matchesJobCompany(j, selectedComp) {
+  if (!selectedComp || selectedComp === 'Все компании' || selectedComp === 'all') return true;
+  const compLower = selectedComp.toLowerCase();
+  const jComp = (j.company || '').toLowerCase();
+  if (jComp.includes(compLower) || compLower.includes(jComp)) return true;
+  if ((compLower.includes('яндекс') || compLower.includes('yandex')) && jComp.includes('yandex')) return true;
+  if ((compLower.includes('сбер') || compLower.includes('sber')) && jComp.includes('sber')) return true;
+  if ((compLower.includes('т-банк') || compLower.includes('tbank')) && (jComp.includes('t-bank') || jComp.includes('tbank') || jComp.includes('тинькофф') || jComp.includes('tinkoff'))) return true;
+  if ((compLower.includes('вк') || compLower.includes('vk')) && jComp.includes('vk')) return true;
+  if ((compLower.includes('озон') || compLower.includes('ozon')) && jComp.includes('ozon')) return true;
+  if ((compLower.includes('мтс') || compLower.includes('mts')) && jComp.includes('mts')) return true;
+  return false;
+}
+
+function matchesCandidateCompany(c, selectedComp) {
+  if (!selectedComp || selectedComp === 'Все компании' || selectedComp === 'all') return true;
+  const compLower = selectedComp.toLowerCase();
+  const cComp = (c.company || '').toLowerCase();
+  const cJob = (c.jobTitle || '').toLowerCase();
+  const cJobId = (c.jobId || '').toLowerCase();
+
+  if (cComp) return cComp.includes(compLower) || compLower.includes(cComp);
+
+  if (compLower.includes('яндекс') || compLower.includes('yandex')) {
+    if (cJobId) return cJobId.includes('yandex');
+    return cJob.includes('frontend') || (cJob.includes('аналитик') && !cJobId.includes('sber') && !cJobId.includes('vk'));
+  }
+  if (compLower.includes('сбер') || compLower.includes('sber')) {
+    if (cJobId) return cJobId.includes('sber');
+    return cJob.includes('java');
+  }
+  if (compLower.includes('т-банк') || compLower.includes('tbank')) {
+    if (cJobId) return cJobId.includes('tbank');
+    return cJob.includes('python');
+  }
+  if (compLower.includes('вк') || compLower.includes('vk')) {
+    if (cJobId) return cJobId.includes('vk');
+    return cJob.includes('ml') || cJob.includes('qa');
+  }
+  if (compLower.includes('озон') || compLower.includes('ozon')) {
+    if (cJobId) return cJobId.includes('ozon');
+    return cJob.includes('product');
+  }
+  if (compLower.includes('мтс') || compLower.includes('mts')) {
+    if (cJobId) return cJobId.includes('mts');
+    return cJob.includes('cloud') || cJob.includes('telecom');
+  }
+  return true;
+}
+
 function matchesHrFilters(row) {
   const university = document.querySelector('[data-hr-university]')?.value ?? 'all';
   const status = document.querySelector('[data-hr-status]')?.value ?? 'all';
@@ -1004,7 +1054,17 @@ function matchesHrFilters(row) {
     matchesJob = jobCell.includes(jobFilter.toLocaleLowerCase('ru')) || text.includes(jobFilter.toLocaleLowerCase('ru'));
   }
 
-  return matchesUniversity && matchesStatus && matchesJob;
+  const companySelect = document.querySelector('.hr-topbar__company select');
+  const selectedComp = companySelect ? companySelect.value : 'all';
+  const candData = {
+    id: row.dataset.candidateId || '',
+    jobId: row.dataset.jobId || '',
+    company: row.dataset.company || '',
+    jobTitle: row.querySelectorAll('td')[2]?.textContent.trim() || ''
+  };
+  const matchesComp = matchesCandidateCompany(candData, selectedComp);
+
+  return matchesUniversity && matchesStatus && matchesJob && matchesComp;
 }
 
 function matchesHrKanbanFilters(card) {
@@ -1026,7 +1086,17 @@ function matchesHrKanbanFilters(card) {
     matchesJob = jobTitle.includes(jobFilter.toLocaleLowerCase('ru')) || jobId.includes(jobFilter.toLocaleLowerCase('ru')) || text.includes(jobFilter.toLocaleLowerCase('ru'));
   }
 
-  return matchesUniversity && matchesStatus && matchesJob;
+  const companySelect = document.querySelector('.hr-topbar__company select');
+  const selectedComp = companySelect ? companySelect.value : 'all';
+  const candData = {
+    id: card.dataset.candidateId || '',
+    jobId: card.dataset.jobId || '',
+    company: card.dataset.company || '',
+    jobTitle: card.querySelector('.kanban-card__job')?.textContent.trim() || ''
+  };
+  const matchesComp = matchesCandidateCompany(candData, selectedComp);
+
+  return matchesUniversity && matchesStatus && matchesJob && matchesComp;
 }
 
 
@@ -1047,23 +1117,8 @@ function calculateHrMetrics(passedJobs, passedCands) {
   let filteredCands = cands;
 
   if (selectedComp && selectedComp !== 'Все компании' && selectedComp !== 'all') {
-    const compLower = selectedComp.toLowerCase();
-    filteredJobs = jobs.filter(j => {
-      const jComp = (j.company || '').toLowerCase();
-      return jComp.includes(compLower) || compLower.includes(jComp);
-    });
-    filteredCands = cands.filter(c => {
-      const cComp = (c.company || '').toLowerCase();
-      const cJob = (c.jobTitle || '').toLowerCase();
-      if (cComp) return cComp.includes(compLower) || compLower.includes(cComp);
-      if (compLower.includes('яндекс') || compLower.includes('yandex')) return cJob.includes('аналитик') || cJob.includes('frontend');
-      if (compLower.includes('сбер') || compLower.includes('sber')) return cJob.includes('java');
-      if (compLower.includes('т-банк') || compLower.includes('tbank')) return cJob.includes('data');
-      if (compLower.includes('вк') || compLower.includes('vk')) return cJob.includes('ml');
-      if (compLower.includes('озон') || compLower.includes('ozon')) return cJob.includes('product');
-      if (compLower.includes('мтс') || compLower.includes('mts')) return cJob.includes('cloud') || cJob.includes('telecom');
-      return true;
-    });
+    filteredJobs = jobs.filter(j => matchesJobCompany(j, selectedComp));
+    filteredCands = cands.filter(c => matchesCandidateCompany(c, selectedComp));
   }
 
   metricNumbers[0].textContent = filteredJobs.length;
@@ -1088,22 +1143,26 @@ function calculateHrMetrics(passedJobs, passedCands) {
 function syncHrJobFilterOptions() {
   const select = document.querySelector('[data-hr-job]');
   if (!select) return;
-  const candRows = [...document.querySelectorAll('.candidate-table tbody tr')];
+  const companySelect = document.querySelector('.hr-topbar__company select');
+  const selectedComp = companySelect ? companySelect.value : 'all';
+
   const jobsSet = new Set();
-  candRows.forEach(row => {
-    const title = row.querySelectorAll('td')[2]?.textContent.trim();
-    if (title) jobsSet.add(title);
-  });
   const cachedJobs = storage.read('buddie-jobs-cache', DEFAULT_JOBS);
-  if (Array.isArray(cachedJobs)) {
-    cachedJobs.forEach(j => { if (j.title) jobsSet.add(j.title); });
-  }
+  const jobsList = Array.isArray(cachedJobs) ? cachedJobs : DEFAULT_JOBS;
+
+  jobsList.forEach(j => {
+    if (j.title && matchesJobCompany(j, selectedComp)) {
+      jobsSet.add(j.title);
+    }
+  });
 
   const currentValue = select.value;
   select.innerHTML = '<option value="all">Все вакансии</option>' +
     [...jobsSet].map(title => `<option value="${escapeFilterHtml(title)}">${escapeFilterHtml(title)}</option>`).join('');
   if ([...jobsSet].includes(currentValue)) {
     select.value = currentValue;
+  } else {
+    select.value = 'all';
   }
 }
 
@@ -1730,13 +1789,19 @@ document.querySelectorAll('.partners__item').forEach(item => {
 });
 
 document.querySelector('[data-application-status]')?.addEventListener('change', () => updateSearch(searchTerm));
-document.querySelector('[data-hr-university]')?.addEventListener('change', () => updateSearch(searchTerm));
-document.querySelector('[data-hr-status]')?.addEventListener('change', () => updateSearch(searchTerm));
+document.querySelector('[data-hr-university]')?.addEventListener('change', () => { updateSearch(searchTerm); announceCandidateCount(); });
+document.querySelector('[data-hr-status]')?.addEventListener('change', () => { updateSearch(searchTerm); announceCandidateCount(); });
 const hrJobSelectEl = document.querySelector('[data-hr-job]');
 if (hrJobSelectEl) {
   syncHrJobFilterOptions();
-  hrJobSelectEl.addEventListener('change', () => updateSearch(searchTerm));
+  hrJobSelectEl.addEventListener('change', () => { updateSearch(searchTerm); announceCandidateCount(); });
 }
+function announceCandidateCount() {
+  if (!document.querySelector('.hr-page')) return;
+  const visibleCount = document.querySelectorAll('.candidate-table tbody tr:not([hidden])').length;
+  announce(`Отобрано кандидатов: ${visibleCount}`);
+}
+
 const hrTopCompanySelect = document.querySelector('.hr-topbar__company select');
 if (hrTopCompanySelect) {
   const syncCompanyBadge = () => {
@@ -1755,9 +1820,11 @@ if (hrTopCompanySelect) {
   syncCompanyBadge();
   hrTopCompanySelect.addEventListener('change', () => {
     syncCompanyBadge();
+    syncHrJobFilterOptions();
     updateSearch(searchTerm);
     calculateHrMetrics();
-    announce(`Выбран работодатель: ${hrTopCompanySelect.value}`);
+    const visibleCount = document.querySelectorAll('.candidate-table tbody tr:not([hidden])').length;
+    announce(`Выбран работодатель: ${hrTopCompanySelect.value}. Отобрано кандидатов: ${visibleCount}`);
   });
 }
 
@@ -2746,7 +2813,7 @@ function createCandidateRowHtml(cand) {
   const btnText = isNew ? 'Открыть' : 'Профиль';
   const avatarClass = cand.avatarClass ? ' ' + escapeHtml(cand.avatarClass) : '';
 
-  return '<tr data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(cand.status || 'new') + '">' +
+  return '<tr data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(cand.status || 'new') + '" data-job-id="' + escapeHtml(cand.jobId || '') + '" data-company="' + escapeHtml(cand.company || '') + '">' +
     '<td>' +
       '<div class="candidate">' +
         '<span class="candidate__avatar' + avatarClass + '">' + escapeHtml(cand.initials || 'К') + '</span>' +
@@ -2942,7 +3009,7 @@ function createKanbanCardHtml(cand) {
   const avatarClass = cand.avatarClass ? ' ' + escapeHtml(cand.avatarClass) : '';
   const currentStatus = cand.status || 'new';
 
-  return '<article class="kanban-card" draggable="true" tabindex="0" data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(currentStatus) + '" data-job-id="' + escapeHtml(cand.jobId || '') + '" aria-label="Кандидат ' + escapeHtml(cand.name || '') + '">' +
+  return '<article class="kanban-card" draggable="true" tabindex="0" data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(currentStatus) + '" data-job-id="' + escapeHtml(cand.jobId || '') + '" data-company="' + escapeHtml(cand.company || '') + '" aria-label="Кандидат ' + escapeHtml(cand.name || '') + '">' +
     '<div class="kanban-card__top">' +
       '<div class="kanban-card__user">' +
         '<span class="candidate__avatar' + avatarClass + '" aria-hidden="true">' + escapeHtml(cand.initials || 'К') + '</span>' +
@@ -3106,7 +3173,10 @@ function initHrViewSwitcher() {
     const isKanban = mode === 'kanban';
     tableScroll.style.display = isKanban ? 'none' : '';
     kanbanBoard.style.display = isKanban ? 'grid' : 'none';
+    const pager = document.getElementById('hr-kanban-pager');
+    if (pager) pager.style.display = isKanban ? '' : 'none';
     if (foot) foot.style.display = isKanban ? 'none' : '';
+    announce(isKanban ? 'Режим отображения: Канбан-доска' : 'Режим отображения: Таблица кандидатов');
 
     switcher.querySelectorAll('.view-switcher__btn').forEach(btn => {
       const active = btn.dataset.view === mode;
@@ -4986,6 +5056,51 @@ updateSearch(searchTerm);
 
 initHrAutoSync();
 initHrViewSwitcher();
+initKanbanMobilePager();
+function initKanbanMobilePager() {
+  const pager = document.getElementById('hr-kanban-pager');
+  const board = document.getElementById('hr-kanban-board');
+  if (!pager || !board) return;
+
+  const pagerButtons = pager.querySelectorAll('.kanban-pager-btn');
+  pagerButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const colStatus = btn.dataset.column;
+      const targetCol = board.querySelector('.kanban-column[data-status="' + colStatus + '"]');
+      if (targetCol) {
+        targetCol.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+        pagerButtons.forEach(b => {
+          const active = b === btn;
+          b.classList.toggle('is-active', active);
+          b.setAttribute('aria-selected', String(active));
+        });
+      }
+    });
+  });
+
+  board.addEventListener('scroll', debounce(() => {
+    const cols = [...board.querySelectorAll('.kanban-column')];
+    const boardLeft = board.scrollLeft;
+    let closestCol = cols[0];
+    let minDiff = Infinity;
+    cols.forEach(col => {
+      const diff = Math.abs(col.offsetLeft - boardLeft);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestCol = col;
+      }
+    });
+    if (closestCol) {
+      const st = closestCol.dataset.status;
+      pagerButtons.forEach(b => {
+        const active = b.dataset.column === st;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-selected', String(active));
+      });
+    }
+  }, 100));
+}
+
 handleJobDeepLink();
 window.addEventListener('hashchange', () => {
   if (window.location.hash.startsWith('#job-')) {
