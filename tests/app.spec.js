@@ -2274,3 +2274,70 @@ test('HR Kanban pipeline: view switcher toggles views, cards render across 5 col
   await expect(cand1Row).toHaveAttribute('data-status', 'interview');
   await expect(cand1Row.locator('.status-badge')).toHaveText(/интервью/i);
 });
+
+
+test('HR 360 audit: touch targets meet >= 44px on mobile, company reactively filters candidates and recalculates metrics, mobile pager works', async ({ page }) => {
+  // 1. Mobile touch targets on 375px viewport
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/hr.html');
+
+  const switcherBtn = page.locator('.view-switcher__btn').first();
+  const switcherBox = await switcherBtn.boundingBox();
+  expect(switcherBox.height).toBeGreaterThanOrEqual(44);
+
+  const tableActionBtn = page.locator('.candidate-table tbody .button--small').first();
+  const actionBox = await tableActionBtn.boundingBox();
+  expect(actionBox.height).toBeGreaterThanOrEqual(44);
+
+  // Switch to Kanban on mobile
+  await page.locator('.view-switcher__btn[data-view="kanban"]').click();
+  const kanbanCardSelect = page.locator('.kanban-card__select').first();
+  const selectBox = await kanbanCardSelect.boundingBox();
+  expect(selectBox.height).toBeGreaterThanOrEqual(44);
+
+  // Mobile pager is visible on 375px
+  const pager = page.locator('#hr-kanban-pager');
+  await expect(pager).toBeVisible();
+  const pagerBtns = pager.locator('.kanban-pager-btn');
+  await expect(pagerBtns).toHaveCount(5);
+  const pagerBtnBox = await pagerBtns.first().boundingBox();
+  expect(pagerBtnBox.height).toBeGreaterThanOrEqual(44);
+
+  // Clicking a pager button scrolls column into view
+  await pagerBtns.nth(2).click(); // Interview
+  await expect(pagerBtns.nth(2)).toHaveClass(/is-active/);
+
+  // 2. Desktop viewport: verify pager is hidden and test company reactivity
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(pager).toBeHidden();
+
+  // Switch to Table view
+  await page.locator('.view-switcher__btn[data-view="table"]').click();
+
+  // All 5 candidates initially visible
+  const allRows = page.locator('.candidate-table tbody tr');
+  await expect(allRows.filter({ visible: true })).toHaveCount(5);
+
+  // Select ООО Яндекс: only Yandex candidates visible
+  const companySelect = page.locator('.hr-topbar__company select');
+  await companySelect.selectOption('ООО Яндекс');
+  await expect(allRows.filter({ visible: true })).toHaveCount(1);
+  await expect(allRows.filter({ hasText: 'Алина И.' })).toBeVisible();
+  await expect(allRows.filter({ hasText: 'Роман С.' })).toBeHidden();
+
+  // Verify metric cards dynamically recalculate for Yandex
+  const metricNumbers = page.locator('.hr-metric__number');
+  await expect(metricNumbers.nth(1)).toHaveText('1'); // 1 отклик
+
+  // Switch to ООО Сбер: Sber candidates visible (Нур М. and Дамир К.)
+  await companySelect.selectOption('ООО Сбер');
+  await expect(allRows.filter({ visible: true })).toHaveCount(2);
+  await expect(allRows.filter({ hasText: 'Дамир К.' })).toBeVisible();
+  await expect(allRows.filter({ hasText: 'Алина И.' })).toBeHidden();
+  await expect(metricNumbers.nth(1)).toHaveText('2'); // 2 отклика
+
+  // Switch back to Все компании: all 5 candidates restored
+  await companySelect.selectOption('Все компании');
+  await expect(allRows.filter({ visible: true })).toHaveCount(5);
+  await expect(metricNumbers.nth(1)).toHaveText('5');
+});
