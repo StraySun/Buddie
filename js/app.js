@@ -2873,6 +2873,10 @@ async function applyCandidateStatus(row, candId, candName, status) {
     if (select && select.value !== status) {
       select.value = status;
     }
+    const dot = kanbanCard.querySelector('.kanban-card__status-dot');
+    if (dot) {
+      dot.className = 'kanban-card__status-dot kanban-card__status-dot--' + status;
+    }
     const dropzone = document.querySelector('.kanban-column[data-status="' + status + '"] .kanban-column__dropzone');
     if (dropzone && kanbanCard.parentElement !== dropzone) {
       dropzone.appendChild(kanbanCard);
@@ -3003,40 +3007,58 @@ function renderCandidatesTable(candidates) {
 }
 
 function createKanbanCardHtml(cand) {
-  const skillsHtml = (cand.skills || ['Python', 'SQL']).slice(0, 3).map(s => '<span>' + escapeHtml(s) + '</span>').join('');
+  const skills = Array.isArray(cand.skills) ? cand.skills : ['Python', 'SQL'];
+  const maxSkills = 3;
+  const visibleSkills = skills.slice(0, maxSkills);
+  const remainingCount = skills.length - maxSkills;
+
+  let skillsHtml = visibleSkills.map(s => '<span>' + escapeHtml(s) + '</span>').join('');
+  if (remainingCount > 0) {
+    skillsHtml += '<span class="kanban-card__skills-more" title="' + escapeHtml(skills.slice(maxSkills).join(', ')) + '">+' + remainingCount + '</span>';
+  }
+
   const uni = escapeHtml(cand.university || 'КФУ · 3-й курс');
   const uniData = uni.includes('КФУ') ? 'kfu' : (uni.includes('ИТМО') ? 'itmo' : (uni.includes('ВШЭ') ? 'hse' : 'all'));
   const avatarClass = cand.avatarClass ? ' ' + escapeHtml(cand.avatarClass) : '';
   const currentStatus = cand.status || 'new';
+  const matchScore = cand.matchScore || '90%';
+  const jobTitle = cand.jobTitle || cand.role || 'Стажёр';
 
-  return '<article class="kanban-card" draggable="true" tabindex="0" data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(currentStatus) + '" data-job-id="' + escapeHtml(cand.jobId || '') + '" data-company="' + escapeHtml(cand.company || '') + '" aria-label="Кандидат ' + escapeHtml(cand.name || '') + '">' +
-    '<div class="kanban-card__top">' +
+  return '<article class="kanban-card" draggable="true" tabindex="0" role="button" data-candidate-id="' + escapeHtml(cand.id || '') + '" data-university="' + uniData + '" data-status="' + escapeHtml(currentStatus) + '" data-job-id="' + escapeHtml(cand.jobId || '') + '" data-company="' + escapeHtml(cand.company || '') + '" aria-label="Кандидат ' + escapeHtml(cand.name || '') + ', ' + escapeHtml(jobTitle) + ', совпадение ' + escapeHtml(matchScore) + '">' +
+    '<div class="kanban-card__top kanban-card__header">' +
       '<div class="kanban-card__user">' +
         '<span class="candidate__avatar' + avatarClass + '" aria-hidden="true">' + escapeHtml(cand.initials || 'К') + '</span>' +
-        '<div>' +
-          '<strong>' + escapeHtml(cand.name || 'Кандидат') + '</strong>' +
-          '<div class="kanban-card__role">' + escapeHtml(cand.role || 'Соискатель') + '</div>' +
+        '<div class="kanban-card__identity">' +
+          '<div class="kanban-card__name-row">' +
+            '<strong>' + escapeHtml(cand.name || 'Кандидат') + '</strong>' +
+            '<span class="kanban-card__open-icon" title="Открыть профиль" aria-hidden="true">↗</span>' +
+          '</div>' +
+          '<div class="kanban-card__univ">' + uni + '</div>' +
         '</div>' +
       '</div>' +
-      '<span class="match-score kanban-card__match" title="AI Match Score">' + escapeHtml(cand.matchScore || '90%') + '</span>' +
+      '<span class="match-score kanban-card__match" title="AI Match Score: ' + escapeHtml(matchScore) + '"><span class="match-score__spark" aria-hidden="true">✦</span> ' + escapeHtml(matchScore) + '</span>' +
     '</div>' +
-    '<div class="kanban-card__job">' + escapeHtml(cand.jobTitle || 'Стажёр') + '</div>' +
-    '<div class="kanban-card__univ">' + uni + '</div>' +
-    (cand.interviewSlot ? '<div class="cand-interview-slot" style="color:#2563eb;font-size:11px;font-weight:600;">◷ ' + escapeHtml(cand.interviewSlot.split('(')[0].trim()) + '</div>' : '') +
+    '<div class="kanban-card__body">' +
+      '<div class="kanban-card__job">' + escapeHtml(jobTitle) + '</div>' +
+      (cand.interviewSlot ? '<div class="cand-interview-slot kanban-card__slot"><span aria-hidden="true">◷</span> ' + escapeHtml(cand.interviewSlot.split('(')[0].trim()) + '</div>' : '') +
+    '</div>' +
     '<div class="kanban-card__meta">' +
       '<div class="kanban-card__skills">' + skillsHtml + '</div>' +
     '</div>' +
-    '<div class="kanban-card__actions">' +
-      '<button type="button" class="button button--outline button--small btn-cand-profile" data-cand-id="' + escapeHtml(cand.id || '') + '" style="padding:2px 8px;font-size:11px;min-height:26px;">Профиль</button>' +
-      '<label class="kanban-card__move">' +
-        '<span class="sr-only">Переместить:</span>' +
-        '<select class="kanban-card__select" data-move-candidate="' + escapeHtml(cand.id || '') + '" aria-label="Сменить статус кандидата ' + escapeHtml(cand.name || '') + '">' +
-          '<option value="new"' + (currentStatus === 'new' ? ' selected' : '') + '>Новый</option>' +
-          '<option value="review"' + (currentStatus === 'review' ? ' selected' : '') + '>На рассмотрении</option>' +
-          '<option value="interview"' + (currentStatus === 'interview' ? ' selected' : '') + '>Интервью</option>' +
-          '<option value="offer"' + (currentStatus === 'offer' ? ' selected' : '') + '>Оффер</option>' +
-          '<option value="rejected"' + (currentStatus === 'rejected' ? ' selected' : '') + '>Отказ</option>' +
-        '</select>' +
+    '<div class="kanban-card__footer kanban-card__actions">' +
+      '<label class="kanban-card__move kanban-card__stage-control">' +
+        '<span class="sr-only">Сменить стадию кандидата:</span>' +
+        '<div class="kanban-card__select-wrapper">' +
+          '<span class="kanban-card__status-dot kanban-card__status-dot--' + escapeHtml(currentStatus) + '" aria-hidden="true"></span>' +
+          '<select class="kanban-card__select" data-move-candidate="' + escapeHtml(cand.id || '') + '" aria-label="Сменить статус кандидата ' + escapeHtml(cand.name || '') + '">' +
+            '<option value="new"' + (currentStatus === 'new' ? ' selected' : '') + '>Новый</option>' +
+            '<option value="review"' + (currentStatus === 'review' ? ' selected' : '') + '>На рассмотрении</option>' +
+            '<option value="interview"' + (currentStatus === 'interview' ? ' selected' : '') + '>Интервью</option>' +
+            '<option value="offer"' + (currentStatus === 'offer' ? ' selected' : '') + '>Оффер</option>' +
+            '<option value="rejected"' + (currentStatus === 'rejected' ? ' selected' : '') + '>Отказ</option>' +
+          '</select>' +
+          '<svg class="kanban-card__select-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>' +
+        '</div>' +
       '</label>' +
     '</div>' +
   '</article>';
@@ -3072,13 +3094,31 @@ function bindKanbanEvents() {
       board.querySelectorAll('.kanban-column__dropzone').forEach(dz => dz.classList.remove('is-drag-over'));
     });
 
+    const triggerOpen = () => {
+      const candId = card.dataset.candidateId;
+      const targetRow = document.querySelector('.candidate-table tbody tr[data-candidate-id="' + candId + '"]');
+      const openBtn = targetRow ? targetRow.querySelector('.button') : null;
+      if (openBtn) openBtn.click();
+    };
+
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.kanban-card__select') || e.target.closest('.kanban-card__stage-control')) return;
+      triggerOpen();
+    });
+
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (e.target.closest('.kanban-card__select') || e.target.closest('.kanban-card__stage-control')) return;
+        e.preventDefault();
+        triggerOpen();
+      }
+    });
+
     const profileBtn = card.querySelector('.btn-cand-profile');
     if (profileBtn) {
-      profileBtn.addEventListener('click', () => {
-        const candId = card.dataset.candidateId;
-        const targetRow = document.querySelector('.candidate-table tbody tr[data-candidate-id="' + candId + '"]');
-        const openBtn = targetRow ? targetRow.querySelector('.button') : null;
-        if (openBtn) openBtn.click();
+      profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerOpen();
       });
     }
 
@@ -3088,6 +3128,10 @@ function bindKanbanEvents() {
         const newStatus = e.target.value;
         const candId = card.dataset.candidateId;
         const candName = card.querySelector('strong')?.textContent.trim() || 'Кандидат';
+        const dot = card.querySelector('.kanban-card__status-dot');
+        if (dot) {
+          dot.className = 'kanban-card__status-dot kanban-card__status-dot--' + newStatus;
+        }
         await applyCandidateStatus(null, candId, candName, newStatus);
       });
     }
@@ -3125,6 +3169,10 @@ function bindKanbanEvents() {
       card.dataset.status = newStatus;
       const cardSelect = card.querySelector('.kanban-card__select');
       if (cardSelect) cardSelect.value = newStatus;
+      const dot = card.querySelector('.kanban-card__status-dot');
+      if (dot) {
+        dot.className = 'kanban-card__status-dot kanban-card__status-dot--' + newStatus;
+      }
       updateKanbanColumnCounts();
 
       await applyCandidateStatus(null, candId, candName, newStatus);
